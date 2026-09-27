@@ -38,7 +38,13 @@
         <canvas id="glow"></canvas>
         <img id="line" alt="" draggable="false">
         <canvas id="nums"></canvas>
+        <canvas id="ideaC" hidden></canvas>
       </div>
+      <svg id="vline" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <canvas id="numsO" aria-hidden="true"></canvas>
+      <div id="tryrow" class="tryrow" hidden><b>Try</b><span class="tsw"></span><button class="tx" aria-label="Hide suggestions">✕</button></div>
+      <div id="nudge" class="nudge" role="status" hidden><span id="nudgeTxt"></span><span class="nsw"></span><button class="nx" aria-label="Dismiss">✕</button></div>
+      <div class="zoomui"><button id="zoomOut" title="Zoom out (−)" aria-label="Zoom out">−</button><span id="zoomPct">100%</span><button id="zoomIn" title="Zoom in (+)" aria-label="Zoom in">+</button><button id="zoomFit" title="Fit to screen (0)" aria-label="Fit">⤢</button></div>
     </div>
     <div id="celebrate" hidden><div class="burst"></div><div class="msg"><div class="big">Picture complete</div><div class="small">Every region is lit. Tap to continue.</div></div></div>
     <div id="toast"></div>
@@ -72,23 +78,45 @@
   <div id="upgrade" class="sheet small" hidden>
     <div class="up-card">
       <button class="up-x" id="upClose" title="Close">✕</button>
-      <div class="up-kicker">✦ Premium Pencils</div>
-      <h2>Unlock Premium Pencils</h2>
-      <p class="up-sub">Metallic sheen, sparkling glitter, glowing neon, plus a soft airbrush and a watercolor wash. They work with the pencil, the fill tool and saved pictures.</p>
+      <div class="up-kicker" id="upKicker">✦ Premium Pencils</div>
+      <h2 id="upTitle">Unlock Premium Pencils</h2>
+      <p class="up-sub" id="upSub"></p>
       <canvas id="upPreview" width="1200" height="210"></canvas>
-      <ul class="up-list"><li><b>5 metallics</b> gold, silver, copper, rose gold, bronze</li><li><b>6 glitters</b> with real sparkle</li><li><b>5 neons</b> with an outer glow</li><li><b>2 brushes</b> soft airbrush and watercolor wash</li></ul>
+      <ul class="up-list" id="upList"></ul>
       <button class="big accent up-buy" id="upBuy"><span class="demo-tag">DEMO</span> Unlock for <b id="upPrice">$2.99</b></button>
       <div class="up-note" id="upNote">Demo build: no payment is taken. The unlock is saved on this device only.</div>
       <div class="up-code"><label for="upCode">Have a code?</label><div><input id="upCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ENTER CODE"><button class="big" id="upRedeem">Redeem</button></div></div>
       <div class="up-msg" id="upMsg" role="status"></div>
     </div>
   </div>
+  <div id="showcase" class="sheet small" hidden>
+    <div class="up-card show-card">
+      <button class="up-x" id="showClose" title="Close">✕</button>
+      <div class="up-kicker">✦ Effects showcase</div>
+      <h2>3D Pop + Gold metallic</h2>
+      <canvas id="showC" width="1600" height="900"></canvas>
+      <p class="up-sub">The envelope is filled with a gold metallic pencil and raised with 3D Pop. Every premium set has free tries, and 3D Pop has 3 free pops.</p>
+      <div class="show-btns"><button class="big accent" id="showPop">Try 3D Pop</button><button class="big" id="showSets">See pencil sets</button></div>
+    </div>
+  </div>
+  <div id="cutscene" hidden>
+    <canvas id="cutC"></canvas>
+    <div id="cutSub" class="cut-sub"></div>
+    <div id="cutTitle" class="cut-title"></div>
+    <button id="cutMute" class="cut-btn cut-mute" title="Sound off" aria-label="Toggle sound"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="w" d="M16.5 8.5a5 5 0 010 7M19 6a8.5 8.5 0 010 12"/><path class="x" d="M17 9l5 6M22 9l-5 6"/></svg></button>
+    <button id="cutSkip" class="cut-btn cut-skip">Skip ›</button>
+  </div>
   <div id="settings" class="sheet small" hidden>
     <div class="set-card">
       <h2>Settings</h2>
       <button class="row big" id="setStory"><span>Story mode<small>Color each picture to unlock the next chapter</small></span><i class="sw-toggle"></i></button>
       <button class="row big danger" id="setReset"><span>Reset progress<small>Locks chapters again and clears all saved coloring</small></span><b>Reset</b></button>
-      <button class="row big" id="setPremium"><span>Premium Pencils<small id="setPremiumSub">Metallics, glitter, neon, airbrush and watercolor</small></span><b id="setPremiumBtn">Unlock</b></button>
+      <button class="row big" id="setCut"><span>Story cutscenes<small>A short animated scene between chapters</small></span><i class="sw-toggle"></i></button>
+      <button class="row big" id="setHints"><span>Color hints<small>Suggested colors and gentle tips in Free Color</small></span><i class="sw-toggle"></i></button>
+      <button class="row big" id="setZoomSize"><span>Size follows zoom<small>Pencils get finer as you zoom in</small></span><i class="sw-toggle"></i></button>
+      <button class="row big" id="set_pencils"><span>Premium Pencils<small></small></span><b>Unlock</b></button>
+      <button class="row big" id="set_palettes"><span>All Palettes<small></small></span><b>Unlock</b></button>
+      <button class="row big" id="set_effects3d"><span>3D Pop<small></small></span><b>Unlock</b></button>
       <button class="big" id="setClose">Close</button>
     </div>
   </div>
@@ -98,21 +126,30 @@
         <button class="tool big on" data-tool="pencil" title="Colored pencil"><svg viewBox="0 0 24 24"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z"/><path d="M14 5l2.5 2.5M17 2.5l4.5 4.5-2 2L15 4.5z"/></svg><span>Pencil</span></button>
         <button class="tool big" data-tool="fill" title="Tap to fill"><svg viewBox="0 0 24 24"><path d="M5 11l7-7 7 7-7 7z"/><path d="M19 15c0 0 2 2.5 2 4a2 2 0 01-4 0c0-1.5 2-4 2-4z"/></svg><span>Fill</span></button>
         <button class="tool big" data-tool="eraser" title="Eraser"><svg viewBox="0 0 24 24"><path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/></svg><span>Eraser</span></button>
+        <button class="tool big pop" data-tool="pop" title="3D Pop: tap an area to raise it off the page"><svg viewBox="0 0 24 24"><path d="M4 16l8 4 8-4M4 12l8 4 8-4"/><path d="M4 8l8-4 8 4-8 4z"/></svg><span>3D Pop</span></button>
       </div>
       <div class="grp free-only sizes">
         <button class="size" data-size="0" title="Fine"><i style="width:6px;height:6px"></i></button>
         <button class="size on" data-size="1" title="Medium"><i style="width:12px;height:12px"></i></button>
         <button class="size" data-size="2" title="Broad"><i style="width:20px;height:20px"></i></button>
-        <button id="clip" class="chip on" title="Keep pencil strokes inside the region where they start">Stay inside</button>
+        <span class="popctl"><label class="popdepth" title="Depth"><span>Depth</span><input type="range" id="popDepth" min="10" max="100" value="60"></label>
+          <button class="chip" id="popMode" title="Raised or pressed">Raised</button><span id="popTries" class="poptries"></span></span>
+        <span class="llwrap"><button id="clip" class="chip ll on" aria-pressed="true" title="Line Lock: pencil strokes stay inside the lines (push hard past a line to cross it)"><svg viewBox="0 0 24 24" class="llicon"><rect x="5" y="11" width="14" height="10" rx="2"/><path class="shackle" d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="lltxt">Line Lock</span><span class="llstate">On</span></button>
+        <span id="lltip" class="lltip" hidden>Line Lock keeps your color inside the lines.</span></span>
       </div>
+      <div class="grp free-only"><button class="big" id="idea" title="Preview idea: briefly shows suggested colors on the empty areas"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><span>Idea</span></button></div>
       <div class="grp free-only story-only"><button class="big accent" id="done" title="Finish this picture and reveal the story"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span>Done</span></button></div>
       <div class="grp cbn-only"><div id="progress"><b id="pdone">0</b><span>/</span><span id="ptotal">0</span><small>filled</small></div></div>
       <div class="grp right">
         <button class="act big" id="undo" title="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg><span>Undo</span></button>
         <button class="act big" id="clear" title="Clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Clear</span></button>
+        <button class="act big" id="saveLoop" hidden title="Save a short looping video of the pulse colors (WebM)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span>Loop</span></button>
         <button class="act big" id="save" title="Save PNG"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span>Save</span></button>
       </div>
     </div>
+    <div id="setbar" class="free-only"><button class="sarrow" id="setPrev" title="Previous set" aria-label="Previous pencil set">‹</button>
+      <div class="slabel"><span class="slock" hidden><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></span><b class="sname">Book palette</b><span class="scount"></span><span class="sstate"></span></div>
+      <button class="sarrow" id="setNext" title="Next set" aria-label="Next pencil set">›</button><div class="sdots"></div></div>
     <div id="colors"><div id="numrow"></div><div id="freerow"></div></div>
   </footer>
 </div>
