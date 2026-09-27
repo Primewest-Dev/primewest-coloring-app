@@ -75,7 +75,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-
 .sw.done::after{content:'✓';position:absolute;left:-4px;top:-6px;width:20px;height:20px;border-radius:50%;background:var(--glow);color:#2a1a0c;font-size:12px;display:grid;place-items:center;font-weight:700}
 .sw.flash{animation:flash 1.2s ease-out}
 @keyframes flash{0%{box-shadow:0 0 0 0 rgba(255,190,100,.9)}100%{box-shadow:0 0 0 26px rgba(255,190,100,0)}}
-.cbn #freerow{display:none}
+
 .free .sw .left,.free .sw.done::after{display:none}
 .free .sw{width:48px;height:48px}
 .free .sw .n{font-size:12px;line-height:18px}
@@ -195,7 +195,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .pgroup::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,240,200,.28) 50%,transparent 65%);
   background-size:250% 100%;animation:sheen 3.2s linear infinite;pointer-events:none}
 @keyframes sheen{from{background-position:130% 0}to{background-position:-130% 0}}
-.plabel{position:absolute;left:10px;top:2px;display:flex;align-items:center;gap:4px;font:600 10px Poppins;letter-spacing:.14em;text-transform:uppercase;color:#ffd9a6}
+.plabel{position:absolute;left:10px;top:2px;display:flex;align-items:center;gap:4px;font:600 10px Poppins;letter-spacing:.14em;text-transform:uppercase;color:#ffd9a6;white-space:nowrap}
 .plock{position:relative;width:12px;height:12px;display:none}
 .plock svg.lock{width:12px;height:12px;left:0;top:0;transform:none;stroke:#ffd9a6;filter:none}
 .pgroup.locked .plock{display:inline-block}
@@ -295,7 +295,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 
 /* ================= pencil set switcher ================= */
 #setbar{display:flex;align-items:center;gap:8px;padding:0 6px;min-height:34px}
-.cbn #setbar{display:none}
+
 .sarrow{width:40px;height:34px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:#ffe2bd;font:600 22px/1 Poppins}
 .sarrow:active{transform:scale(.95)}
 .slabel{display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap;overflow:hidden}
@@ -320,7 +320,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .premium.n-amber{color:#ffb347}.premium.n-mint{color:#7dffc4}.premium.n-sky{color:#7cc8ff}.premium.n-rose{color:#ff7a9c}
 .premium.n-ember{color:#ff7b2e}.premium.n-gold{color:#ffd257}.premium.n-aqua{color:#3fe0d0}.premium.n-magenta{color:#ff4fd8}.premium.n-ice{color:#a9d8ff}
 /* pulse layer: breathing glow in the app */
-.pulse-layer{animation:pulseBreath 2.4s ease-in-out infinite;will-change:opacity,filter}
+.pulse-layer{animation:pulseBreath var(--pulseDur,2.4s) ease-in-out infinite;will-change:opacity,filter}
 @keyframes pulseBreath{0%,100%{opacity:.72;filter:brightness(1) saturate(1)}50%{opacity:1;filter:brightness(1.35) saturate(1.25) drop-shadow(0 0 6px rgba(255,255,255,.55))}}
 .cbn .pulse-layer{display:none}
 @media (max-width:760px){.slabel .scount{display:none}.sdots{display:none}}
@@ -346,7 +346,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .poptries{font:600 11px Poppins;color:var(--glow)}
 .tool.pop svg{stroke:#ffd9a6}
 .pop-sh,.pop-li{pointer-events:none;transition:transform .12s ease-out}
-.cbn .tool-pop .popctl{display:none}
+
 
 /* ================= color helper ================= */
 .tryrow{position:absolute;left:10px;top:10px;z-index:6;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-radius:14px;
@@ -431,7 +431,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .pp-li,.pp-sh,.idea3d-li,.idea3d-sh,.fx-layer{pointer-events:none}
 .idea3d-li,.idea3d-sh{animation:ideaGhost 1.8s ease-in-out infinite alternate}
 @keyframes ideaGhost{from{opacity:.55}to{opacity:1}}
-.cbn .fx-layer{display:none}
+
 /* ---------- live preview strips ---------- */
 .pgroup{padding-top:25px}
 .plabel .pstrip{width:78px!important;height:20px!important;border-radius:5px;margin-left:6px;box-shadow:inset 0 0 0 1px rgba(255,217,166,.25)}
@@ -455,7 +455,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .mxrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0}.mxrow>b{width:84px;color:#ffd9a6;font:600 11px Poppins;text-transform:uppercase;letter-spacing:.1em}
 .mxo{height:36px;padding:0 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--mute);font:600 13px Poppins;display:inline-flex;align-items:center;gap:5px}
 .mxo.on{color:#2a1608;background:var(--glow);border-color:transparent}.mxo.lk{opacity:.8}.mxo svg{width:13px;height:13px}.mxo small{font-size:10px;opacity:.8;margin-left:3px}
-.cbn .mixer{display:none}
+
 /* ---------- owner test bar ---------- */
 .ownerbar{position:fixed;left:8px;top:66px;z-index:60;display:flex;gap:6px;align-items:center;padding:6px 8px;border-radius:999px;
   background:rgba(20,14,10,.92);border:1px solid rgba(255,179,92,.5);box-shadow:0 6px 20px rgba(0,0,0,.4);font:600 12px Poppins}
@@ -476,7 +476,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .popsw{display:inline-flex;padding:3px;gap:2px;border-radius:12px}
 .popsw i{font:600 12px Poppins;font-style:normal;padding:6px 10px;border-radius:9px;color:var(--mute);white-space:nowrap}
 .popsw i.on{background:rgba(255,179,92,.22);color:#ffe2bd;box-shadow:inset 0 0 0 1px rgba(255,179,92,.5)}
-.cbn .popswwrap{display:none}
+
 .savedind{position:fixed;right:14px;top:64px;z-index:30;font:600 11px Poppins;color:#cfe8c0;background:rgba(20,28,16,.72);border:1px solid rgba(160,210,140,.35);padding:3px 9px;border-radius:10px;opacity:0;transition:opacity .35s;pointer-events:none}
 .savedind.show{opacity:.92}
 
@@ -516,3 +516,28 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .ptip i{position:absolute;left:9px;top:9px;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 1.5px rgba(255,255,255,.7)}
 .ptip b{display:block;font-size:13.5px;font-weight:600;letter-spacing:.01em}.ptip small{display:block;font-size:11.5px;opacity:.78;margin-top:1px}
 @keyframes ptipIn{from{opacity:0;transform:translateY(3px)}}
+
+/* Stationary set arrows (v11): the label between ‹ › has a fixed width with fixed slots for lock, name, count and
+   badge, and the tray below keeps one height, so neither arrow moves when the set changes. */
+#setbar .sarrow{flex:none}
+#setbar .slabel{flex:none;width:398px;display:grid;grid-template-columns:14px 150px 78px 132px;column-gap:8px;align-items:center;justify-items:start}
+#setbar .slock[hidden]{display:inline-flex;visibility:hidden}
+#setbar .slabel>*{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#setbar .slabel .sname{justify-self:center;text-align:center;width:100%}
+#colors{min-height:117px;box-sizing:border-box}
+@media (max-width:760px){
+  #setbar .slabel{flex:1 1 0;width:auto;grid-template-columns:14px minmax(0,1fr) 96px}
+  #setbar .slabel .scount{display:none}
+}
+.ideasbar .inav b{flex:none;width:96px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ideasbar .inav button{flex:none}
+
+/* v11: Color by Number has the full toolbar and pencil boxes; pencils there pick the finish for the numbered colour */
+.cbn #ppColor{display:none}
+/* effect sliders inside the pencil box (small) */
+.plabel .fxs{display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding:1px 6px;border-radius:9px;background:rgba(0,0,0,.28);box-shadow:inset 0 0 0 1px rgba(255,217,166,.2);letter-spacing:.06em;cursor:default}
+.plabel .fxs span{font:600 9.5px Poppins}.plabel .fxs em{font:600 9px Poppins;font-style:normal;min-width:30px;text-align:right;color:#ffe2bd;letter-spacing:0;text-transform:none}
+.plabel .fxs input{width:64px;height:14px;margin:0;accent-color:#ffb35c;touch-action:none;cursor:pointer}
+.plabel .fxs.off em{color:#9c8a74}
+.chromebtn{margin-left:6px;height:34px!important;padding:0 12px!important}.chromebtn.on{color:#1d2330;background:linear-gradient(135deg,#f4f7fb,#9aa4b2 45%,#e9eef5 55%,#7d8796);border-color:transparent}
+@media (max-width:760px){.ideasbar{bottom:auto;top:10px;left:8px}.ideasbar .chip{padding:5px 8px}}   /* keep the idea arrows clear of the zoom buttons on phones */

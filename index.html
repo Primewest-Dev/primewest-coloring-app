@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="ep-build" content="10">
+<meta name="ep-build" content="11">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#14110f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="fonts.css">
-<link rel="stylesheet" href="app.css?v=10">
+<link rel="stylesheet" href="app.css?v=11">
 </head>
 <body>
 <div id="app">
@@ -142,7 +142,7 @@
   <div id="ownerbar" class="ownerbar" hidden><b>Owner</b><button id="ownUnlock">Unlock all (owner test)</button><button id="ownRelock">Re-lock (test as buyer)</button></div>
   <footer id="bottom">
     <div id="tools">
-      <div class="grp free-only">
+      <div class="grp">
         <button class="tool big on" data-tool="pencil" title="Colored pencil"><svg viewBox="0 0 24 24"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z"/><path d="M14 5l2.5 2.5M17 2.5l4.5 4.5-2 2L15 4.5z"/></svg><span>Pencil</span></button>
         <button class="tool big" data-tool="fill" title="Tap to fill"><svg viewBox="0 0 24 24"><path d="M5 11l7-7 7 7-7 7z"/><path d="M19 15c0 0 2 2.5 2 4a2 2 0 01-4 0c0-1.5 2-4 2-4z"/></svg><span>Fill</span></button>
         <button class="tool big" data-tool="eraser" title="Eraser"><svg viewBox="0 0 24 24"><path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/></svg><span>Eraser</span></button>
@@ -151,7 +151,7 @@
         <button class="tool big poppencil" data-tool="poppencil" title="Pop Pencil: paint over an area to lift it (or press it in). Every pass adds a little more."><svg viewBox="0 0 24 24"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z"/><path d="M14 5l2.5 2.5"/><path class="badge3d" d="M15 2.5l3-1.5 3 1.5v3.2l-3 1.5-3-1.5z M15 2.5l3 1.5 3-1.5M18 4v3.2"/></svg><span>Pop Pencil</span></button>
         <div class="popswwrap" role="group" aria-label="Pop Pencil direction"><button class="chip popsw" id="popMode" title="Pop Pencil direction: Raise lifts areas off the page, Inset presses them in" aria-pressed="false"><i data-v="raise" class="on">▲ Raise</i><i data-v="inset">▼ Inset</i></button></div>
       </div>
-      <div class="grp free-only sizes">
+      <div class="grp sizes">
         <button class="size" data-size="0" title="Fine"><i style="width:6px;height:6px"></i></button>
         <button class="size on" data-size="1" title="Medium"><i style="width:12px;height:12px"></i></button>
         <button class="size" data-size="2" title="Broad"><i style="width:20px;height:20px"></i></button>
@@ -172,18 +172,18 @@
         <button class="act big" id="save" title="Save PNG"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span>Save</span></button>
       </div>
     </div>
-    <div id="setbar" class="free-only"><button class="sarrow" id="setPrev" title="Previous set" aria-label="Previous pencil set">‹</button>
+    <div id="setbar"><button class="sarrow" id="setPrev" title="Previous set" aria-label="Previous pencil set">‹</button>
       <div class="slabel"><span class="slock" hidden><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></span><b class="sname">Book palette</b><span class="scount"></span><span class="sstate"></span></div>
-      <button class="sarrow" id="setNext" title="Next set" aria-label="Next pencil set">›</button><div class="sdots"></div><button class="chip mixbtn" id="mixBtn" title="Mix: combine a finish, an animation and particles">✦ Mix</button></div>
-    <div id="mixer" class="mixer free-only" hidden><div class="mxhead"><b>Mix effects</b><canvas class="mxpv" width="480" height="96"></canvas><button class="mxx" title="Close mix">✕</button></div><div class="mxrows"></div></div>
+      <button class="sarrow" id="setNext" title="Next set" aria-label="Next pencil set">›</button><div class="sdots"></div><button class="chip mixbtn" id="mixBtn" title="Mix: combine a finish, an animation and particles">✦ Mix</button><button class="chip chromebtn" id="chromeBtn" aria-pressed="false" title="Chrome finish: any color you pick becomes chrome (live mirror shimmer)">◈ Chrome</button></div>
+    <div id="mixer" class="mixer" hidden><div class="mxhead"><b>Mix effects</b><canvas class="mxpv" width="480" height="96"></canvas><button class="mxx" title="Close mix">✕</button></div><div class="mxrows"></div></div>
     <div id="colors"><div id="numrow"></div><div id="freerow"></div></div>
   </footer>
 </div>
 <!-- Chapter list (data-driven). Scene art files (data/scene_XX.js) are loaded on demand as plain <script> tags:
      works from file:// and USB sticks; images are data: URIs so canvases never taint. -->
-<script>window.EP_BUILD_HTML=10;</script>
-<script src="data/story.js?v=10"></script>
-<script src="premium-config.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script>window.EP_BUILD_HTML=11;</script>
+<script src="data/story.js?v=11"></script>
+<script src="premium-config.js?v=11"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

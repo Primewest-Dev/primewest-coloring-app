@@ -29,6 +29,17 @@ Open: https://primewest-dev.github.io/primewest-coloring-app/
   color next to each line), or hide it for a painted look. Stays crisp when zoomed, is included in Save,
   can be undone and is saved with the picture. The button glows when a picture is complete.
 - Every pencil has a name: hover (or long-press) a pencil or number swatch for its name and effect.
+- v11: chrome is a live shimmer (a slow color shift and flowing light on top of the glint), and glitter has real
+  sparkle (points that pop on and off all over the glittered area). Small sliders sit inside the pencil boxes and are
+  remembered: Shimmer (chrome, metallic, jewel) and Sparkle (glitter) go from Off (standard, still) to Full; the Pulse
+  box has Speed and the Glow box has Strength. With the system "reduce motion" setting, shimmer and sparkle start at
+  half strength.
+- More colors: Spectrum Light, Spectrum and Spectrum Deep (the full hue wheel), Neutrals, Skin Tones and Earth Tones,
+  12 chrome pencils, and a Chrome finish button that turns any color you pick into chrome.
+- Color by Number has the full toolbar and pencil boxes. The numbers still choose the color; a pencil adds its finish
+  (chrome, glitter, pulse, glow, metallic, jewel, smoke, clouds, gradient or a Mix) and the effect animates. Finished
+  areas count as correctly colored. The same free tries and locks apply as in Free Color.
+- The set switcher arrows (and the Show ideas arrows) stay in place whatever the set name, count or badge.
 
 ## Saving and updates
 - Autosave: every scene's work (colours, effect layers, pop / inset heights, Pop Pencil) is saved about 1.5 s after each change, every 20 s while you work, and when the tab is hidden or closed. It goes to localStorage and to IndexedDB (versioned format, last 3 snapshots per scene), so an update or a full localStorage never loses work. A small "Saved ✓" shows when it is stored.
