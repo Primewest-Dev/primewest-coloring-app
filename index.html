@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#14110f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ember Post">
+<title>The Last Ember Post · Coloring</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand"><span class="ember"></span><span>The Last Ember Post</span></div>
+    <nav id="scenes" aria-label="Chapters"></nav>
+    <div id="modes" role="tablist">
+      <button class="mode on" data-mode="cbn" role="tab">Color by Number</button>
+      <button class="mode" data-mode="free" role="tab">Free Color</button>
+    </div>
+    <button class="icon big" id="mapBtn" title="Journey map"><svg viewBox="0 0 24 24"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg></button>
+    <button class="icon big" id="setBtn" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+  </header>
+  <section id="story"><div id="stitle"></div><p id="scap"></p><div id="shint">Color the picture to reveal the story</div></section>
+  <main id="stagewrap">
+    <div id="stage">
+      <div id="zoomer">
+        <div id="paper"></div>
+        <div id="layers"></div>
+        <canvas id="stroke"></canvas>
+        <canvas id="dim"></canvas>
+        <canvas id="glow"></canvas>
+        <img id="line" alt="" draggable="false">
+        <canvas id="nums"></canvas>
+      </div>
+    </div>
+    <div id="celebrate" hidden><div class="burst"></div><div class="msg"><div class="big">Picture complete</div><div class="small">Every region is lit. Tap to continue.</div></div></div>
+    <div id="toast"></div>
+    <div id="reveal" hidden>
+      <div class="rv-glow"></div>
+      <div class="rv-card">
+        <div class="rv-kicker" id="rvKicker"></div>
+        <h2 class="rv-title" id="rvTitle"></h2>
+        <p class="rv-story" id="rvStory"></p>
+        <div class="rv-unlock" id="rvUnlock" hidden>
+          <div class="rv-badge"><span class="spark">✦</span> Chapter unlocked</div>
+          <div class="rv-next"><div class="th"><img id="rvNextImg" alt=""></div><div><b id="rvNextTitle"></b><span id="rvNextTeaser"></span></div></div>
+        </div>
+        <div class="rv-end" id="rvEnd" hidden></div>
+        <div class="rv-actions">
+          <button class="big accent" id="rvNext">Next chapter <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+          <button class="big" id="rvMap">Journey map</button>
+          <button class="big" id="rvStay">Keep coloring</button>
+        </div>
+      </div>
+    </div>
+  </main>
+  <div id="map" class="sheet" hidden>
+    <div class="map-head">
+      <div><h2>The Journey</h2><div id="mapProg"></div><div id="mapSub"></div></div>
+      <div class="bar"><i id="mapBar"></i></div>
+      <button class="big" id="mapClose">Close</button>
+    </div>
+    <div id="mapGrid"></div>
+  </div>
+  <div id="upgrade" class="sheet small" hidden>
+    <div class="up-card">
+      <button class="up-x" id="upClose" title="Close">✕</button>
+      <div class="up-kicker">✦ Premium Pencils</div>
+      <h2>Unlock Premium Pencils</h2>
+      <p class="up-sub">Metallic sheen, sparkling glitter, glowing neon, plus a soft airbrush and a watercolor wash. They work with the pencil, the fill tool and saved pictures.</p>
+      <canvas id="upPreview" width="1200" height="210"></canvas>
+      <ul class="up-list"><li><b>5 metallics</b> gold, silver, copper, rose gold, bronze</li><li><b>6 glitters</b> with real sparkle</li><li><b>5 neons</b> with an outer glow</li><li><b>2 brushes</b> soft airbrush and watercolor wash</li></ul>
+      <button class="big accent up-buy" id="upBuy"><span class="demo-tag">DEMO</span> Unlock for <b id="upPrice">$2.99</b></button>
+      <div class="up-note" id="upNote">Demo build: no payment is taken. The unlock is saved on this device only.</div>
+      <div class="up-code"><label for="upCode">Have a code?</label><div><input id="upCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ENTER CODE"><button class="big" id="upRedeem">Redeem</button></div></div>
+      <div class="up-msg" id="upMsg" role="status"></div>
+    </div>
+  </div>
+  <div id="settings" class="sheet small" hidden>
+    <div class="set-card">
+      <h2>Settings</h2>
+      <button class="row big" id="setStory"><span>Story mode<small>Color each picture to unlock the next chapter</small></span><i class="sw-toggle"></i></button>
+      <button class="row big danger" id="setReset"><span>Reset progress<small>Locks chapters again and clears all saved coloring</small></span><b>Reset</b></button>
+      <button class="row big" id="setPremium"><span>Premium Pencils<small id="setPremiumSub">Metallics, glitter, neon, airbrush and watercolor</small></span><b id="setPremiumBtn">Unlock</b></button>
+      <button class="big" id="setClose">Close</button>
+    </div>
+  </div>
+  <footer id="bottom">
+    <div id="tools">
+      <div class="grp free-only">
+        <button class="tool big on" data-tool="pencil" title="Colored pencil"><svg viewBox="0 0 24 24"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z"/><path d="M14 5l2.5 2.5M17 2.5l4.5 4.5-2 2L15 4.5z"/></svg><span>Pencil</span></button>
+        <button class="tool big" data-tool="fill" title="Tap to fill"><svg viewBox="0 0 24 24"><path d="M5 11l7-7 7 7-7 7z"/><path d="M19 15c0 0 2 2.5 2 4a2 2 0 01-4 0c0-1.5 2-4 2-4z"/></svg><span>Fill</span></button>
+        <button class="tool big" data-tool="eraser" title="Eraser"><svg viewBox="0 0 24 24"><path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/></svg><span>Eraser</span></button>
+      </div>
+      <div class="grp free-only sizes">
+        <button class="size" data-size="0" title="Fine"><i style="width:6px;height:6px"></i></button>
+        <button class="size on" data-size="1" title="Medium"><i style="width:12px;height:12px"></i></button>
+        <button class="size" data-size="2" title="Broad"><i style="width:20px;height:20px"></i></button>
+        <button id="clip" class="chip on" title="Keep pencil strokes inside the region where they start">Stay inside</button>
+      </div>
+      <div class="grp free-only story-only"><button class="big accent" id="done" title="Finish this picture and reveal the story"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span>Done</span></button></div>
+      <div class="grp cbn-only"><div id="progress"><b id="pdone">0</b><span>/</span><span id="ptotal">0</span><small>filled</small></div></div>
+      <div class="grp right">
+        <button class="act big" id="undo" title="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg><span>Undo</span></button>
+        <button class="act big" id="clear" title="Clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Clear</span></button>
+        <button class="act big" id="save" title="Save PNG"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span>Save</span></button>
+      </div>
+    </div>
+    <div id="colors"><div id="numrow"></div><div id="freerow"></div></div>
+  </footer>
+</div>
+<!-- Chapter list (data-driven). Scene art files (data/scene_XX.js) are loaded on demand as plain <script> tags:
+     works from file:// and USB sticks; images are data: URIs so canvases never taint. -->
+<script src="data/story.js"></script>
+<script src="premium-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
