@@ -402,3 +402,71 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
   .zoomui svg{width:14px;height:14px}
   #zoomPct{min-width:34px;font-size:10px}
 }
+/* 2D / 3D switch + 3D modes */
+.d3sw{display:inline-flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(0,0,0,.25);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);min-height:48px;flex:none}
+.d3sw span{padding:8px 12px;border-radius:999px;font:700 14px Poppins;color:var(--mute);transition:.2s}
+.d3sw:not(.on) .d2,.d3sw.on .d3{background:linear-gradient(180deg,#3b2c1f,#2a2019);color:#ffe2bd;box-shadow:inset 0 0 0 1px rgba(255,179,92,.45),0 0 16px rgba(255,150,60,.25)}
+.d3sw.on .d3{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;text-shadow:0 1px 0 rgba(255,235,200,.5)}
+.d3only{display:none}.d3 .zoomui .d3only{display:inline-flex;align-items:center;justify-content:center}
+.zoomui #bandBtn svg{width:18px;height:18px;fill:none;stroke:#ffe2bd;stroke-width:1.8}
+#bandBtn.on{background:rgba(255,179,92,.3)}
+.d3 .tool.pop{display:none}
+.rel-sh,.rel-li{pointer-events:none;transition:transform .25s ease-out}
+#bandv{z-index:8;overflow:hidden;background:#fffdf8;cursor:pointer}
+#bandv .band{position:absolute;inset:0;width:100%;height:100%;transition:transform .2s ease-out}
+#bandv .b2{filter:drop-shadow(6px 10px 8px rgba(30,18,6,.35))}#bandv .b1{filter:drop-shadow(3px 5px 5px rgba(30,18,6,.25))}
+#popWhole.on{background:rgba(255,179,92,.22);color:#ffe2bd;box-shadow:inset 0 0 0 1px rgba(255,179,92,.5)}
+@media (max-width:1100px){.d3sw span{padding:6px 9px;font-size:13px}}
+@media (max-width:760px){.d3sw{min-height:44px;padding:3px}.d3sw span{padding:6px 8px;font-size:12px}}
+
+/* ---------- pop pencil / pop erase / 3D idea (kept minimal) ---------- */
+.tool svg .badge3d{stroke:var(--glow);stroke-width:1.4;fill:rgba(255,179,92,.25)}
+.tool-pp .sizes .size{display:inline-flex}
+.popsw{display:inline-flex;gap:0;padding:4px;align-items:center}
+.popsw i{font-style:normal;padding:0 12px;height:100%;display:inline-flex;align-items:center;border-radius:10px;color:var(--mute)}
+.popsw i.on{background:linear-gradient(180deg,#3b2c1f,#2a2019);color:#ffe2bd;box-shadow:inset 0 0 0 1px rgba(255,179,92,.45)}
+#idea3d.on{color:#ffe2bd;border-color:rgba(255,179,92,.6);box-shadow:0 0 12px rgba(255,150,60,.25)}
+#idea3dApply{background:var(--glow);color:#2a1608;border-color:transparent}
+#popDepth,#popWhole{display:none!important}
+.pp-li,.pp-sh,.idea3d-li,.idea3d-sh,.fx-layer{pointer-events:none}
+.idea3d-li,.idea3d-sh{animation:ideaGhost 1.8s ease-in-out infinite alternate}
+@keyframes ideaGhost{from{opacity:.55}to{opacity:1}}
+.cbn .fx-layer{display:none}
+/* ---------- live preview strips ---------- */
+.pgroup{padding-top:25px}
+.plabel .pstrip{width:78px!important;height:20px!important;border-radius:5px;margin-left:6px;box-shadow:inset 0 0 0 1px rgba(255,217,166,.25)}
+.row.big .rowpv{width:150px;height:40px;border-radius:8px;flex:none;margin:0 10px 0 auto;background:#1f1813}
+#upPreview{border-radius:12px;background:#1f1813}
+/* ---------- jewel shimmer ---------- */
+.pencil.jewel,.pencil.jewelc,.pencil.gem{position:relative;overflow:hidden}
+.pencil.jewel::after,.pencil.jewelc::after,.pencil.gem::after{content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.75) 46%,rgba(255,255,255,.1) 54%,transparent 70%);background-size:260% 100%;
+  animation:gemSheen 2.8s ease-in-out infinite;mix-blend-mode:screen}
+.pgroup:not(.locked) .pencil.jewel svg{animation:gemGlow 2.8s ease-in-out infinite}
+@keyframes gemSheen{0%{background-position:130% 0}55%,100%{background-position:-60% 0}}
+@keyframes gemGlow{0%,100%{filter:drop-shadow(0 0 2px rgba(255,255,255,.3))}50%{filter:drop-shadow(0 0 7px rgba(255,255,255,.7))}}
+/* ---------- mix ---------- */
+.mixbtn{margin-left:10px;height:34px!important;padding:0 12px!important}
+.mixbtn.on{color:#2a1608;background:var(--glow);border-color:transparent}
+.mixer{position:relative;margin:4px 8px;padding:10px 12px;border-radius:14px;background:linear-gradient(180deg,#2b2119,#1f1813);border:1px solid rgba(255,179,92,.35)}
+.mxhead{display:flex;align-items:center;gap:12px;margin-bottom:6px}.mxhead b{color:#ffe2bd;font:600 13px Poppins;letter-spacing:.08em;text-transform:uppercase}
+.mxpv{width:240px;height:48px;border-radius:8px;background:#15100c}
+.mxx{margin-left:auto;width:36px;height:36px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--mute)}
+.mxrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0}.mxrow>b{width:84px;color:#ffd9a6;font:600 11px Poppins;text-transform:uppercase;letter-spacing:.1em}
+.mxo{height:36px;padding:0 12px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--mute);font:600 13px Poppins;display:inline-flex;align-items:center;gap:5px}
+.mxo.on{color:#2a1608;background:var(--glow);border-color:transparent}.mxo.lk{opacity:.8}.mxo svg{width:13px;height:13px}.mxo small{font-size:10px;opacity:.8;margin-left:3px}
+.cbn .mixer{display:none}
+/* ---------- owner test bar ---------- */
+.ownerbar{position:fixed;left:8px;top:66px;z-index:60;display:flex;gap:6px;align-items:center;padding:6px 8px;border-radius:999px;
+  background:rgba(20,14,10,.92);border:1px solid rgba(255,179,92,.5);box-shadow:0 6px 20px rgba(0,0,0,.4);font:600 12px Poppins}
+.ownerbar b{color:#ffd9a6;padding:0 6px;letter-spacing:.08em;text-transform:uppercase}
+.ownerbar button{height:30px;padding:0 12px;border-radius:999px;background:#2b2119;color:#ffe2bd;border:1px solid rgba(255,179,92,.35)}
+.ownerbar button.on{background:var(--glow);color:#2a1608}
+.ownerbar[hidden]{display:none}
+@media (prefers-reduced-motion:reduce){.pencil.jewel::after,.pencil.jewelc::after,.pencil.gem::after,.pgroup:not(.locked) .pencil.jewel svg,.idea3d-li,.idea3d-sh{animation:none}}
+.mixer[hidden],#idea3dApply[hidden]{display:none}
+.set-card{max-height:calc(100vh - 24px);overflow-y:auto}
+.set-code{padding:10px 12px;border-radius:14px;border:1px solid rgba(255,179,92,.45);background:rgba(255,179,92,.06)}
+.set-code label{color:#ffe2bd;font-weight:600}
+
+#lineTint{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.vec #lineTint{visibility:hidden}.cbn #lineTint{}
