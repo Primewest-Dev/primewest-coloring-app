@@ -396,3 +396,9 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 @media (max-width:1250px){.tool span{display:none}.tool.big{padding:0 12px}.chip.ll .lltxt{display:none}}
 #saveLoop[hidden]{display:none!important}
 .tryrow,.nudge{pointer-events:none}.tryrow button,.nudge button{pointer-events:auto}
+@media (max-width:600px),(max-height:500px){
+  .zoomui{right:6px;bottom:6px;padding:2px;gap:0;border-radius:10px;background:rgba(30,24,19,.7)}
+  .zoomui button{width:28px;height:28px;font-size:16px}
+  .zoomui svg{width:14px;height:14px}
+  #zoomPct{min-width:34px;font-size:10px}
+}
