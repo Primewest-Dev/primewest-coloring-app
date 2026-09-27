@@ -17,6 +17,10 @@ Open: https://primewest-dev.github.io/primewest-coloring-app/
   Chapter 4 is free in 3D. Tools: Pop Pencil (Raise / Inset, a little higher with each pass, up to a cap),
   Pop Erase and the 3D idea preview.
 
+## Saving and updates
+- Autosave: every scene's work (colours, effect layers, pop / inset heights, Pop Pencil) is saved about 1.5 s after each change, every 20 s while you work, and when the tab is hidden or closed. It goes to localStorage and to IndexedDB (versioned format, last 3 snapshots per scene), so an update or a full localStorage never loses work. A small "Saved ✓" shows when it is stored.
+- Updates: the offline cache is network-first (always the newest release when online, the cached copy when offline). If an old cached page ever meets a newer script, the app clears its cache once and reloads instead of breaking.
+
 ## Purchases (demo only)
 No payment is taken. Products: pencils, palettes, effects3d, smoke, clouds and gradients. Each has free tries.
 Payment and licensing hooks are in `premium-config.js`. Codes in that file are public, so real licensing needs a server.

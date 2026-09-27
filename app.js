@@ -1,6 +1,18 @@
 /* The Last Ember Post · Coloring (prototype). Plain JS, no dependencies, works offline and from file://. */
 (()=>{
 'use strict';
+/* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
+   paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
+const EP_BUILD=9;
+function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
+  console.warn('Refreshing app files:',why);
+  const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
+  const jobs=[];try{if(window.caches)jobs.push(caches.keys().then(k=>Promise.all(k.filter(n=>n.startsWith('emberpost')).map(n=>caches.delete(n)))));}catch(e){}
+  try{if(navigator.serviceWorker)jobs.push(navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.update().catch(()=>0)))));}catch(e){}
+  Promise.all(jobs).catch(()=>0).then(go);setTimeout(go,2500);return true;}
+try{const u=new URL(location.href);if(u.searchParams.has('_r')){u.searchParams.delete('_r');history.replaceState(null,'',u.toString());}}catch(e){}
+if(window.EP_BUILD_HTML!==EP_BUILD&&/^https?:$/.test(location.protocol)&&epHeal('page build '+window.EP_BUILD_HTML+' vs script '+EP_BUILD))return;
+window.addEventListener('error',e=>{if(!window.EP_OK&&/^https?:$/.test(location.protocol))epHeal('startup error: '+(e.message||''));});
 const SC=(window.EP_SCENES=window.EP_SCENES||{});
 /* chapters: data-driven from data/story.js; falls back to whatever scene files were loaded statically */
 const STORY=window.EP_STORY||{chapters:Object.keys(SC).map(Number).sort((a,b)=>a-b).map(n=>({n,title:SC[n].title,teaser:SC[n].caption,story:SC[n].caption,data:null,thumb:SC[n].thumb}))};
@@ -8,10 +20,11 @@ const CH=STORY.chapters, CHM={}; CH.forEach(c=>CHM[c.n]=c);
 const PLAY=CH.filter(c=>c.data||SC[c.n]);           // chapters that have art in this build, in story order
 const IDS=PLAY.map(c=>c.n);
 /* ---------- persistence (localStorage, all keys prefixed ep.v1.) ---------- */
-const LS={get(k,d){try{const v=localStorage.getItem('ep.v1.'+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
-  set(k,v){try{localStorage.setItem('ep.v1.'+k,JSON.stringify(v));return true;}catch(e){console.warn('save failed',k,e);return false;}},
-  del(k){try{localStorage.removeItem('ep.v1.'+k);}catch(e){}},
-  wipe(){try{Object.keys(localStorage).filter(k=>k.startsWith('ep.v1.')).forEach(k=>localStorage.removeItem(k));}catch(e){}}};
+const LSMEM={};   // values that did not fit in localStorage (kept for this session and in the IndexedDB autosave)
+const LS={get(k,d){try{let v=localStorage.getItem('ep.v1.'+k);if(v==null&&('ep.v1.'+k) in LSMEM)v=LSMEM['ep.v1.'+k];return v==null?d:JSON.parse(v);}catch(e){return d;}},
+  set(k,v){const s=JSON.stringify(v);try{localStorage.setItem('ep.v1.'+k,s);delete LSMEM['ep.v1.'+k];return true;}catch(e){console.warn('localStorage full, keeping in autosave',k);LSMEM['ep.v1.'+k]=s;return true;}},
+  del(k){try{localStorage.removeItem('ep.v1.'+k);}catch(e){}delete LSMEM['ep.v1.'+k];},
+  wipe(){try{Object.keys(localStorage).filter(k=>k.startsWith('ep.v1.')).forEach(k=>localStorage.removeItem(k));}catch(e){}for(const k in LSMEM)delete LSMEM[k];try{IDB.clear();}catch(e){}}};
 const settings=Object.assign({story:true},LS.get('settings',{}));
 const prog=Object.assign({unlocked:[],done:[],current:null},LS.get('progress',{}));
 if(IDS.length&&!prog.unlocked.includes(IDS[0]))prog.unlocked.unshift(IDS[0]);
@@ -303,7 +316,7 @@ const SETS=[{id:'book',name:'Book palette',product:null,type:'plain',colors:EXTR
   .concat([['metal','Metallic'],['chrome','Chrome'],['glitter','Glitter'],['jewel','Jewel'],['neon','Neon'],['glow','Glow'],['pulse','Pulse'],['ramp','Gradients','gradients'],['smoke','Smoke','smoke'],['cloud','Clouds','clouds'],['brush','Brushes']]
     .map(([k,n,pr])=>({id:k,name:n,product:pr||'pencils',type:'ink',items:PREMIUM.filter(p=>p.kind===k)})));
 const SETI={};SETS.forEach((t,i)=>SETI[t.id]=i);
-let setIdx=Math.max(0,SETI[settings.pset]??0);
+let setIdx=SETI[settings.pset];if(!(setIdx>=0&&setIdx<SETS.length)||!((SETS[setIdx].colors||SETS[setIdx].items||[]).length)){setIdx=0;settings.pset=SETS[0].id;}   // unknown / old saved set -> default
 /* free samples (kept outside ep.v1 so "Reset progress" doesn't refill them). Owner code bypasses everything. */
 const TRY_BUDGET=3;          // per premium set: 3 strokes, or 1 fill (a fill costs 3)
 const Trials={k:'ep.trials.v1',get(){try{return JSON.parse(localStorage.getItem(this.k)||'{}');}catch(e){return {};}},
@@ -679,7 +692,7 @@ function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and ligh
   const rs0=pop.rs||[pop.r],inG=new Set(rs0),A=adjacency(st),rs=rs0.slice();
   for(const r of rs0)for(const b of A[r])if(!inG.has(b)&&st.cnt[b]<6000&&[...A[b]].every(q=>inG.has(q)||q===b)){inG.add(b);rs.push(b);}  // fill enclosed holes (stars, specks)
   let bx0=W,by0=H,bx1=-1,by1=-1;for(const r of rs){const b=r*4;if(st.bb[b+2]<0)continue;bx0=Math.min(bx0,st.bb[b]);by0=Math.min(by0,st.bb[b+1]);bx1=Math.max(bx1,st.bb[b+2]);by1=Math.max(by1,st.bb[b+3]);}
-  if(bx1<0)return;const D=(4+pop.depth*.22)*(pop.hz!=null?.45+.9*pop.hz:1),M=Math.ceil(D*1.6)+10;
+  if(bx1<0)return;const D=(4+pop.depth*.22)*(pop.hz!=null?.45+.9*pop.hz:1)*(pop.k==null?1:.3+.7*pop.k),M=Math.ceil(D*1.6)+10;
   const x0=Math.max(0,bx0-M),y0=Math.max(0,by0-M),x1=Math.min(W-1,bx1+M),y1=Math.min(H-1,by1+M),w=x1-x0+1,h=y1-y0+1;
   const m=new Uint8Array(w*h);for(const r of rs)for(let p=st.off[r];p<st.off[r+1];p++){const i=st.pix[p],x=i%W-x0,y=((i/W)|0)-y0;m[y*w+x]=1;}
   { // close the mask across thin line ink (rays, outlines between same-group regions) so lines don't read as grooves
@@ -707,22 +720,35 @@ function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and ligh
     sx.globalCompositeOperation='destination-out';sx.drawImage(mk2,0,0);sh.drawImage(s2,x0,y0);}}
 function popCanvases(st){if(!st.popSh){st.popSh=mk();st.popLi=mk();st.popSh.className='pop-sh';st.popLi.className='pop-li';}return st;}
 function renderPops(st=S){if(!st)return;popCanvases(st);const sh=st.popSh.getContext('2d'),li=st.popLi.getContext('2d');sh.clearRect(0,0,W,H);li.clearRect(0,0,W,H);
-  for(const p of st.pops||[])popRender(st,p,sh,li);
+  for(const p of st.pops||[]){const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;sh.globalAlpha=li.globalAlpha=k;popRender(st,p,sh,li);}
+  sh.globalAlpha=li.globalAlpha=1;
   if(st===S&&!st.popSh.isConnected){layers.appendChild(st.popSh);layers.appendChild(st.popLi);}popParallax();if(st===S)scheduleLineTint();}
-function savePops(st){(st.pops||[]).length?LS.set('pop.'+st.n,st.pops):LS.del('pop.'+st.n);}
+function savePops(st){(st.pops||[]).length?LS.set('pop.'+st.n,st.pops.map(({k,anim,...p})=>p)):LS.del('pop.'+st.n);}
 /* the tapped area = the region plus touching regions painted the same colour (e.g. an envelope split by light rays) */
 function popGroup(r){const c=S.rc&&S.rc[r];if(!c)return [r];const A=adjacency(),seen=new Set([r]),q=[r];let area=S.cnt[r];
   while(q.length&&seen.size<80){const a=q.shift();for(const b of A[a])if(!seen.has(b)&&S.rc[b]===c&&area+S.cnt[b]<W*H*.45){seen.add(b);area+=S.cnt[b];q.push(b);}}return [...seen];}
+/* 3D Pop tap cycle: each tap on an area goes Raise -> Flat -> Inset -> Raise ... with a short animated transition */
+function popAnim(p,from,to,done,ms=240){const t0=performance.now();p.k=from;
+  const step=now=>{const u=Math.min(1,(now-t0)/ms),e=u<.5?2*u*u:1-2*(1-u)*(1-u);p.k=from+(to-from)*e;renderPops();
+    if(u<1)requestAnimationFrame(step);else{delete p.k;if(done)done();}};
+  if(RM.matches||document.hidden){p.k=to;renderPops();delete p.k;if(done)done();return;}requestAnimationFrame(step);}
 function popTap(x,y){const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];const i=S.pops.findIndex(p=>(p.rs||[p.r]).includes(r));
-  const T=depthOf(S);
+  const T=depthOf(S);S.popNext=S.popNext||{};
   if(POP.flat){if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');toast('Flattened');}else toast('Flat: tap a raised or inset area to flatten it');return;}
-  if(i<0&&T&&!(T.lv[r]===2||(POP.pressed&&T.lv[r]<0))){shake();toast(T.lv[r]===0?'Background stays flat':T.lv[r]<0?'This opening sits below the surface · try Inset':'Only foreground objects pop');return;}
-  if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');toast('Pop removed');return;}
+  if(i>=0){const p=S.pops[i],rsP=p.rs||[p.r],drop=()=>{const j=S.pops.indexOf(p);if(j>=0)S.pops.splice(j,1);renderPops();dirty('pop');};
+    if(p.anim)return;p.anim=1;
+    if(!p.pressed){rsP.forEach(q=>S.popNext[q]='inset');popAnim(p,1,0,()=>{delete p.anim;drop();});toast('Flat · tap again to press it in');return;}   // Raise -> Flat
+    rsP.forEach(q=>delete S.popNext[q]);
+    if(T&&T.lv[r]<0){popAnim(p,1,0,()=>{delete p.anim;drop();});toast('Flat');return;}                                                     // an opening only goes Inset <-> Flat
+    popAnim(p,1,0,()=>{p.pressed=false;popAnim(p,0,1,()=>{delete p.anim;renderPops();dirty('pop');});});toast('Raised');return;}              // Inset -> Raise
+  const want=S.popNext[r],pressed=want?want==='inset':POP.pressed;
+  if(T&&!(T.lv[r]===2||(T.lv[r]<0&&(pressed||want)))){shake();toast(T.lv[r]===0?'Background stays flat':T.lv[r]<0?'This opening sits below the surface · try Inset':'Only foreground objects pop');return;}
   if(!Effects3D.unlocked()){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
     const l=Trials.popsLeft();toast(l?`3D Pop · free tries: ${l} left`:'That was your last free 3D Pop ✦');}
   let rs=POP.whole&&T?objectOf(S,r):popGroup(r);if(T)rs=T.lv[r]<0?rs.filter(q=>T.lv[q]<0):rs.filter(q=>T.lv[q]===2);if(!rs.length)rs=[r];
-  const hz=T?rs.reduce((a,q)=>a+T.h[q],0)/rs.length/100:null;
-  S.pops.push({r,rs,depth:POP.depth,pressed:POP.pressed,hz});renderPops();dirty('pop');}
+  rs.forEach(q=>delete S.popNext[q]);delete S.popNext[r];
+  const hz=T?rs.reduce((a,q)=>a+T.h[q],0)/rs.length/100:null,p={r,rs,depth:POP.depth,pressed:(T&&T.lv[r]<0)?true:pressed,hz};
+  S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;renderPops();dirty('pop');});if(want==='inset')toast('Inset · tap again to raise it');}
 function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}}
 function popRestyle(){ // slider / toggle apply to the most recent pop, and to new ones
   if(POP.flat)return;if(S&&S.pops&&S.pops.length){const p=S.pops[S.pops.length-1];p.depth=POP.depth;p.pressed=POP.pressed;renderPops();dirty('pop');}}
@@ -1413,7 +1439,7 @@ if(0)$('#popDepth').oninput=e=>{const v=+e.target.value;POP.flat=v===0;POP.press
 if(0)$('#popWhole').onclick=()=>{POP.whole=!POP.whole;settings.popWhole=POP.whole;LS.set('settings',settings);$('#popWhole').classList.toggle('on',POP.whole);toast(POP.whole?'Pop whole object: one tap raises the whole object':'Pop one area at a time');};
 $('#d3sw').onclick=()=>set3D(!D3.want||!D3.on);
 $('#bandBtn').onclick=()=>{if(!D3.on)return;enableTilt();bandView(!D3.band);};$('#bandv').onclick=()=>bandView(false);
-$('#popMode').onclick=()=>{POP.pressed=!POP.pressed;POP.flat=false;   // simple switch: Raise <-> Inset (Pop Erase flattens)
+$('#popMode').onclick=e=>{const v=e.target&&e.target.dataset&&e.target.dataset.v;POP.pressed=v?v==='inset':!POP.pressed;POP.flat=false;if(tool!=='pop'&&tool!=='poppencil'&&mode==='free')setTool('poppencil');   // simple switch: Raise <-> Inset (Pop Erase flattens)
   settings.popMode=POP.pressed?'inset':'raised';LS.set('settings',settings);popUI();popRestyle();toast(POP.pressed?'Inset: press areas into the page':'Raise: lift areas off the page');};
 $('#idea3d').onclick=()=>idea3d();$('#idea3dApply').onclick=idea3dApply;
 $('#mixBtn').onclick=()=>{if(mode!=='free')setMode('free');setMix(!MIX.on);};$('#mixer .mxx').onclick=()=>setMix(false);
@@ -1429,22 +1455,22 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){
 
 /* ---------- saving each scene's coloring ---------- */
 const pend={};let saveT=0;
-function dirty(kind){if(!S)return;if(S.ltAny&&(kind==='free'||kind==='cbn'))scheduleLineTint();if(kind==='free'||kind==='pulse')S.envDirty=true;if(kind==='pp')S.ppV=(S.ppV||0)+1;if(kind==='pulse'){const sl=$('#saveLoop');if(sl)sl.hidden=!(S.pulseUsed&&mode==='free');}pend[S.n]=pend[S.n]||{};pend[S.n][kind]=1;clearTimeout(saveT);saveT=setTimeout(saveNow,700);}
+function dirty(kind){if(!S)return;if(S.ltAny&&(kind==='free'||kind==='cbn'))scheduleLineTint();if(kind==='free'||kind==='pulse')S.envDirty=true;if(kind==='pp')S.ppV=(S.ppV||0)+1;if(kind==='pulse'){const sl=$('#saveLoop');if(sl)sl.hidden=!(S.pulseUsed&&mode==='free');}pend[S.n]=pend[S.n]||{};pend[S.n][kind]=1;clearTimeout(saveT);saveT=setTimeout(saveNow,1500);}
 function saveNow(){clearTimeout(saveT);
   for(const k of Object.keys(pend)){const st=cache[k];if(!st){delete pend[k];continue;}const p=pend[k];
     if(p.cbn){const ids=[];for(let r=1;r<st.N;r++)if(st.cbn.filled[r])ids.push(r);ids.length?LS.set('cbn.'+k,ids.join(',')):LS.del('cbn.'+k);}
     if(p.free&&st.rc)LS.set('rc.'+k,st.rc);
     if(p.free){let any=false;const d=st.free.ctx.getImageData(0,0,W,H).data;for(let i=3;i<d.length;i+=64)if(d[i]){any=true;break;}
-      if(any){let url=st.free.c.toDataURL('image/webp',.9);if(!url.startsWith('data:image/webp'))url=st.free.c.toDataURL('image/png');
+      if(any){const url=st.free.c.toDataURL('image/png');   // lossless: a reload shows exactly what was painted
       if(!LS.set('free.'+k,url))toast('Storage is full: free coloring not saved');}else LS.del('free.'+k);}
     if(p.pulse&&st.pulse){let any=false;const d=st.pulse.ctx.getImageData(0,0,W,H).data;for(let i=3;i<d.length;i+=64)if(d[i]){any=true;break;}
-      if(any){let url=st.pulse.c.toDataURL('image/webp',.9);if(!url.startsWith('data:image/webp'))url=st.pulse.c.toDataURL('image/png');LS.set('pulse.'+k,url);}else LS.del('pulse.'+k);}
+      if(any){const url=st.pulse.c.toDataURL('image/png');LS.set('pulse.'+k,url);}else LS.del('pulse.'+k);}
     if(p.pop)savePops(st);
     if(p.fx)saveFx(st); if(p.pp)savePP(st);
     const t=document.createElement('canvas');t.width=320;t.height=180;const x=t.getContext('2d');x.fillStyle='#fffdf8';x.fillRect(0,0,320,180);
     const cur=S&&S.n==k, src=cur?(mode==='free'?st.free.c:st.cbn.c):(p.free&&!p.cbn?st.free.c:st.cbn.c);
     x.drawImage(src,0,0,320,180); if(cur&&lineImg.complete&&lineImg.naturalWidth)x.drawImage(lineImg,0,0,320,180);
-    LS.set('thumb.'+k,t.toDataURL('image/jpeg',.72));delete pend[k];}
+    LS.set('thumb.'+k,t.toDataURL('image/jpeg',.72));delete pend[k];idbSave(+k);}
   refreshThumbs();}
 function refreshThumbs(){$$('.scene').forEach(b=>{const n=+b.dataset.n,i=b.querySelector('img');if(i&&isUnlocked(n))i.src=thumbOf(n);});}
 async function restoreScene(st){
@@ -1461,6 +1487,37 @@ async function restoreScene(st){
   st.pops=LS.get('pop.'+st.n,[]);st.rc=LS.get('rc.'+st.n,{});st.flat3d=LS.get('flat3d.'+st.n,[]);
   await loadFx(st); await loadPP(st);
 }
+/* ---------- autosave: each scene's work (colours, effect layers, pop / inset heights, Pop Pencil, line settings) is also kept
+   in IndexedDB with a versioned format and the last 3 snapshots per scene, so an app update or a full localStorage never
+   loses work. localStorage stays the fast path; IndexedDB restores anything missing on start. ---------- */
+const SAVE_FORMAT=2,SCENE_KEYS=['cbn','free','pulse','pop','rc','flat3d','fx','pp','thumb','lines'];
+const IDB={db:null,ready:null,
+  open(){if(this.ready)return this.ready;this.ready=new Promise(res=>{try{const q=indexedDB.open('emberpost-save',1);
+    q.onupgradeneeded=()=>{const db=q.result;if(!db.objectStoreNames.contains('scenes'))db.createObjectStore('scenes',{keyPath:'n'});};
+    q.onsuccess=()=>{this.db=q.result;res(this.db);};q.onerror=()=>res(null);q.onblocked=()=>res(null);}catch(e){res(null);}});return this.ready;},
+  async all(){const db=await this.open();if(!db)return [];return new Promise(res=>{try{const q=db.transaction('scenes').objectStore('scenes').getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>res([]);}catch(e){res([]);}});},
+  async get(n){const db=await this.open();if(!db)return null;return new Promise(res=>{try{const q=db.transaction('scenes').objectStore('scenes').get(n);q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null);}catch(e){res(null);}});},
+  async put(rec){const db=await this.open();if(!db)return false;return new Promise(res=>{try{const tx=db.transaction('scenes','readwrite');tx.objectStore('scenes').put(rec);tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);}catch(e){res(false);}});},
+  async clear(){const db=await this.open();if(!db)return;return new Promise(res=>{try{const tx=db.transaction('scenes','readwrite');tx.objectStore('scenes').clear();tx.oncomplete=tx.onerror=()=>res();}catch(e){res();}});}};
+function migrateSave(rec){ // older formats -> current. format 1 = the plain localStorage keys (v6 .. v8), kept as-is
+  if(!rec||typeof rec!=='object')return null;if(!rec.format)rec.format=1;
+  if(!Array.isArray(rec.snaps))rec.snaps=rec.keys?[{t:rec.t||0,build:rec.build||0,keys:rec.keys}]:[];
+  rec.snaps=rec.snaps.filter(s=>s&&s.keys&&typeof s.keys==='object');rec.format=SAVE_FORMAT;return rec;}
+function sceneKeys(n){const o={};for(const k of SCENE_KEYS){const key='ep.v1.'+k+'.'+n;let v=null;try{v=localStorage.getItem(key);}catch(e){}if(v==null&&key in LSMEM)v=LSMEM[key];if(v!=null)o[k]=v;}return o;}
+const idbLast={};
+async function idbSave(n,force){const keys=sceneKeys(n),sig=Object.keys(keys).map(k=>k+':'+keys[k].length+':'+keys[k].slice(-48)).join('|');
+  if(!force&&idbLast[n]===sig)return false;const rec=migrateSave(await IDB.get(n))||{n,format:SAVE_FORMAT,snaps:[]};
+  if(rec.snaps[0]&&rec.snaps[0].sig===sig){idbLast[n]=sig;return false;}
+  rec.snaps.unshift({t:Date.now(),build:EP_BUILD,sig,keys});rec.snaps=rec.snaps.slice(0,3);rec.n=n;rec.t=Date.now();rec.build=EP_BUILD;
+  const ok=await IDB.put(rec);if(ok){idbLast[n]=sig;savedBlip();}return ok;}
+async function idbHydrate(){ // on start: bring back anything localStorage lost (cleared, full, or an old release wrote elsewhere)
+  const recs=await IDB.all();let restored=0;
+  for(const r0 of recs){const rec=migrateSave(r0);if(!rec||!rec.snaps.length)continue;const snap=rec.snaps[0];
+    let any=0;for(const [k,v] of Object.entries(snap.keys)){const key='ep.v1.'+k+'.'+rec.n;let has=false;try{has=localStorage.getItem(key)!=null;}catch(e){}if(has)continue;   // localStorage copy wins when present
+      try{localStorage.setItem(key,v);}catch(e){LSMEM[key]=v;}any=1;}restored+=any;}
+  if(restored)console.info('Restored',restored,'scene(s) from the autosave');return restored;}
+function savedBlip(){const e=$('#savedInd');if(!e)return;e.classList.add('show');clearTimeout(savedBlip.t);savedBlip.t=setTimeout(()=>e.classList.remove('show'),1400);}
+setInterval(()=>{if(document.hidden||!S)return;if(Object.keys(pend).length)saveNow();else idbSave(S.n);},20000);
 window.addEventListener('pagehide',saveNow);document.addEventListener('visibilitychange',()=>{if(document.hidden)saveNow();});
 
 /* ---------- story mode: complete -> reveal -> unlock ---------- */
@@ -1622,8 +1679,13 @@ window.EP={
 
 /* ---------- boot ---------- */
 setInkPattern(); buildScenes(); applySettingsUI(); handleReturn(); ownerBar();
-{const start=(prog.current&&isUnlocked(prog.current)&&IDS.includes(prog.current))?prog.current:IDS[0];
- if(start)showScene(start); else $('#scap').textContent='No scene data found.';}
+{const go=()=>{const start=(prog.current&&isUnlocked(prog.current)&&IDS.includes(prog.current))?prog.current:IDS[0];
+ if(start)showScene(start); else $('#scap').textContent='No scene data found.';};
+ Promise.race([idbHydrate().catch(()=>0),new Promise(r=>setTimeout(r,1500))]).then(go);}
+window.EP_OK=true;try{sessionStorage.removeItem('ep.heal');}catch(e){}
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(err=>console.warn('SW not registered',err)));}
+  const hadCtl=!!navigator.serviceWorker.controller;let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadCtl||reloaded)return;reloaded=true;   // a new release took over: reload once so page + scripts match
+    if(!S||!(S.free&&S.free.undo&&S.free.undo.length))location.reload();else toast('App updated · it will use the new version next time you open it');});
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update().catch(()=>0)).catch(err=>console.warn('SW not registered',err)));}
 })();
