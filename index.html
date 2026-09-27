@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="ep-build" content="11">
+<meta name="ep-build" content="12">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#14110f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="fonts.css">
-<link rel="stylesheet" href="app.css?v=11">
+<link rel="stylesheet" href="app.css?v=12">
 </head>
 <body>
 <div id="app">
@@ -83,6 +83,11 @@
     </div>
     <div id="mapGrid"></div>
   </div>
+  <div id="soDlg" class="sheet small" hidden role="alertdialog" aria-modal="true" aria-labelledby="soTitle">
+    <div class="up-card so-card"><div class="up-kicker">↺ Start over</div><h2 id="soTitle">Start this page over?</h2>
+      <p>This wipes the whole page back to blank: all colors, effects, pop and 3D heights, and line settings, in both Color by Number and Free Color. The saved copies of this page are deleted too, so it can't be brought back. Other pages aren't touched.</p>
+      <div class="so-btns"><button class="chip" id="soCancel">Cancel</button><button class="chip so-go" id="soGo">Start over</button></div></div>
+  </div>
   <div id="upgrade" class="sheet small" hidden>
     <div class="up-card">
       <button class="up-x" id="upClose" title="Close">✕</button>
@@ -149,7 +154,7 @@
         <button class="tool big poperase" data-tool="poperase" title="Pop Erase: tap a raised or inset part to flatten it"><svg viewBox="0 0 24 24"><path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/><path class="badge3d" d="M15 2.5l3-1.5 3 1.5v3.2l-3 1.5-3-1.5z M15 2.5l3 1.5 3-1.5M18 4v3.2"/></svg><span>Pop Erase</span></button>
         <button class="tool big pop" data-tool="pop" title="3D Pop: tap an area to raise it off the page"><svg viewBox="0 0 24 24"><path d="M4 16l8 4 8-4M4 12l8 4 8-4"/><path d="M4 8l8-4 8 4-8 4z"/></svg><span>3D Pop</span></button>
         <button class="tool big poppencil" data-tool="poppencil" title="Pop Pencil: paint over an area to lift it (or press it in). Every pass adds a little more."><svg viewBox="0 0 24 24"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z"/><path d="M14 5l2.5 2.5"/><path class="badge3d" d="M15 2.5l3-1.5 3 1.5v3.2l-3 1.5-3-1.5z M15 2.5l3 1.5 3-1.5M18 4v3.2"/></svg><span>Pop Pencil</span></button>
-        <div class="popswwrap" role="group" aria-label="Pop Pencil direction"><button class="chip popsw" id="popMode" title="Pop Pencil direction: Raise lifts areas off the page, Inset presses them in" aria-pressed="false"><i data-v="raise" class="on">▲ Raise</i><i data-v="inset">▼ Inset</i></button></div>
+        <div class="popswwrap" role="group" aria-label="Pop Pencil direction"><button class="chip popsw" id="popMode" title="Pop Pencil direction: Raise lifts areas off the page, Inset presses them in" aria-pressed="false"><i data-v="raise" class="on">▲ Raise</i><i data-v="inset">▼ Inset</i></button><label class="pph" title="Pop height: middle is flat, right raises, left presses in"><span class="pphe">▼</span><input type="range" id="ppH" min="-100" max="100" step="5" value="60" aria-label="Pop height (left inset, middle flat, right raise)"><span class="pphe">▲</span><b id="ppHv">Raise 60</b></label></div>
       </div>
       <div class="grp sizes">
         <button class="size" data-size="0" title="Fine"><i style="width:6px;height:6px"></i></button>
@@ -166,7 +171,7 @@
       <div class="grp cbn-only"><div id="progress"><b id="pdone">0</b><span>/</span><span id="ptotal">0</span><small>filled</small></div></div>
       <div class="grp right">
         <button class="act big" id="undo" title="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg><span>Undo</span></button>
-        <button class="act big" id="clear" title="Clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Clear</span></button>
+        <button class="act big" id="clear" title="Clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Clear</span></button><button class="act big" id="startOver" title="Start over: wipe this whole page back to blank"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4h4"/></svg><span>Start over</span></button>
         <button class="act big" id="saveLoop" hidden title="Save a short looping video of the pulse colors (WebM)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span>Loop</span></button>
         <button class="act big" id="linesBtn" aria-expanded="false" title="Lines: fade, recolor or hide the line art"><svg viewBox="0 0 24 24"><path d="M3 17c3-6 6 2 9-4s6 2 9-4"/><path d="M3 21h18" opacity=".45"/></svg><span>Lines</span></button>
         <button class="act big" id="save" title="Save PNG"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span>Save</span></button>
@@ -181,9 +186,9 @@
 </div>
 <!-- Chapter list (data-driven). Scene art files (data/scene_XX.js) are loaded on demand as plain <script> tags:
      works from file:// and USB sticks; images are data: URIs so canvases never taint. -->
-<script>window.EP_BUILD_HTML=11;</script>
-<script src="data/story.js?v=11"></script>
-<script src="premium-config.js?v=11"></script>
-<script src="app.js?v=11"></script>
+<script>window.EP_BUILD_HTML=12;</script>
+<script src="data/story.js?v=12"></script>
+<script src="premium-config.js?v=12"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>

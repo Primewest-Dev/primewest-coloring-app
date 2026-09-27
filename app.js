@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=11;
+const EP_BUILD=12;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -115,7 +115,10 @@ const RAMP_LEN=320;   // px of stroke per full run through the ramp
 for(const [k,n] of [['rainbow','Rainbow'],['tropical','Tropical'],['ocean','Ocean'],['fire','Fire'],['sunset','Sunset'],['aurora','Aurora'],['cyber','Cyber'],['vaporwave','Vaporwave'],
   ['miami','Miami'],['gold','Gold ramp'],['chrome','Chrome ramp'],['copper','Copper ramp']])PREMIUM.splice(PREMIUM.length-2,0,{id:'r-'+k,kind:'ramp',ramp:k,hex:RAMPS[k][Math.floor(RAMPS[k].length/2)],name:n});
 const PREM={};PREMIUM.forEach(p=>PREM[p.id]=p);
-PREM['c-any']={id:'c-any',kind:'chrome',hex:'#d9dde3',name:'Chrome finish'};   // Chrome finish: any colour, as chrome (not a pencil of its own)
+PREM['c-any']={id:'c-any',kind:'chrome',hex:'#d9dde3',name:'Chrome finish'};
+const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',glow:'Glow',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
+for(const k in ANY_KINDS)if(k!=='chrome')PREM['any-'+k]={id:'any-'+k,kind:k,hex:'#ffffff',name:ANY_KINDS[k]+' finish'};
+const anyId=k=>k==='chrome'?'c-any':'any-'+k;   // Chrome finish: any colour, as chrome (not a pencil of its own)
 let ink={kind:'plain',hex:color,id:null};
 const grainA=(()=>{const d=grain.getContext('2d').getImageData(0,0,256,256).data,a=new Uint8Array(65536);for(let i=0;i<65536;i++)a[i]=d[i*4+3];return a;})();
 const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
@@ -357,10 +360,24 @@ function buildPalette(){
       b.onclick=()=>usePlain(set,h);host.appendChild(b);});
   else set.items.forEach(p=>{const b=document.createElement('button');b.className='pencil premium '+p.kind+(GEMS.has(p.id)?' gem':'')+(p.kind==='neon'||p.kind==='glow'?' n-'+p.id.slice(2):'')+(own?'':' dim');
       b.dataset.p=p.id;b.title=p.name;b.innerHTML=premiumIcon(p);b.onclick=()=>usePremium(set,p);host.appendChild(b);});
+  if(set.type==='ink'&&ANY_KINDS[set.id]){const b=document.createElement('button');b.className='anycol'+(own?'':' dim')+(ink.id===anyId(set.id)?' on':'');b.id='anyBtn';b.title=`Any color as ${set.name}: pick from every color in the book's guide plus the full color range`;
+    b.innerHTML=`<i style="background:${ink.id===anyId(set.id)?ink.hex:'conic-gradient(#f44,#fa3,#ee4,#4c6,#3cd,#46f,#a5f,#f4a,#f44)'}"></i><span>Any<br>color</span>`;b.onclick=e=>{e.stopPropagation();anyPicker(set);};host.appendChild(b);}
   if(set.id==='book'){const t=document.createElement('button');t.className='moresets';t.innerHTML='<b>✦ More sets</b><span>Palettes, metallic, chrome, glow…</span>';
     t.onclick=()=>flipSet(1);fr.appendChild(t);}
   markColor();}
-function flipSet(d){setIdx=(setIdx+d+SETS.length)%SETS.length;settings.pset=SETS[setIdx].id;LS.set('settings',settings);buildPalette();$('#colors').scrollLeft=$('#numrow').offsetWidth;}
+function anyColors(){ // this page's colour guide first, then the book palette and the full colour range (deduped)
+  const out=[],seen=new Set(),add=(name,cs)=>{const g=[];for(const h of cs){const k=h.toLowerCase();if(seen.has(k))continue;seen.add(k);g.push(h);}if(g.length)out.push([name,g]);};
+  if(S)add(`This page's color guide`,S.d.palette);add('Book palette',EXTRA);
+  for(const id of ['spec-light','spec','spec-deep','neutrals','skin','earth2']){const t=SETS[SETI[id]];if(t)add(t.name,t.colors);}
+  for(const t of SETS)if(t.type==='plain'&&t.id!=='book')add(t.name,t.colors);return out;}
+function anyPicker(set,show=true){let d=$('#anyPop');if(d)d.remove();if(!show)return;
+  d=document.createElement('div');d.id='anyPop';d.className='anypop';d.setAttribute('role','dialog');d.setAttribute('aria-label','Any color');
+  const g=anyColors();d.innerHTML=`<header><b>${esc(set.name)} · any color</b><button class="x" aria-label="Close">×</button></header>`+g.map(([n,cs])=>`<h4>${esc(n)}</h4><div class="agrid">${cs.map(h=>`<button class="asw" data-c="${h}" title="${h}" style="background:${h}"></button>`).join('')}</div>`).join('');
+  d.querySelector('.x').onclick=()=>anyPicker(set,false);
+  d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;const base=PREM[anyId(set.id)],p={...base,hex:b.dataset.c,name:base.name};anyPicker(set,false);usePremium(set,p);buildPalette();};
+  document.body.appendChild(d);const r=$('#anyBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
+  setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected||d.contains(e.target)){if(!d.isConnected)document.removeEventListener('pointerdown',f,true);return;}document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#anyBtn'))d.remove();},true),0);}
+function flipSet(d){anyPicker(null,false);setIdx=(setIdx+d+SETS.length)%SETS.length;settings.pset=SETS[setIdx].id;LS.set('settings',settings);buildPalette();$('#colors').scrollLeft=$('#numrow').offsetWidth;}
 function usePlain(set,h){
   if(!owned(set)){const ps=Trials.palScene();
     if(ps!=null&&S&&ps!==S.n){openUpgrade(null,'palettes');return;}
@@ -501,7 +518,7 @@ function haloDraw(c,src,hex){c.save();c.shadowColor=hex;c.shadowBlur=34;c.global
   c.globalCompositeOperation='screen';c.shadowBlur=0;c.globalAlpha=.35;c.drawImage(src,0,0);c.restore();}
 /* pulse inks live on their own layer, which breathes (CSS animation) in the app and is flattened into saved PNGs */
 function pulseLayer(){if(!S.pulse){const c=mk();c.className='pulse-layer';S.pulse={c,ctx:c.getContext('2d',{willReadFrequently:true})};
-    c.style.setProperty('--pc','#ffb35c');layers.appendChild(c);}return S.pulse;}
+    c.style.setProperty('--pc','#ffb35c');under3D(c);}return S.pulse;}
 function fillFree(x,y){
   const r=S.lab[(y|0)*W+(x|0)]; if(!r)return; if(!allowPremiumUse(3))return; snap();
   const b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;
@@ -706,7 +723,11 @@ stage.addEventListener('contextmenu',e=>e.preventDefault());
 
 /* ---------- 3D Pop: distance-transform height map -> bevel lighting (top-left light), inner shadow, soft drop shadow ---------- */
 const POP={depth:Math.abs(+(settings.popDepth||60)),pressed:settings.popMode==='pressed'||settings.popMode==='inset',flat:settings.popMode==='flat',whole:settings.popWhole!==false};
-POP.flat=false;POP.depth=60;POP.whole=true;
+POP.whole=true;
+{const h=typeof settings.popH==='number'?Math.max(-1,Math.min(1,settings.popH)):(POP.pressed?-.6:.6);POP.hv=Math.abs(h);POP.flat=h===0;POP.pressed=h<0;POP.depth=Math.max(10,Math.round(POP.hv*100));}
+const popH=()=>POP.flat?0:(POP.pressed?-1:1)*POP.hv;   // v12: one two-way height: + raises, 0 flat, - insets
+function setPopH(v){v=Math.max(-1,Math.min(1,Math.round(v*20)/20));POP.flat=v===0;if(v)POP.pressed=v<0;POP.hv=Math.abs(v);if(v)POP.depth=Math.max(10,Math.round(POP.hv*100));
+  settings.popH=v;settings.popMode=POP.flat?'flat':POP.pressed?'inset':'raised';LS.set('settings',settings);popUI();}
 const popModeName=()=>POP.pressed?'Inset':'Raise';
 function chamfer(d,w,h){for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!d[i])continue;let v=d[i];
     if(x>0)v=Math.min(v,d[i-1]+1);if(y>0){v=Math.min(v,d[i-w]+1);if(x>0)v=Math.min(v,d[i-w-1]+1.414);if(x<w-1)v=Math.min(v,d[i-w+1]+1.414);}d[i]=v;}
@@ -746,6 +767,7 @@ function popCanvases(st){if(!st.popSh){st.popSh=mk();st.popLi=mk();st.popSh.clas
 function renderPops(st=S){if(!st)return;popCanvases(st);const sh=st.popSh.getContext('2d'),li=st.popLi.getContext('2d');sh.clearRect(0,0,W,H);li.clearRect(0,0,W,H);
   for(const p of st.pops||[]){const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;sh.globalAlpha=li.globalAlpha=k;popRender(st,p,sh,li);}
   sh.globalAlpha=li.globalAlpha=1;
+  if((st.pops||[]).length){const mark=new Uint8Array(st.N);for(const p of st.pops)for(const q of (p.rs||[p.r]))mark[q]=1;const rm=regionMask(st,mark);for(const c of [sh,li]){c.save();c.globalCompositeOperation='destination-in';c.drawImage(rm,0,0);c.restore();}}   // v12: strictly inside the popped areas
   if(st===S&&!st.popSh.isConnected){layers.appendChild(st.popSh);layers.appendChild(st.popLi);}popParallax();if(st===S)scheduleLineTint();}
 function savePops(st){(st.pops||[]).length?LS.set('pop.'+st.n,st.pops.map(({k,anim,...p})=>p)):LS.del('pop.'+st.n);}
 /* the tapped area = the region plus touching regions painted the same colour (e.g. an envelope split by light rays) */
@@ -766,17 +788,18 @@ function popTap(x,y){const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];const i=S
     if(T&&T.lv[r]<0){popAnim(p,1,0,()=>{delete p.anim;drop();});toast('Flat');return;}                                                     // an opening only goes Inset <-> Flat
     popAnim(p,1,0,()=>{p.pressed=false;popAnim(p,0,1,()=>{delete p.anim;renderPops();dirty('pop');});});toast('Raised');return;}              // Inset -> Raise
   const want=S.popNext[r],pressed=want?want==='inset':POP.pressed;
-  if(T&&!(T.lv[r]===2||(T.lv[r]<0&&(pressed||want)))){shake();toast(T.lv[r]===0?'Background stays flat':T.lv[r]<0?'This opening sits below the surface · try Inset':'Only foreground objects pop');return;}
   if(!Effects3D.unlocked()){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
     const l=Trials.popsLeft();toast(l?`3D Pop · free tries: ${l} left`:'That was your last free 3D Pop ✦');}
-  let rs=POP.whole&&T?objectOf(S,r):popGroup(r);if(T)rs=T.lv[r]<0?rs.filter(q=>T.lv[q]<0):rs.filter(q=>T.lv[q]===2);if(!rs.length)rs=[r];
+  if(isBackdrop(S,r)){shake();toast('Background stays flat · clouds, lightning and other drawn shapes pop');return;}
+  const rs=[r];   // v12: only the tapped line-enclosed area
   rs.forEach(q=>delete S.popNext[q]);delete S.popNext[r];
-  const hz=T?rs.reduce((a,q)=>a+T.h[q],0)/rs.length/100:null,p={r,rs,depth:POP.depth,pressed:(T&&T.lv[r]<0)?true:pressed,hz};
+  const p={r,rs,depth:POP.depth,pressed,hz:null};
   S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;renderPops();dirty('pop');});if(want==='inset')toast('Inset · tap again to raise it');}
 function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}}
 function popRestyle(){ // slider / toggle apply to the most recent pop, and to new ones
   if(POP.flat)return;if(S&&S.pops&&S.pops.length){const p=S.pops[S.pops.length-1];p.depth=POP.depth;p.pressed=POP.pressed;renderPops();dirty('pop');}}
-function popUI(){const m=$('#popMode');m.setAttribute('aria-pressed',String(POP.pressed));m.dataset.m=popModeName().toLowerCase();
+function popUI(){const hs=$('#ppH');if(hs){const v=Math.round(popH()*100);if(+hs.value!==v)hs.value=v;const o=$('#ppHv');if(o)o.textContent=v>0?'Raise '+v:v<0?'Inset '+(-v):'Flat';hs.style.setProperty('--p',((v+100)/2)+'%');}
+  const m=$('#popMode');m.setAttribute('aria-pressed',String(POP.pressed));m.dataset.m=popModeName().toLowerCase();
   m.querySelectorAll('i').forEach(b=>b.classList.toggle('on',b.dataset.v===m.dataset.m));}
 /* Pop Erase: flattens a manual pop (2D) or the template relief of an area (3D modes); tap again in 3D to restore */
 function popErase(x,y){const r=labAt(x,y);if(!r||!S)return;if(ppEraseAt(r)){toast('Flattened');return;}
@@ -787,8 +810,7 @@ function popErase(x,y){const r=labAt(x,y);if(!r||!S)return;if(ppEraseAt(r)){toas
   rs.forEach(q=>back?fl.delete(q):fl.add(q));S.flat3d=[...fl];fl.size?LS.set('flat3d.'+S.n,S.flat3d):LS.del('flat3d.'+S.n);
   S.relief=null;apply3D(true);toast(back?'3D restored':'Flattened · tap again to restore');}
 let tilt={x:0,y:0};
-function popParallax(){relParallax();if(!S||!S.popSh)return;const k=Math.min(4,1+Z.z*.3);S.popSh.style.transform=`translate(${(-tilt.x*k).toFixed(2)}px,${(-tilt.y*k).toFixed(2)}px)`;
-  S.popLi.style.transform=`translate(${(tilt.x*.35).toFixed(2)}px,${(tilt.y*.35).toFixed(2)}px)`;}
+function popParallax(){relParallax();if(!S||!S.popSh)return;S.popSh.style.transform=S.popLi.style.transform='';}   // v12: pops stay put inside their lines (no parallax drift over neighbours)
 stage.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||!S||!((S.pops&&S.pops.length)||D3.on))return;D3.lastMove=performance.now();const r=stage.getBoundingClientRect();
   tilt={x:((e.clientX-r.left)/r.width-.5)*2.4,y:((e.clientY-r.top)/r.height-.5)*2.4};popParallax();});
 let orientOn=false;
@@ -803,7 +825,7 @@ function needDepth(n){return new Promise(res=>{if((window.EP_DEPTH||{})[n])retur
 const depthOf=st=>st&&(window.EP_DEPTH||{})[st.n]||null;
 function objectOf(st,r){const T=depthOf(st),o=T.ob[r],l=T.lv[r],out=[];for(let q=1;q<st.N;q++)if(T.ob[q]===o&&T.lv[q]===l)out.push(q);return out;}
 function cleanPops(st){const T=depthOf(st);if(!T||!st.pops||!st.pops.length)return;const n0=st.pops.length;
-  st.pops=st.pops.map(p=>({...p,rs:(p.rs||[p.r]).filter(q=>T.lv[q]===2||(p.pressed&&T.lv[q]<0))})).filter(p=>p.rs.length);if(st.pops.length!==n0){renderPops(st);savePops(st);}}
+  st.pops=st.pops.map(p=>({...p,rs:(p.rs||[p.r]).filter(q=>!isBackdrop(st,q))})).filter(p=>p.rs.length);/* v12: anything but the open backdrop can stay popped */if(st.pops.length!==n0){renderPops(st);savePops(st);}}
 const D3={on:false,want:!!settings.view3d,band:false,lastMove:0};
 const allowed3D=n=>n===FREE_3D_SCENE||Effects3D.unlocked();
 const FREE_3D_SCENE=4;
@@ -930,7 +952,9 @@ function fxClip(){ // after erase / undo / clear: keep effects only where colour
   const c=mk();c.getContext('2d').putImageData(m,0,0);
   for(const r of S.fx){r.mx.save();r.mx.globalCompositeOperation='destination-in';r.mx.drawImage(c,0,0);r.mx.restore();r.dirty=true;}
   S.fx.forEach(r=>{if(r.dirty)fxScan(r);});S.fx=S.fx.filter(r=>r.bb);if(S.fxL)S.fxL[mode]=S.fx;dirty('fx');fxDraw(performance.now());}
-function fxAttach(){if(!S)return;const c=fxLayer();if(!c.isConnected)layers.appendChild(c);c.style.display='';}
+/* v12 (as in v8): colour layers always sit under the 3D shading, so painting or filling a popped area changes its colour and keeps its height */
+function under3D(c){const ref=[S&&S.popSh,S&&S.pp&&S.pp.sh].filter(e=>e&&e.parentNode===layers).sort((a,b)=>a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING?-1:1)[0];if(ref){if(c.nextSibling!==ref||c.parentNode!==layers)layers.insertBefore(c,ref);}else if(!c.isConnected)layers.appendChild(c);}
+function fxAttach(){if(!S)return;const c=fxLayer();under3D(c);c.style.display='';}
 const scratch=mk(),scx=scratch.getContext('2d');
 function star(x,cx,cy,R,a){x.globalAlpha=a;x.beginPath();for(let i=0;i<8;i++){const rr=i%2?R*.22:R,an=i*Math.PI/4;x.lineTo(cx+Math.cos(an)*rr,cy+Math.sin(an)*rr);}x.closePath();x.fill();}
 function fxDrawRec(x,r,t){ // t in seconds
@@ -1295,29 +1319,35 @@ const PP_R=[10,16,26];   // brush radius per size button
 function ppCanvases(st){if(!st.pp){const r=mk(),i=mk();st.pp={r,i,rx:r.getContext('2d',{willReadFrequently:true}),ix:i.getContext('2d',{willReadFrequently:true}),li:mk(),sh:mk()};
   st.pp.li.className='pp-li';st.pp.sh.className='pp-sh';}return st.pp;}
 let pps=null;
+/* v12: only true empty background stays flat: a big open backdrop area (sky, plain wall) that runs to the picture edge.
+   Clouds, lightning, stars and other drawn things in the sky are their own closed areas and pop like anything else. */
+function isBackdrop(st,r){const T=depthOf(st);if(T&&T.lv[r]!==0)return false;const b=r*4,edge=st.bb[b]<=0||st.bb[b+1]<=0||st.bb[b+2]>=W-1||st.bb[b+3]>=H-1;return edge&&st.cnt[r]>W*H*.01;}
 function ppRegions(r,x,y){ // outline boundary = the region under the first touch; where the template knows the object (hand), use the object
-  const T=depthOf(S);if(!T||!T.lv[r])return [r];
-  const o=T.ob[r],rs=[];for(let q=1;q<S.N;q++)if(T.ob[q]===o&&T.lv[q]===T.lv[r])rs.push(q);
-  // a small enclosed detail (thumbnail, nail, seal stamp) keeps its own outline; a big part of an object uses the whole object
-  return S.cnt[r]<W*H*.004?[r]:rs;}
+  return [r];}   // v12: strictly the one line-enclosed area where the stroke starts (every line is a wall), like Fill
 function ppMaskFor(rs){const c=mk(),x=c.getContext('2d'),m=x.createImageData(W,H),D=m.data;for(const q of rs)for(let p=S.off[q];p<S.off[q+1];p++)D[S.pix[p]*4+3]=255;x.putImageData(m,0,0);return c;}
 function ppBegin(x,y){
   if(!Effects3D.unlocked()&&S.n!==FREE_3D_SCENE){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
     const l=Trials.popsLeft();toast(l?`Pop Pencil · free tries: ${l} left`:'That was your last free 3D try ✦');}
   let r=labAt(x,y);if(!r)return;if(isInk(x,y)){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q)r=labAt(q[0],q[1]);}
-  const T=depthOf(S);if(T&&T.lv[r]===0){shake();toast('Background stays flat');return;}
-  ppCanvases(S);const tmp=mk(),rs=ppRegions(r,x,y);pps={r,rs,mask:ppMaskFor(rs),tmp,tx:tmp.getContext('2d'),last:[x,y],inset:POP.pressed};ppStamp(x,y);ppFlush();}
+  if(isBackdrop(S,r)){shake();toast('Background stays flat · clouds, lightning and other drawn shapes pop');return;}
+  ppCanvases(S);const tmp=mk(),rs=ppRegions(r,x,y);pps={r,rs,mask:ppMaskFor(rs),tmp,tx:tmp.getContext('2d'),last:[x,y],inset:POP.pressed,v:popH()};ppStamp(x,y);ppFlush();}
 function ppStamp(x,y){const R=PP_R[sizeIdx]/zoomSizeDiv();pps.tx.globalAlpha=.16;pps.tx.drawImage(sprite,x-R,y-R,2*R,2*R);}
 function ppMove(x,y){const [lx,ly]=pps.last,d=Math.hypot(x-lx,y-ly),step=Math.max(1,PP_R[sizeIdx]*.3/zoomSizeDiv()),n=Math.floor(d/step);
   for(let i=1;i<=n;i++)ppStamp(lx+(x-lx)*i/n,ly+(y-ly)*i/n);if(n)pps.last=[x,y];if(!ppFlush.t)ppFlush.t=setTimeout(()=>{ppFlush.t=0;ppFlush();},90);}
-function ppFlush(){if(!pps)return;const st=S.pp,t=pps.tx;t.save();t.globalCompositeOperation='destination-in';t.drawImage(pps.mask,0,0);t.restore();
-  const tgt=pps.inset?st.ix:st.rx;tgt.save();tgt.globalAlpha=1;tgt.drawImage(pps.tmp,0,0);tgt.restore();t.clearRect(0,0,W,H);ppRender(S);}
+function ppFlush(){if(!pps)return;const st=S.pp,t=pps.tx,r=pps.r,b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;if(bw<=0||bh<=0)return;
+  // the stroke sets the height toward the slider value (+ raise, - inset, 0 flattens), only on pixels of the starting area
+  const Tm=t.getImageData(bx,by,bw,bh).data,R=st.rx.getImageData(bx,by,bw,bh),I=st.ix.getImageData(bx,by,bw,bh),dr=R.data,di=I.data,v=pps.v,lab=S.lab;
+  for(let y=0;y<bh;y++){const o=(by+y)*W+bx;for(let x=0;x<bw;x++){const j=(y*bw+x)*4+3,a=Tm[j];if(!a||lab[o+x]!==r)continue;
+    const k=a/255,h0=(dr[j]-di[j])/255,h=v>0?(h0>=v?h0:Math.min(v,h0+k)):v<0?(h0<=v?h0:Math.max(v,h0-k)):(h0>0?Math.max(0,h0-k):Math.min(0,h0+k));dr[j]=h>0?Math.round(h*255):0;di[j]=h<0?Math.round(-h*255):0;}}
+  st.rx.putImageData(R,bx,by);st.ix.putImageData(I,bx,by);t.clearRect(0,0,W,H);ppRender(S);}   // v8 feel: every pass adds a little more, up to the slider height
 function ppEnd(){if(!pps)return;clearTimeout(ppFlush.t);ppFlush.t=0;ppFlush();pps=null;dirty('pp');}
 function ppRender(st){const P=st.pp;if(!P)return;const N=W*H,dr=P.rx.getImageData(0,0,W,H).data,di=P.ix.getImageData(0,0,W,H).data;
-  const h=new Float32Array(N);let any=false;for(let i=0;i<N;i++){const v=(dr[i*4+3]-di[i*4+3])/255;h[i]=v;if(v)any=true;}   // alpha caps at 255: the height cap
+  const h=new Float32Array(N),lab=st.lab,mark=new Uint8Array(st.N);let any=false;for(let i=0;i<N;i++){const v=(dr[i*4+3]-di[i*4+3])/255;h[i]=v;if(v){any=true;mark[lab[i]]=1;}}   // alpha caps at 255: the height cap
+  mark[0]=0;
   const lx=P.li.getContext('2d'),sx=P.sh.getContext('2d');lx.clearRect(0,0,W,H);sx.clearRect(0,0,W,H);P.any=any;if(!any){ppAttach(st);return;}
   const b=new Float32Array(N),R=3;for(let pass=0;pass<2;pass++){for(let y=0;y<H;y++){let s=0;const o=y*W;for(let x=-R;x<W;x++){if(x+R<W)s+=h[o+x+R];if(x-R-1>=0)s-=h[o+x-R-1];if(x>=0)b[o+x]=s/(2*R+1);}}
     for(let x=0;x<W;x++){let s=0;for(let y=-R;y<H;y++){if(y+R<H)s+=b[(y+R)*W+x];if(y-R-1>=0)s-=b[(y-R-1)*W+x];if(y>=0)h[y*W+x]=s/(2*R+1);}}}
+  for(let i=0;i<N;i++)if(!mark[lab[i]])h[i]=0;   // v12: nothing outside the popped areas (lines and neighbours stay untouched)
   const im=lx.createImageData(W,H),D=im.data,K=44;
   for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(!h[i]&&!h[i-1]&&!h[i+1]&&!h[i-W]&&!h[i+W])continue;
     const gx=(h[i+1]-h[i-1])*.5,gy=(h[i+W]-h[i-W])*.5,v=(gx+gy)*.7071*K+(h[i]<0?h[i]*.3:h[i]*.06),j=i*4;
@@ -1326,7 +1356,9 @@ function ppRender(st){const P=st.pp;if(!P)return;const N=W*H,dr=P.rx.getImageDat
   const m=sx.createImageData(W,H);for(let i=0;i<N;i++)if(h[i]>.03)m.data[i*4+3]=Math.min(255,h[i]*500);const mc=mk();mc.getContext('2d').putImageData(m,0,0);
   sx.save();sx.shadowColor='rgba(38,22,8,.35)';sx.shadowBlur=9;sx.shadowOffsetX=4+W*2;sx.shadowOffsetY=7;sx.drawImage(mc,-W*2,0);sx.restore();
   sx.globalCompositeOperation='destination-out';sx.drawImage(mc,0,0);sx.globalCompositeOperation='source-over';
+  {const rm=regionMask(st,mark);for(const c of [lx,sx]){c.save();c.globalCompositeOperation='destination-in';c.drawImage(rm,0,0);c.restore();}}
   const hq=new Float32Array(WQ*HQ);for(let y=0;y<HQ;y++)for(let X=0;X<WQ;X++)hq[y*WQ+X]=Math.max(0,h[(y*MQ+2)*W+X*MQ+2]);P.hq=hq;ppAttach(st);if(st===S)scheduleLineTint();if(st===S&&typeof fxStart==='function')fxStart();}
+function regionMask(st,mark){const c=mk(),x=c.getContext('2d'),m=x.createImageData(W,H),D=m.data;for(let r=1;r<st.N;r++)if(mark[r])for(let p=st.off[r];p<st.off[r+1];p++)D[st.pix[p]*4+3]=255;x.putImageData(m,0,0);return c;}
 function ppAttach(st){if(st!==S||!st.pp)return;layers.appendChild(st.pp.sh);layers.appendChild(st.pp.li);}
 function ppEraseAt(r){const P=S.pp;if(!P||!P.any)return false;const bx=S.bb[r*4],by=S.bb[r*4+1],bw=S.bb[r*4+2]-bx+1,bh=S.bb[r*4+3]-by+1;
   const d=P.rx.getImageData(bx,by,bw,bh).data,e=P.ix.getImageData(bx,by,bw,bh).data;let has=false;
@@ -1365,7 +1397,7 @@ function regionHeights(st){const T=depthOf(st),hr=new Float32Array(st.N);let any
     for(let r=1;r<st.N;r++){if(!cnt[r])continue;const up=sum[r]/cnt[r],dn=neg[r]/cnt[r];if(up>.04&&!hr[r]){hr[r]=Math.min(1,up*3);any=true;}else if(dn>.04&&!hr[r]){hr[r]=-Math.min(1,dn*3);any=true;}}}
   return any?hr:null;}
 function updateLineTint(){const c=$('#lineTint');if(!S||!c)return;const x=c.getContext('2d');x.clearRect(0,0,W,H);const old=vline.querySelector('#vtint');if(old)old.remove();
-  const hr=regionHeights(S);S.ltAny=!!hr;if(!hr)return;
+  const hr=D3.on?regionHeights(S):null;S.ltAny=!!hr;if(!hr)return;   /* v12: 2D pops leave the black lines alone (lines are walls); lit outlines stay for the 3D view */
   // fill colour of each popped region (what you see: free colour or colour-by-number, paper when empty)
   const src=(mode==='free'?S.free.ctx:S.cbn.ctx).getImageData(0,0,W,H).data,N=S.N,cs=new Float32Array(N*3),cn=new Uint32Array(N),L=S.lab;
   for(let i=0;i<W*H;i+=3){const r=L[i];if(!hr[r])continue;const j=i*4,a=src[j+3]/255;cs[r*3]+=src[j]*a+255*(1-a);cs[r*3+1]+=src[j+1]*a+253*(1-a);cs[r*3+2]+=src[j+2]*a+248*(1-a);cn[r]++;}
@@ -1728,7 +1760,9 @@ $('#d3sw').onclick=()=>set3D(!D3.want||!D3.on);
 $('#bandBtn').onclick=()=>{if(!D3.on)return;enableTilt();bandView(!D3.band);};$('#bandv').onclick=()=>bandView(false);
 $('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));
 $('#ppColor').onclick=()=>{settings.ppColor=settings.ppColor===false;LS.set('settings',settings);$('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));toast(settings.ppColor!==false?'Color while popping: on (uses your current pencil)':'Color while popping: off (only raises / insets)');};
-$('#popMode').onclick=e=>{const v=e.target&&e.target.dataset&&e.target.dataset.v;POP.pressed=v?v==='inset':!POP.pressed;POP.flat=false;if(tool!=='pop'&&tool!=='poppencil'&&mode==='free')setTool('poppencil');   // simple switch: Raise <-> Inset (Pop Erase flattens)
+$('#ppH').oninput=e=>{setPopH(+e.target.value/100);if(tool!=='pop'&&tool!=='poppencil')setTool('poppencil');popRestyle();};
+$('#ppH').onchange=()=>{const v=popH();toast(v>0?'Pop height: raise':v<0?'Pop height: inset':'Pop height: flat · the Pop Pencil smooths areas back to the page');};
+$('#popMode').onclick=e=>{const v=e.target&&e.target.dataset&&e.target.dataset.v;POP.pressed=v?v==='inset':!POP.pressed;POP.flat=false;if(!POP.hv)POP.hv=.6;settings.popH=popH();if(tool!=='pop'&&tool!=='poppencil'&&mode==='free')setTool('poppencil');   // simple switch: Raise <-> Inset (Pop Erase flattens)
   settings.popMode=POP.pressed?'inset':'raised';LS.set('settings',settings);popUI();popRestyle();toast(POP.pressed?'Inset: press areas into the page':'Raise: lift areas off the page');};
 $('#idea3d').onclick=()=>idea3d();$('#idea3dApply').onclick=idea3dApply;
 $('#mixBtn').onclick=()=>{setMix(!MIX.on);};
@@ -1754,7 +1788,17 @@ $('#ideasPrev').onclick=()=>{IDEAS.set--;renderIdeas();ideasSave();};$('#ideasNe
 $('#idea').onclick=previewIdea;$('#tryrow .tx').onclick=()=>$('#tryrow').hidden=true;$('#nudge .nx').onclick=()=>$('#nudge').hidden=true;
 $('#saveLoop').onclick=saveLoop;
 $('#setPrev').onclick=()=>flipSet(-1);$('#setNext').onclick=()=>flipSet(1);
-$('#undo').onclick=undo;$('#clear').onclick=clearAll;$('#save').onclick=save;
+$('#undo').onclick=undo;$('#clear').onclick=clearAll;
+/* v12: Start over = the whole page back to blank (both modes, effects, pops, Pop Pencil, 3D flattening, line settings) and its autosaves removed */
+$('#startOver').onclick=()=>{if(!S)return;$('#soDlg').hidden=false;$('#soCancel').focus();};
+$('#soCancel').onclick=()=>{$('#soDlg').hidden=true;};
+$('#soDlg').onclick=e=>{if(e.target.id==='soDlg')$('#soDlg').hidden=true;};
+$('#soGo').onclick=async()=>{$('#soDlg').hidden=true;await startOver();};
+async function startOver(){if(!S)return;const n=S.n;clearTimeout(saveT);delete pend[n];delete pend[String(n)];
+  idbGen[n]=(idbGen[n]||0)+1;for(const k of SCENE_KEYS)LS.del(k+'.'+n);await IDB.del(n);delete idbLast[n];
+  if(pps)pps=null;if(D3.band)bandView(false);delete cache[n];S=null;await showScene(n);
+  for(const k of SCENE_KEYS)LS.del(k+'.'+n);delete pend[n];delete pend[String(n)];   // nothing from the old page gets written back
+  buildScenes();toast('Started over · this page is blank again');return true;}$('#save').onclick=save;
 $('#celebrate').onclick=()=>{$('#celebrate').hidden=true;};
 window.addEventListener('resize',applyZoom);
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}});
@@ -1796,7 +1840,7 @@ async function restoreScene(st){
 /* ---------- autosave: each scene's work (colours, effect layers, pop / inset heights, Pop Pencil, line settings) is also kept
    in IndexedDB with a versioned format and the last 3 snapshots per scene, so an app update or a full localStorage never
    loses work. localStorage stays the fast path; IndexedDB restores anything missing on start. ---------- */
-const SAVE_FORMAT=2,SCENE_KEYS=['cbn','free','pulse','pop','rc','flat3d','fx','pp','thumb','lines'];
+const SAVE_FORMAT=2,SCENE_KEYS=['cbn','free','pulse','pop','rc','flat3d','fx','cfx','pp','thumb','lines'];
 const IDB={db:null,ready:null,
   open(){if(this.ready)return this.ready;this.ready=new Promise(res=>{try{const q=indexedDB.open('emberpost-save',1);
     q.onupgradeneeded=()=>{const db=q.result;if(!db.objectStoreNames.contains('scenes'))db.createObjectStore('scenes',{keyPath:'n'});};
@@ -1804,6 +1848,7 @@ const IDB={db:null,ready:null,
   async all(){const db=await this.open();if(!db)return [];return new Promise(res=>{try{const q=db.transaction('scenes').objectStore('scenes').getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>res([]);}catch(e){res([]);}});},
   async get(n){const db=await this.open();if(!db)return null;return new Promise(res=>{try{const q=db.transaction('scenes').objectStore('scenes').get(n);q.onsuccess=()=>res(q.result||null);q.onerror=()=>res(null);}catch(e){res(null);}});},
   async put(rec){const db=await this.open();if(!db)return false;return new Promise(res=>{try{const tx=db.transaction('scenes','readwrite');tx.objectStore('scenes').put(rec);tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);}catch(e){res(false);}});},
+  async del(n){const db=await this.open();if(!db)return;return new Promise(res=>{try{const tx=db.transaction('scenes','readwrite');tx.objectStore('scenes').delete(n);tx.oncomplete=tx.onerror=()=>res();}catch(e){res();}});},
   async clear(){const db=await this.open();if(!db)return;return new Promise(res=>{try{const tx=db.transaction('scenes','readwrite');tx.objectStore('scenes').clear();tx.oncomplete=tx.onerror=()=>res();}catch(e){res();}});}};
 function migrateSave(rec){ // older formats -> current. format 1 = the plain localStorage keys (v6 .. v8), kept as-is
   if(!rec||typeof rec!=='object')return null;if(!rec.format)rec.format=1;
@@ -1811,10 +1856,12 @@ function migrateSave(rec){ // older formats -> current. format 1 = the plain loc
   rec.snaps=rec.snaps.filter(s=>s&&s.keys&&typeof s.keys==='object');rec.format=SAVE_FORMAT;return rec;}
 function sceneKeys(n){const o={};for(const k of SCENE_KEYS){const key='ep.v1.'+k+'.'+n;let v=null;try{v=localStorage.getItem(key);}catch(e){}if(v==null&&key in LSMEM)v=LSMEM[key];if(v!=null)o[k]=v;}return o;}
 const idbLast={};
-async function idbSave(n,force){const keys=sceneKeys(n),sig=Object.keys(keys).map(k=>k+':'+keys[k].length+':'+keys[k].slice(-48)).join('|');
+const idbGen={};
+async function idbSave(n,force){const gen=idbGen[n]||0,keys=sceneKeys(n),sig=Object.keys(keys).map(k=>k+':'+keys[k].length+':'+keys[k].slice(-48)).join('|');
   if(!force&&idbLast[n]===sig)return false;const rec=migrateSave(await IDB.get(n))||{n,format:SAVE_FORMAT,snaps:[]};
   if(rec.snaps[0]&&rec.snaps[0].sig===sig){idbLast[n]=sig;return false;}
   rec.snaps.unshift({t:Date.now(),build:EP_BUILD,sig,keys});rec.snaps=rec.snaps.slice(0,3);rec.n=n;rec.t=Date.now();rec.build=EP_BUILD;
+  if((idbGen[n]||0)!==gen)return false;   // the page was started over meanwhile
   const ok=await IDB.put(rec);if(ok){idbLast[n]=sig;savedBlip();}return ok;}
 async function idbHydrate(){ // on start: bring back anything localStorage lost (cleared, full, or an old release wrote elsewhere)
   const recs=await IDB.all();let restored=0;
@@ -1982,6 +2029,12 @@ window.EP={
   ppHeight:(x,y)=>{if(!S.pp)return 0;const a=S.pp.rx.getImageData(x|0,y|0,1,1).data[3],b=S.pp.ix.getImageData(x|0,y|0,1,1).data[3];return (a-b)/255;},
   tipNames:()=>SETS.map((t,ti)=>({id:t.id,names:(t.type==='plain'?t.colors.map(h=>({dataset:{c:h},classList:{contains:c=>c==='pencil'}})):t.items.map(p=>({dataset:{p:p.id},classList:{contains:()=>false}}))).map(el=>{const o=setIdx;setIdx=ti;const d=tipFor(el);setIdx=o;return d&&d[0]+' | '+d[1];})})),
   lines:()=>({...linesOf(S),under:!$('#lineUnder').hidden,col:!$('#lineCol').hidden,op:lineImg.style.opacity,vfill:(vline.querySelector('path')||{getAttribute:()=>null}).getAttribute('fill'),vauto:!!vline.querySelector('#vauto'),hist:(S.linesHist||[]).length,saved:LS.get('lines.'+S.n,null)}),
+  compSnap:()=>{EP._cs=composite().getContext('2d').getImageData(0,0,W,H).data;return true;},
+  _od:{},compDiff:(rs)=>{const A=EP._cs,B=composite().getContext('2d').getImageData(0,0,W,H).data,set=new Set(rs);let inside=0,outside=0,maxOut=0;
+    for(let i=0;i<W*H;i++){const j=i*4,d=Math.abs(A[j]-B[j])+Math.abs(A[j+1]-B[j+1])+Math.abs(A[j+2]-B[j+2]);if(!d)continue;if(set.has(S.lab[i]))inside++;else{outside++;if(d>maxOut)maxOut=d;const q=S.lab[i];EP._od[q]=(EP._od[q]||0)+1;}}const o={inside,outside,maxOut};if(outside)o.where=Object.entries(EP._od).sort((a,b)=>b[1]-a[1]).slice(0,4);EP._od={};return o;},
+  popLayersOutside:(rs)=>{const set=new Set(rs),o={};for(const [k,c] of [['ppSh',S.pp&&S.pp.sh],['ppLi',S.pp&&S.pp.li],['popSh',S.popSh],['popLi',S.popLi]]){if(!c){o[k]=[0,0];continue;}const d=c.getContext('2d').getImageData(0,0,W,H).data;let a=0,b=0;for(let i=0;i<W*H;i++)if(d[i*4+3]){if(set.has(S.lab[i]))a++;else b++;}o[k]=[a,b];}return o;},
+  layerOrder:()=>[...layers.children].map(c=>c===S.cbn.c?'cbn':c===S.free.c?'free':c.className||c.tagName),
+  popH:()=>popH(), anyColors:()=>anyColors().map(([n,c])=>[n,c.length]),
   composite:()=>composite().toDataURL('image/png').length, compositeAt:(x,y)=>{const d=composite().getContext('2d').getImageData(x|0,y|0,1,1).data;return [d[0],d[1],d[2],d[3]];},
   regionType:r=>regionType(r),
   fillAllOf:(k)=>{for(let r=1;r<S.N;r++)if(S.num[r]===k&&S.tgt[r]&&!S.cbn.filled[r])fillCBN(r);},

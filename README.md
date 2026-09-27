@@ -40,6 +40,16 @@ Open: https://primewest-dev.github.io/primewest-coloring-app/
   (chrome, glitter, pulse, glow, metallic, jewel, smoke, clouds, gradient or a Mix) and the effect animates. Finished
   areas count as correctly colored. The same free tries and locks apply as in Free Color.
 - The set switcher arrows (and the Show ideas arrows) stay in place whatever the set name, count or badge.
+- v12: every effect set (metallic, chrome, glitter, jewel, neon, glow, pulse, smoke, clouds) has an "Any color" button:
+  pick the effect, then any color from this page's color guide, the book palette, the full spectrum, neutrals, skin and
+  earth tones and every palette (about 280 colors).
+- Pop is back to the v8 Pop Pencil (each pass adds a little more) with one two-way height slider: left presses in,
+  the middle is flat (smooths areas back), right raises. Pop stays strictly inside the one line-enclosed area where the
+  stroke starts, like Fill; every black line is a wall, so small circles and dots pop on their own. Clouds, lightning
+  and other shapes drawn in the sky pop; only the open background stays flat. Coloring or filling a popped area
+  changes its color and keeps its height and shading.
+- Start over: wipes the whole page back to blank (colors in both modes, effects, pops and 3D heights, line settings)
+  after a confirm, and deletes that page's saved copies so a reload doesn't bring it back. Other pages aren't touched.
 
 ## Saving and updates
 - Autosave: every scene's work (colours, effect layers, pop / inset heights, Pop Pencil) is saved about 1.5 s after each change, every 20 s while you work, and when the tab is hidden or closed. It goes to localStorage and to IndexedDB (versioned format, last 3 snapshots per scene), so an update or a full localStorage never loses work. A small "Saved ✓" shows when it is stored.

@@ -541,3 +541,22 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .plabel .fxs.off em{color:#9c8a74}
 .chromebtn{margin-left:6px;height:34px!important;padding:0 12px!important}.chromebtn.on{color:#1d2330;background:linear-gradient(135deg,#f4f7fb,#9aa4b2 45%,#e9eef5 55%,#7d8796);border-color:transparent}
 @media (max-width:760px){.ideasbar{bottom:auto;top:10px;left:8px}.ideasbar .chip{padding:5px 8px}}   /* keep the idea arrows clear of the zoom buttons on phones */
+/* v12: "Any color" in every effect box */
+.anycol{flex:none;align-self:center;display:flex;flex-direction:column;align-items:center;gap:3px;width:52px;padding:5px 2px;border-radius:12px;border:1px solid rgba(255,179,92,.35);background:rgba(255,255,255,.04);color:#ffe2bd;font:600 10px/1.1 Poppins;cursor:pointer}
+.anycol i{display:block;width:26px;height:26px;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(0,0,0,.25),0 0 0 2px rgba(255,255,255,.15)}
+.anycol.on{background:rgba(255,179,92,.22);box-shadow:inset 0 0 0 1px rgba(255,179,92,.6)}.anycol.dim{opacity:.6}
+.anypop{position:fixed;z-index:80;width:min(560px,calc(100vw - 16px));max-height:min(70vh,560px);overflow:auto;padding:10px 12px 12px;border-radius:16px;background:#221a14;border:1px solid rgba(255,179,92,.35);box-shadow:0 18px 50px rgba(0,0,0,.55);color:#f3e6d6}
+.anypop header{display:flex;align-items:center;justify-content:space-between;position:sticky;top:-10px;background:#221a14;padding:4px 0 6px;font:600 13px Poppins}
+.anypop .x{background:none;border:0;color:#f3e6d6;font-size:22px;cursor:pointer;line-height:1}
+.anypop h4{margin:8px 0 4px;font:600 11px Poppins;color:#c9b39a;letter-spacing:.02em}
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(24px,1fr));gap:4px}
+.asw{width:100%;aspect-ratio:1;border-radius:6px;border:1px solid rgba(0,0,0,.35);cursor:pointer;padding:0}.asw:hover{outline:2px solid #ffd9a6;outline-offset:1px}
+/* v12: two-way Pop height slider (left inset, middle flat, right raise) */
+.pph{display:inline-flex;align-items:center;gap:4px;margin-left:8px;font:600 11px Poppins;color:#e9d6bf;white-space:nowrap}
+.pph .pphe{font-size:10px;color:var(--mute)}
+.pph input{width:118px;accent-color:#ffb35c;background:linear-gradient(90deg,rgba(90,60,40,.9),rgba(255,255,255,.18) 50%,rgba(255,200,120,.9));height:6px;border-radius:4px;-webkit-appearance:none;appearance:none}
+.pph input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#ffd9a6;border:2px solid #2a1f18;box-shadow:0 0 0 1px #ffb35c}
+.pph b{min-width:58px;font-weight:600;color:#ffe2bd}
+/* v12: Start over confirm */
+#soDlg{z-index:45}.so-card{max-width:440px}.so-card p{color:#d9c7b2;font:400 13px/1.5 Poppins;margin:8px 0 14px}
+.so-btns{display:flex;gap:10px;justify-content:flex-end}.so-btns .chip{height:38px;padding:0 16px}.so-go{background:#c9473d!important;color:#fff!important;border-color:transparent!important}
