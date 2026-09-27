@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="ep-build" content="9">
+<meta name="ep-build" content="10">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#14110f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="fonts.css">
-<link rel="stylesheet" href="app.css?v=9">
+<link rel="stylesheet" href="app.css?v=10">
 </head>
 <body>
 <div id="app">
@@ -38,7 +38,10 @@
         <canvas id="stroke"></canvas>
         <canvas id="dim"></canvas>
         <canvas id="glow"></canvas>
+        <canvas id="ideasC" hidden></canvas>
+        <canvas id="lineUnder" width="1600" height="900" hidden></canvas>
         <img id="line" alt="" draggable="false">
+        <canvas id="lineCol" width="1600" height="900" hidden></canvas>
         <canvas id="lineTint" width="1600" height="900"></canvas>
         <canvas id="nums"></canvas>
         <canvas id="ideaC" hidden></canvas>
@@ -47,6 +50,7 @@
       <svg id="vline" viewBox="0 0 1600 900" preserveAspectRatio="none" aria-hidden="true"></svg>
       <canvas id="numsO" aria-hidden="true"></canvas>
       <div id="tryrow" class="tryrow" hidden><b>Try</b><span class="tsw"></span><button class="tx" aria-label="Hide suggestions">✕</button></div>
+      <div id="ideasbar" class="ideasbar free-only"><button class="chip" id="ideasTog" aria-pressed="false" title="Show ideas: empty areas softly pulse a suggested color (just a hint)">✦ Show ideas</button><span class="inav"><button id="ideasPrev" aria-label="Previous idea set">‹</button><b id="ideasName">Color guide</b><button id="ideasNext" aria-label="Next idea set">›</button></span></div>
       <div id="nudge" class="nudge" role="status" hidden><span id="nudgeTxt"></span><span class="nsw"></span><button class="nx" aria-label="Dismiss">✕</button></div>
       <div class="zoomui"><button id="zoomOut" title="Zoom out (−)" aria-label="Zoom out">−</button><span id="zoomPct">100%</span><button id="zoomIn" title="Zoom in (+)" aria-label="Zoom in">+</button><button id="zoomFit" title="Fit to screen (0)" aria-label="Fit">⤢</button><button id="bandBtn" class="d3only" title="Parallax view: the layers slide apart by depth as you tilt or move" aria-label="Parallax view"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="11" height="11" rx="2"/><rect x="10" y="4" width="11" height="11" rx="2"/></svg></button></div>
     </div>
@@ -129,6 +133,12 @@
     </div>
   </div>
   <span id="savedInd" class="savedind" aria-live="polite">Saved ✓</span>
+  <div id="linesPop" class="linespop" role="dialog" aria-label="Lines" hidden>
+    <div class="lnhead"><b>Lines</b><button id="lnX" class="lnx" aria-label="Close">✕</button></div>
+    <label class="lnrow"><span>Fade</span><input id="lnFade" type="range" min="0" max="100" value="0" aria-label="Fade lines from black to invisible"><em id="lnFadeV">black</em></label>
+    <div class="lnrow"><span>Color</span><div class="lncs"><button class="lnc on" data-c="ink" title="Black ink" style="background:#141414"></button><button class="lnc auto" data-c="auto" title="Auto: a darker shade of the color next to each line">Auto</button><button class="lnc" data-c="#5a3a22" title="Sepia" style="background:#5a3a22"></button><button class="lnc" data-c="#2f3f6b" title="Indigo" style="background:#2f3f6b"></button><button class="lnc" data-c="#7a1f2b" title="Wine" style="background:#7a1f2b"></button><button class="lnc cur" data-c="cur" title="Your color"></button></div></div>
+    <div class="lnrow lnbtns"><button id="lnHide" class="chip" aria-pressed="false" title="Hide the lines for a painted look">Hide lines · painted look</button><button id="lnReset" class="chip">Reset</button></div>
+  </div>
   <div id="ownerbar" class="ownerbar" hidden><b>Owner</b><button id="ownUnlock">Unlock all (owner test)</button><button id="ownRelock">Re-lock (test as buyer)</button></div>
   <footer id="bottom">
     <div id="tools">
@@ -147,7 +157,7 @@
         <button class="size" data-size="2" title="Broad"><i style="width:20px;height:20px"></i></button>
         <span class="popctl"><input type="hidden" id="popDepth" value="60">
           <button class="chip" id="popWhole" hidden>Whole object</button>
-          <button class="chip" id="idea3d" title="3D idea: preview a 3D look for this page">✦ 3D idea</button><button class="chip accent" id="idea3dApply" hidden>Apply</button><span id="popTries" class="poptries"></span></span>
+          <button class="chip ppcol" id="ppColor" aria-pressed="true" title="Color while popping: Pop Pencil also paints with the pencil / effect you picked">🎨 Color while popping</button><button class="chip" id="idea3d" title="3D idea: preview a 3D look for this page">✦ 3D idea</button><button class="chip accent" id="idea3dApply" hidden>Apply</button><span id="popTries" class="poptries"></span></span>
         <span class="llwrap"><button id="clip" class="chip ll on" aria-pressed="true" title="Line Lock: pencil strokes stay inside the lines (push hard past a line to cross it)"><svg viewBox="0 0 24 24" class="llicon"><rect x="5" y="11" width="14" height="10" rx="2"/><path class="shackle" d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span class="lltxt">Line Lock</span><span class="llstate">On</span></button>
         <span id="lltip" class="lltip" hidden>Line Lock keeps your color inside the lines.</span></span>
       </div>
@@ -158,6 +168,7 @@
         <button class="act big" id="undo" title="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg><span>Undo</span></button>
         <button class="act big" id="clear" title="Clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Clear</span></button>
         <button class="act big" id="saveLoop" hidden title="Save a short looping video of the pulse colors (WebM)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span>Loop</span></button>
+        <button class="act big" id="linesBtn" aria-expanded="false" title="Lines: fade, recolor or hide the line art"><svg viewBox="0 0 24 24"><path d="M3 17c3-6 6 2 9-4s6 2 9-4"/><path d="M3 21h18" opacity=".45"/></svg><span>Lines</span></button>
         <button class="act big" id="save" title="Save PNG"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span>Save</span></button>
       </div>
     </div>
@@ -170,9 +181,9 @@
 </div>
 <!-- Chapter list (data-driven). Scene art files (data/scene_XX.js) are loaded on demand as plain <script> tags:
      works from file:// and USB sticks; images are data: URIs so canvases never taint. -->
-<script>window.EP_BUILD_HTML=9;</script>
-<script src="data/story.js?v=9"></script>
-<script src="premium-config.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script>window.EP_BUILD_HTML=10;</script>
+<script src="data/story.js?v=10"></script>
+<script src="premium-config.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

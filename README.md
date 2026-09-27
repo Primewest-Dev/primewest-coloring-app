@@ -16,6 +16,19 @@ Open: https://primewest-dev.github.io/primewest-coloring-app/
 - 3D: 2D / 3D switch (3D by Number, 3D Free Color). Per-scene depth templates made with Depth Anything V2 Small.
   Chapter 4 is free in 3D. Tools: Pop Pencil (Raise / Inset, a little higher with each pass, up to a cap),
   Pop Erase and the 3D idea preview.
+- Contour shine: chrome, metallic and jewel follow the shape of each area (and any Pop Pencil / 3D height), with
+  a slow glint sweeping across, soft bloom and small twinkles. Smoke is full, layered and curling; clouds are
+  puffy billows with light tops and shaded undersides.
+- Show ideas (Free Color, off by default and remembered): empty areas softly pulse a suggested color; the arrows
+  switch between the color guide and the palettes. An area stops pulsing once you color it.
+- Color while popping (on by default): the Pop Pencil also paints with the pencil or effect you picked, so a
+  chrome pop is raised and mirrored at once.
+- Natural colors: hover over an area (or long-press on touch) to see true-to-life colors in the small sample bar,
+  such as skin tones for hands, wood browns, sky blues. Tap one to pick it.
+- Lines: fade the line art from black to invisible, recolor it (a chosen color, or Auto = a darker shade of the
+  color next to each line), or hide it for a painted look. Stays crisp when zoomed, is included in Save,
+  can be undone and is saved with the picture. The button glows when a picture is complete.
+- Every pencil has a name: hover (or long-press) a pencil or number swatch for its name and effect.
 
 ## Saving and updates
 - Autosave: every scene's work (colours, effect layers, pop / inset heights, Pop Pencil) is saved about 1.5 s after each change, every 20 s while you work, and when the tab is hidden or closed. It goes to localStorage and to IndexedDB (versioned format, last 3 snapshots per scene), so an update or a full localStorage never loses work. A small "Saved ✓" shows when it is stored.
