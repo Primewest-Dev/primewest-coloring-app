@@ -66,6 +66,7 @@ Open: https://primewest-dev.github.io/primewest-coloring-app/
   has a small number box: type a value such as 0.3 (clamped to the slider's range, remembered).
 - v13: lots of chrome no longer freezes the shimmer: all chrome colors are drawn in one batch, so the frame cost stays
   small however many chrome strokes and Any-color picks there are, also after a reload.
+- v14: texture pencils. Wood (oak, walnut, cherry, pine, maple, driftwood), Brick (red, tan, white), Stone (slate, granite, sandstone, marble, cobblestone) and Flowers (blossom, daisy, lavender, forget-me-not, rose, mint sprig): a flat color with a subtle, small, page-anchored pattern, contained in the lines, with Any color, Mix finishes, Pop, undo and Color by Number support, each in its own set box with a looping preview.
 - Start over: wipes the whole page back to blank (colors in both modes, effects, pops and 3D heights, line settings)
   after a confirm, and deletes that page's saved copies so a reload doesn't bring it back. Other pages aren't touched.
 

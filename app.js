@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=13;
+const EP_BUILD=14;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -79,6 +79,15 @@ const PREMIUM=[
   {id:'w-amber',kind:'glow',hex:'#ffb347',name:'Lantern glow'},{id:'w-rose',kind:'glow',hex:'#ff7a9c',name:'Rose glow'},
   {id:'w-mint',kind:'glow',hex:'#7dffc4',name:'Mint glow'},{id:'w-sky',kind:'glow',hex:'#7cc8ff',name:'Sky glow'},
   {id:'w-violet',kind:'glow',hex:'#c79bff',name:'Violet glow'},
+  {id:'tw-oak',kind:'wood',hex:'#b98a52',tex:'oak',name:'Oak'},{id:'tw-walnut',kind:'wood',hex:'#6b4428',tex:'walnut',name:'Walnut'},
+  {id:'tw-cherry',kind:'wood',hex:'#9c4f35',tex:'cherry',name:'Cherry'},{id:'tw-pine',kind:'wood',hex:'#d9b27a',tex:'pine',name:'Pine'},
+  {id:'tw-maple',kind:'wood',hex:'#e3c58f',tex:'maple',name:'Maple'},{id:'tw-drift',kind:'wood',hex:'#a59a8c',tex:'drift',name:'Driftwood'},
+  {id:'tb-red',kind:'brick',hex:'#a8432f',tex:'red',name:'Red brick'},{id:'tb-tan',kind:'brick',hex:'#c9a06d',tex:'tan',name:'Tan brick'},{id:'tb-white',kind:'brick',hex:'#e8e2d6',tex:'white',name:'White brick'},
+  {id:'ts-slate',kind:'stone',hex:'#5f6770',tex:'slate',name:'Slate'},{id:'ts-granite',kind:'stone',hex:'#9a958f',tex:'granite',name:'Granite'},
+  {id:'ts-sand',kind:'stone',hex:'#d2b48a',tex:'sand',name:'Sandstone'},{id:'ts-marble',kind:'stone',hex:'#ece8e2',tex:'marble',name:'Marble'},{id:'ts-cobble',kind:'stone',hex:'#8d8378',tex:'cobble',name:'Cobblestone'},
+  {id:'tf-blossom',kind:'flower',hex:'#f4b6c8',tex:'blossom',name:'Blossom'},{id:'tf-daisy',kind:'flower',hex:'#f3d65a',tex:'daisy',name:'Daisy'},
+  {id:'tf-lavender',kind:'flower',hex:'#b9a3dd',tex:'lavender',name:'Lavender'},{id:'tf-forget',kind:'flower',hex:'#8fb8e8',tex:'forget',name:'Forget-me-not'},
+  {id:'tf-rose',kind:'flower',hex:'#d9495b',tex:'rose',name:'Rose'},{id:'tf-mint',kind:'flower',hex:'#9fd8b8',tex:'mint',name:'Mint sprig'},
   {id:'l-white',kind:'lightning',hex:'#cfe6ff',name:'White lightning'},{id:'l-blue',kind:'lightning',hex:'#3f9bff',name:'Blue lightning'},
   {id:'l-violet',kind:'lightning',hex:'#a45cff',name:'Violet lightning'},{id:'l-pink',kind:'lightning',hex:'#ff4fb8',name:'Pink lightning'},
   {id:'l-red',kind:'lightning',hex:'#ff3b3b',name:'Red lightning'},{id:'l-orange',kind:'lightning',hex:'#ff951f',name:'Orange lightning'},
@@ -121,7 +130,7 @@ for(const [k,n] of [['rainbow','Rainbow'],['tropical','Tropical'],['ocean','Ocea
   ['miami','Miami'],['gold','Gold ramp'],['chrome','Chrome ramp'],['copper','Copper ramp']])PREMIUM.splice(PREMIUM.length-2,0,{id:'r-'+k,kind:'ramp',ramp:k,hex:RAMPS[k][Math.floor(RAMPS[k].length/2)],name:n});
 const PREM={};PREMIUM.forEach(p=>PREM[p.id]=p);
 PREM['c-any']={id:'c-any',kind:'chrome',hex:'#d9dde3',name:'Chrome finish'};
-const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',lightning:'Lightning',glow:'Glow',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
+const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',lightning:'Lightning',wood:'Wood',brick:'Brick',stone:'Stone',flower:'Flowers',glow:'Glow',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
 for(const k in ANY_KINDS)if(k!=='chrome')PREM['any-'+k]={id:'any-'+k,kind:k,hex:'#ffffff',name:ANY_KINDS[k]+' finish'};
 const anyId=k=>k==='chrome'?'c-any':'any-'+k;   // Chrome finish: any colour, as chrome (not a pencil of its own)
 let ink={kind:'plain',hex:color,id:null};
@@ -135,8 +144,50 @@ function chromeAt(rgb,t){t=((t%1)+1)%1; // mirror-like: sky gradient, bright rim
   for(let i=1;i<K.length;i++)if(t<=K[i][0]){const a=K[i-1],b=K[i];return mix(a[1],b[1],(t-a[0])/(b[0]-a[0]));}return K[0][1];}
 function hash2(x,y){let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))*1274126177|0;return ((h^(h>>>16))>>>0)/4294967295;}
 /* 256px seamless tile used to "paint through" the stroke coverage (anchored to the page, like paper tooth) */
+/* ---------- v14 texture pencils: a flat colour plus a subtle, small pattern that is anchored to the page (a 256 px seamless tile,
+   so neighbouring strokes and fills line up), contained in the lines like any colour. Wood, brick, stone and flowers. ---------- */
+const TEXK=new Set(['wood','brick','stone','flower']),TEXDEF={wood:'oak',brick:'red',stone:'granite',flower:'blossom'};
+const texVariant=(k,hex)=>{const p=PREMIUM.find(q=>q.kind===k&&q.hex===hex);return p&&p.tex||TEXDEF[k];};
+function pnoise(seed,cx,cy){cy=cy||cx;const g=new Float32Array((cx+1)*(cy+1));for(let j=0;j<=cy;j++)for(let i=0;i<=cx;i++)g[j*(cx+1)+i]=hash2((i%cx)*31+seed*101,(j%cy)*17+seed*7);
+  const sx=256/cx,sy=256/cy;return (x,y)=>{x=((x%256)+256)%256;y=((y%256)+256)%256;const fx=x/sx,fy=y/sy,ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy,u=tx*tx*(3-2*tx),v=ty*ty*(3-2*ty),q=(a,b)=>g[b*(cx+1)+a];
+    return (q(ix,iy)*(1-u)+q(ix+1,iy)*u)*(1-v)+(q(ix,iy+1)*(1-u)+q(ix+1,iy+1)*u)*v;};}
+const TEXCACHE={};
+function texTile(k,v,rgb){const key=k+v+rgb.join();if(TEXCACHE[key])return TEXCACHE[key];const n=256,im=new ImageData(n,n),D=im.data,sh=(c,f)=>[c[0]*f,c[1]*f,c[2]*f],lum=.3*rgb[0]+.59*rgb[1]+.11*rgb[2];
+  const put=(i,c)=>{D[i*4]=Math.max(0,Math.min(255,c[0]));D[i*4+1]=Math.max(0,Math.min(255,c[1]));D[i*4+2]=Math.max(0,Math.min(255,c[2]));D[i*4+3]=255;};
+  if(k==='wood'){const P={oak:[9,7,.10,.05,1],walnut:[14,10,.12,.04,0],cherry:[7,5,.07,.03,0],pine:[5,9,.16,.03,0],maple:[16,4,.05,.03,0],drift:[6,12,.10,.09,0]}[v]||[9,7,.1,.05,1];
+    const [rings,warp,amp,fib,pores]=P,n1=pnoise(3,4,4),n2=pnoise(5,4,64),n3=pnoise(9,16,128);
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){const t=(y+warp*(n1(x,y)-.5)*2)/n*rings,r=t-Math.floor(t),ring=Math.pow(r,v==='pine'?6:3.5);
+      let f=1-amp*ring-fib*(n2(x,y)-.5)*2-.035*(n3(x,y)-.5)*2;if(pores&&hash2(x,y>>1)<.035)f-=.07;if(v==='drift'){const c=Math.abs(n2(x*1,y)-.5);if(c<.012)f-=.16;f+=.05*(n3(x,y)-.5);}
+      put(y*n+x,sh(rgb,f));}}
+  else if(k==='brick'){const bw=32,bh=16,mort=lum>170?mix(rgb,[120,112,104],.45):mix(rgb,[222,214,200],.62),n1=pnoise(11,32,32);
+    for(let y=0;y<n;y++){const row=(y/bh)|0,off=row%2?bw/2:0;for(let x=0;x<n;x++){const xx=(x+off)%n,col=(xx/bw)|0,lx=xx%bw,ly=y%bh;
+      if(lx<2||ly<2){put(y*n+x,sh(mort,.97+.06*hash2(x,y)));continue;}const tone=1+(hash2(col*7+row,row*3+col)-.5)*.13+(n1(x,y)-.5)*.08+(hash2(x*3,y*5)-.5)*.05;
+      put(y*n+x,sh(rgb,tone-(ly===2||lx===2?.05:0)));}}}
+  else if(k==='stone'){const n1=pnoise(21,8,8),n2=pnoise(23,2,24),n3=pnoise(27,16,16);
+    if(v==='cobble'){const G=8,S=n/G,pts=[];for(let j=0;j<G;j++)for(let i=0;i<G;i++)pts.push([(i+.2+.6*hash2(i,j+40))*S,(j+.2+.6*hash2(i+40,j))*S,hash2(i*9,j*5)]);
+      for(let y=0;y<n;y++)for(let x=0;x<n;x++){let d1=1e9,d2=1e9,c=0;const ci=(x/S)|0,cj=(y/S)|0;for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){const I=(ci+di+G)%G,J=(cj+dj+G)%G,p=pts[J*G+I];
+          let dx=p[0]-x,dy=p[1]-y;if(dx>n/2)dx-=n;if(dx<-n/2)dx+=n;if(dy>n/2)dy-=n;if(dy<-n/2)dy+=n;const d=Math.hypot(dx,dy);if(d<d1){d2=d1;d1=d;c=p[2];}else if(d<d2)d2=d;}
+        const e=d2-d1;let f=1+(c-.5)*.14+(n3(x,y)-.5)*.08-Math.min(.1,d1/S*.12);if(e<2.4)f=.72+.1*e/2.4;put(y*n+x,sh(rgb,f));}}
+    else for(let y=0;y<n;y++)for(let x=0;x<n;x++){const h=hash2(x,y);let f=1+(n1(x,y)-.5)*.1;
+      if(v==='granite'){if(h<.07)f-=.22;else if(h>.95)f+=.15;else if(h>.9)f-=.08;}
+      else if(v==='slate'){f+=(n2(x,y)-.5)*.16+(h-.5)*.04;}
+      else if(v==='sand'){f+=(pnoise(29,1,12)(x,y+6*n1(x,y))-.5)*.12+(h-.5)*.08;}
+      else if(v==='marble'){const t=Math.sin(2*Math.PI*(x/n*2+y/n+2.2*n1(x,y)+.6*n3(x,y))),vein=Math.exp(-Math.abs(t)*14);f=1-.2*vein-.04*(n3(x,y)-.5);}
+      put(y*n+x,sh(rgb,f));}}
+  else if(k==='flower'){const C={blossom:['#fff4f7','#e6a23c'],daisy:['#ffffff','#c8871a'],lavender:['#f1eaff','#8e6cc7'],forget:['#f4f9ff','#f0c93e'],rose:['#ffd6dc','#8f1e2e'],mint:['#f2fff7','#3f8f63']}[v]||['#ffffff','#e6a23c'];
+    const pet=mix(hex2rgb(C[0]),rgb,.25),ctr=hex2rgb(C[1]),G=8,S=n/G,fl=[];for(let j=0;j<G;j++)for(let i=0;i<G;i++){fl.push([(i+.2+.6*hash2(i+3,j+60))*S,(j+.2+.6*hash2(i+60,j+3))*S,3.6+hash2(i,j*3)*1.4,hash2(i*5,j)*6.283]);
+        fl.push([(i+.5+.4*(hash2(i+7,j+80)-.5))*S+S/2,(j+.5+.4*(hash2(i+80,j+7)-.5))*S+S/2,2.2,hash2(i,j*7)*6.283]);}
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){let c=sh(rgb,1+(hash2(x,y)-.5)*.04);
+      for(const [px,py,R,rot] of fl){let dx=x-px,dy=y-py;if(dx>n/2)dx-=n;if(dx<-n/2)dx+=n;if(dy>n/2)dy-=n;if(dy<-n/2)dy+=n;if(Math.abs(dx)>R+1||Math.abs(dy)>R+1)continue;
+        const d=Math.hypot(dx,dy),a=Math.atan2(dy,dx),edge=R*(.5+.5*Math.abs(Math.cos(2.5*(a+rot))));if(d<R*.3)c=mix(ctr,rgb,.15);else if(d<edge)c=mix(pet,rgb,.18+.3*d/R);}
+      put(y*n+x,c);}}
+  return TEXCACHE[key]=im;}
+function texShadeTile(k,v){const key='sh'+k+v;if(TEXCACHE[key])return TEXCACHE[key];const im=texTile(k,v,[150,150,150]),c=document.createElement('canvas');c.width=c.height=256;const o=new ImageData(256,256);
+  for(let i=0;i<65536;i++){const d=(im.data[i*4]-150)/150;if(d>0){o.data[i*4]=o.data[i*4+1]=o.data[i*4+2]=255;o.data[i*4+3]=Math.min(255,d*330);}else o.data[i*4+3]=Math.min(255,-d*300);}
+  c.getContext('2d').putImageData(o,0,0);return TEXCACHE[key]=c;}
 function inkTile(k,hex,style){
   const n=256,c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d');const rgb=hex2rgb(hex);
+  if(TEXK.has(k)&&!style){x.putImageData(texTile(k,texVariant(k,hex),rgb),0,0);return c;}
   if(k==='plain'&&!style){x.fillStyle=hex;x.fillRect(0,0,n,n);x.globalCompositeOperation='destination-in';x.drawImage(grain,0,0);return c;}
   const im=x.createImageData(n,n),D=im.data,T=Math.PI*2;
   const vn=new Float32Array(17*17);for(let i=0;i<vn.length;i++)vn[i]=hash2(i*7+3,i*13+1);   // low-frequency noise (watercolor)
@@ -169,6 +220,7 @@ const inkKind=()=>ink.kind==='mix'?((ink.mix&&ink.mix.finish)||'plain'):ink.kind
 function setInkPattern(){const st=strokeStyle();grainPat=sctx.createPattern(inkTile(st?'plain':inkKind(),ink.hex,st),'repeat');}
 /* fill shading for the tap-to-fill tool (premium inks get a metallic gradient + highlight, sparkle, or a neon core) */
 function shader(bx,by,bw,bh){const rgb=hex2rgb(ink.hex),K=inkKind();
+  if(TEXK.has(K)){const D=texTile(K,texVariant(K,ink.hex),rgb).data;return (x,y)=>{const j=((y&255)*256+(x&255))*4;return [D[j],D[j+1],D[j+2]];};}   /* v14: textures are page-anchored, so fills and strokes line up */
   if(K==='ramp'){const k=ink.ramp;return (x,y)=>rampRgb(k,pingpong(((x-bx)+(y-by)*.6)/RAMP_LEN));}
   if(K==='jewel'){const hx=bx+bw*.3,hy=by+bh*.25,sx=Math.max(6,bw*.12),sy=Math.max(6,bh*.1);
     return (x,y)=>{const f=Math.abs(Math.sin(((x-bx)*.9+(y-by)*.45)*.045))*.6+Math.abs(Math.sin(((x-bx)*.3-(y-by)*.8)*.06))*.4;
@@ -296,6 +348,8 @@ function storyStrip(){
 function pencilSVG(c){return `<svg viewBox="0 0 30 74"><path d="M15 1 L8.5 19 H21.5 Z" fill="#e9cfa6"/><path d="M15 1 L12.4 8.2 H17.6 Z" fill="${c}"/>
  <rect x="8.5" y="19" width="13" height="47" fill="${c}"/><rect x="10.5" y="19" width="2.5" height="47" fill="#fff" opacity=".22"/>
  <rect x="18" y="19" width="3.5" height="47" fill="#000" opacity=".18"/><rect x="8.5" y="64" width="13" height="9" rx="1.5" fill="#c8ad80"/></svg>`}
+const TEXICON={};function texIconURL(k,v,hex){const key=k+v+hex;if(TEXICON[key])return TEXICON[key];const im=texTile(k,v,hex2rgb(hex)),t=document.createElement('canvas');t.width=t.height=256;t.getContext('2d').putImageData(im,0,0);
+  const c=document.createElement('canvas');c.width=26;c.height=94;c.getContext('2d').drawImage(t,0,0,40,144,0,0,26,94);return TEXICON[key]=c.toDataURL('image/png');}
 function premiumIcon(p){
   if(p.kind==='brush')return p.id==='airbrush'
     ?`<svg viewBox="0 0 30 74"><defs><radialGradient id="ab" cx=".5" cy=".3" r=".7"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#9aa3ad"/></radialGradient></defs>
@@ -306,6 +360,7 @@ function premiumIcon(p){
   if(p.kind==='ramp'){const cs=RAMPS[p.ramp],gid='rg-'+p.ramp,st=cs.map((c,i)=>`<stop offset="${(i/(cs.length-1)).toFixed(2)}" stop-color="${c}"/>`).join('');
     return `<svg viewBox="0 0 30 74"><defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">${st}</linearGradient></defs><path d="M15 1 L8.5 19 H21.5 Z" fill="#e9cfa6"/><path d="M15 1 L12.4 8.2 H17.6 Z" fill="${cs[0]}"/><rect x="8.5" y="19" width="13" height="52" rx="2" fill="url(#${gid})"/><rect x="10" y="21" width="3" height="48" rx="1.5" fill="#fff" opacity=".35"/></svg>`;}
   const id='pg-'+p.id,c=p.hex,rgb=hex2rgb(c),lt=mix(rgb,WHITE,.6).map(Math.round),dk=rgb.map(v=>Math.round(v*.45));
+  if(TEXK.has(p.kind)){const t=texIconURL(p.kind,texVariant(p.kind,c),c);return `<svg viewBox="0 0 30 74"><defs><pattern id="${id}" patternUnits="userSpaceOnUse" width="13" height="47"><image href="${t}" width="13" height="47" preserveAspectRatio="none"/></pattern></defs><path d="M15 1 L8.5 19 H21.5 Z" fill="#e9cfa6"/><path d="M15 1 L12.4 8.2 H17.6 Z" fill="${c}"/><rect x="8.5" y="19" width="13" height="47" fill="url(#${id})" transform="translate(0 0)"/><rect x="8.5" y="64" width="13" height="9" rx="1.5" fill="#c8ad80"/><rect x="18" y="19" width="3.5" height="47" fill="#000" opacity=".12"/></svg>`;}
   const grad=p.kind==='metal'||p.kind==='chrome';const body=grad?`url(#${id})`:c;
   const defs=p.kind==='chrome'?`<defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgb(${dk})"/><stop offset=".3" stop-color="rgb(${lt})"/><stop offset=".47" stop-color="#fff"/><stop offset=".5" stop-color="rgb(${rgb.map(v=>Math.round(v*.1))})"/><stop offset=".7" stop-color="rgb(${dk})"/><stop offset=".92" stop-color="rgb(${lt})"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>`
     :p.kind==='metal'?`<defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="rgb(${dk})"/><stop offset=".38" stop-color="rgb(${lt})"/><stop offset=".55" stop-color="#fff"/><stop offset=".75" stop-color="${c}"/><stop offset="1" stop-color="rgb(${dk})"/></linearGradient></defs>`:'';
@@ -329,7 +384,7 @@ const THEMES=[
   {id:'earth2',name:'Earth Tones',colors:['#f1e3c6','#e0c89a','#cba877','#b28958','#8f6a40','#6e4f2e','#4d3620','#9a6a4a','#b5754f','#8c4a2f','#6a3a26','#7f7a4a','#5f6b3a','#a39a72','#c2b280','#3b2f23']});}
 const SETS=[{id:'book',name:'Book palette',product:null,type:'plain',colors:EXTRA}]
   .concat(THEMES.map(t=>({id:t.id,name:t.name,product:'palettes',type:'plain',colors:t.colors})))
-  .concat([['metal','Metallic'],['chrome','Chrome'],['glitter','Glitter'],['jewel','Jewel'],['neon','Neon'],['lightning','Lightning'],['glow','Glow'],['pulse','Pulse'],['ramp','Gradients','gradients'],['smoke','Smoke','smoke'],['cloud','Clouds','clouds'],['brush','Brushes']]
+  .concat([['metal','Metallic'],['chrome','Chrome'],['glitter','Glitter'],['jewel','Jewel'],['neon','Neon'],['lightning','Lightning'],['glow','Glow'],['pulse','Pulse'],['ramp','Gradients','gradients'],['smoke','Smoke','smoke'],['cloud','Clouds','clouds'],['wood','Wood'],['brick','Brick'],['stone','Stone'],['flower','Flowers'],['brush','Brushes']]
     .map(([k,n,pr])=>({id:k,name:n,product:pr||'pencils',type:'ink',items:PREMIUM.filter(p=>p.kind===k)})));
 const SETI={};SETS.forEach((t,i)=>SETI[t.id]=i);
 let setIdx=SETI[settings.pset];if(!(setIdx>=0&&setIdx<SETS.length)||!((SETS[setIdx].colors||SETS[setIdx].items||[]).length)){setIdx=0;settings.pset=SETS[0].id;}   // unknown / old saved set -> default
@@ -516,7 +571,7 @@ function tapCBN(x,y){
 }
 /* Color by Number finishes: the numbered colour is painted as usual (so numbering and completion are unchanged) and the
    picked pencil's effect (chrome, glitter, pulse, glow, metal, jewel, smoke, clouds, gradient, Mix) lives on top of it. */
-function cbnFinishKinds(){if(!ink||ink.kind==='plain'||ink.kind==='brush')return [];return ink.kind==='ramp'?['rampfx']:fxKindsOf(ink);}
+function cbnFinishKinds(){if(!ink||ink.kind==='plain'||ink.kind==='brush')return [];if(ink.kind==='ramp')return ['rampfx'];const ks=fxKindsOf(ink),K=inkKind();if(TEXK.has(K))ks.unshift('texfx|'+K+'|'+texVariant(K,ink.hex));return ks;}
 function cbnFinish(rs){const ks=cbnFinishKinds();if(!ks.length||!rs.length)return;
   const byHex={};for(const r of rs){const h=ink.kind==='ramp'?'r:'+ink.ramp:S.d.palette[S.num[r]-1]||ink.hex;(byHex[h]=byHex[h]||[]).push(r);}
   for(const h of Object.keys(byHex)){const m=new ImageData(W,H);
@@ -595,7 +650,7 @@ function stamp(x,y,pr){
   if(stroke.st==='air'){R*=2.4;cov.globalAlpha=.16;for(let k=0;k<16;k++){const a=Math.random()*6.283,d=R*Math.sqrt(-2*Math.log(Math.random()+1e-6))*.42,rr=1+Math.random()*1.8;
       cov.drawImage(tip,x+Math.cos(a)*d-rr,y+Math.sin(a)*d-rr,2*rr,2*rr);}}
   else if(stroke.st==='water'){R*=2.3;cov.globalAlpha=.09;cov.drawImage(tip,x-R,y-R,2*R,2*R);}
-  else{const j=R*.15,rich=['metal','glitter','neon','jewel','chrome','lightning'].includes(inkKind());if(ink.kind==='smoke'||ink.kind==='cloud'){R*=1.5;cov.globalAlpha=ink.kind==='smoke'?.4+.3*p:.5+.35*p;cov.drawImage(tip,x-R,y-R,2*R,2*R);}else{
+  else{const j=R*.15,rich=['metal','glitter','neon','jewel','chrome','lightning'].includes(inkKind())||TEXK.has(inkKind());if(ink.kind==='smoke'||ink.kind==='cloud'){R*=1.5;cov.globalAlpha=ink.kind==='smoke'?.4+.3*p:.5+.35*p;cov.drawImage(tip,x-R,y-R,2*R,2*R);}else{
     cov.globalAlpha=rich?.75+.25*p:.45+.4*p; cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);}
   const d=stroke.dirty,a=[x-R-2,y-R-2,x+R+2,y+R+2];
   stroke.dirty=d?[Math.min(d[0],a[0]),Math.min(d[1],a[1]),Math.max(d[2],a[2]),Math.max(d[3],a[3])]:a;
@@ -985,7 +1040,7 @@ function fxScan(r){ // bbox + sample points of a mask (for particles and sheen e
   const d=r.mx.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;const pts=[];
   for(let y=0;y<H;y+=3)for(let x=0;x<W;x+=3){if(d[(y*W+x)*4+3]>60){if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;pts.push(x,y);}}
   r.bb=x1<0?null:[x0,y0,x1-x0+1,y1-y0+1];const n=pts.length/2,keep=[];for(let i=0;i<Math.min(n,500);i++){const j=(Math.random()*n)|0;keep.push([pts[j*2],pts[j*2+1]]);}
-  r.pts=keep;r.dirty=false;r.sf=null;r.loose=null;r.tint=null;r.nm=null;r.cf=null;r.shade=null;r.td=null;r.dq=null;r.bolt=null;r.mv=(r.mv||0)+1;if(!r.bb)r.parts=[];}
+  r.pts=keep;r.dirty=false;r.sf=null;r.loose=null;r.tint=null;r.nm=null;r.cf=null;r.shade=null;r.td=null;r.dq=null;r.bolt=null;r.texC=null;r.mv=(r.mv||0)+1;if(!r.bb)r.parts=[];}
 function fxLoose(r,blur,n=2){ // soft, spread mask so wisps / puffs can hover just around the colour
   const c=mk(),x=c.getContext('2d');x.filter=`blur(${blur}px)`;for(let i=0;i<n;i++)x.drawImage(r.mask,0,0);x.filter='none';return c;}
 function fxShade(r){if(r.shade)return r.shade;const c=mk(),x=c.getContext('2d');x.drawImage(r.mask,0,0);x.globalCompositeOperation='source-in';x.fillStyle='rgba(20,10,30,1)';x.fillRect(0,0,W,H);return r.shade=c;}
@@ -1025,6 +1080,7 @@ function fxDrawRec(x,r,t){ // t in seconds
     if(b<.5){x.globalAlpha=(.5-b)*.7;x.drawImage(fxShade(r),0,0);}
     x.globalCompositeOperation='lighter';x.globalAlpha=.06+.5*b*b;x.shadowColor=r.hex;x.shadowBlur=4+16*b;x.drawImage(fxTint(r),0,0);x.restore();return;}
   if(r.kind==='boltfx'){drawBolt(x,r);return;}
+  if(r.kind.startsWith('texfx')){if(!r.texC){const [,k,v]=r.kind.split('|'),c=mk(),cx=c.getContext('2d');cx.fillStyle=cx.createPattern(texShadeTile(k,v),'repeat');cx.fillRect(0,0,W,H);cx.globalCompositeOperation='destination-in';cx.drawImage(r.mask,0,0);r.texC=c;}x.drawImage(r.texC,0,0);return;}   /* v14: texture on a Color by Number colour */
   if(r.kind==='neonfx'){ // neon hum: a steady glow with a soft flicker now and then
     const f=hash2((t*14)|0,7)<.06?.35:1,b=(.75+.25*Math.sin(t*5.3))*f;x.save();x.globalCompositeOperation='lighter';x.globalAlpha=.14+.3*b;x.shadowColor=r.hex;x.shadowBlur=10+14*b;x.drawImage(fxTint(r),0,0);x.restore();return;}
   if(r.kind==='twinkle'){ // glitter: a field of sparkle points that pop on and off all over the glitter, plus drifting 4-point glints
@@ -1334,10 +1390,10 @@ async function loadFx(st){st.fxL={free:[],cbn:[]};for(const [md,key] of [['free'
 function fxSetList(st){if(!st)return;st.fxL=st.fxL||{free:st.fx||[],cbn:[]};st.fxL[mode==='cbn'?'free':'cbn']=st.fxL[mode==='cbn'?'free':'cbn']||[];st.fx=st.fxL[mode]=st.fxL[mode]||[];}
 
 /* ---------- animated previews: pencil-set box strip, mixer, store rows and the upgrade sheet ---------- */
-const MIXK={finish:[['plain','Plain',null],['metal','Metallic','pencils'],['chrome','Chrome','pencils'],['neon','Neon','pencils'],['jewel','Jewel','pencils']],
+const MIXK={finish:[['plain','Plain',null],['metal','Metallic','pencils'],['chrome','Chrome','pencils'],['neon','Neon','pencils'],['jewel','Jewel','pencils'],['wood','Wood','pencils'],['brick','Brick','pencils'],['stone','Stone','pencils'],['flower','Flowers','pencils']],
   anim:[['none','None',null],['pulse','Pulse','pencils'],['glow','Glow','pencils'],['shimmer','Shimmer','pencils'],['lightning','Lightning','pencils']],
   part:[['none','None',null],['glitter','Glitter','pencils'],['smoke','Smoke','smoke'],['cloud','Cloud','clouds']]};
-const MIXSET={lightning:'lightning',metal:'metal',chrome:'chrome',neon:'neon',jewel:'jewel',pulse:'pulse',glow:'glow',shimmer:'jewel',glitter:'glitter',smoke:'smoke',cloud:'cloud'};
+const MIXSET={wood:'wood',brick:'brick',stone:'stone',flower:'flower',lightning:'lightning',metal:'metal',chrome:'chrome',neon:'neon',jewel:'jewel',pulse:'pulse',glow:'glow',shimmer:'jewel',glitter:'glitter',smoke:'smoke',cloud:'cloud'};
 const MIX=Object.assign({on:false,finish:'metal',anim:'pulse',part:'glitter'},LS.get('mix',{}));MIX.on=false;
 function specOfSet(set){if(set.id==='ramp')return {kinds:['ramp'],ramps:['rainbow','sunset','ocean','gold'],colors:['#ef4444','#fb923c','#0891b2','#d4a015']};if(set.type==='plain')return {kinds:['plain'],colors:[set.colors[3],set.colors[7],set.colors[11]||set.colors[1],set.colors[5]]};
   const it=set.items;if(set.id==='brush')return {kinds:['brush'],colors:['#3a6ad6','#c9473d','#4c9a5b']};
@@ -1696,7 +1752,7 @@ function nameColors(list,setId){const used=new Set(),out={};for(const hex of lis
   used.add(n);out[hex]=NAMEC[k]=n;}return out;}
 const PNAME={Gold:'Gilded Gold',Silver:'Sterling Silver',Copper:'Burnished Copper',Bronze:'Antique Bronze',Ruby:'Ruby Heart',Emerald:'Emerald Isle',Sapphire:'Deep Sapphire',Amethyst:'Amethyst Dusk',Topaz:'Golden Topaz'};
 const tcase=s=>s.replace(/\b[a-z]/g,c=>c.toUpperCase());
-const EFFECT={lightning:'Lightning · neon glow with white-hot flashes',metal:'Metallic · polished shine that sweeps over the shape',chrome:'Chrome · mirror shine that follows your tilt',glitter:'Glitter · twinkling sparkles',
+const EFFECT={wood:'Wood · flat color with a fine wood grain',brick:'Brick · small bricks with mortar lines',stone:'Stone · a subtle stone surface',flower:'Flowers · a tiny flower print',lightning:'Lightning · neon glow with white-hot flashes',metal:'Metallic · polished shine that sweeps over the shape',chrome:'Chrome · mirror shine that follows your tilt',glitter:'Glitter · twinkling sparkles',
   jewel:'Jewel · faceted glints and shimmer',neon:'Neon · bright glowing edge',glow:'Glow · soft lantern light',pulse:'Pulse · breathing, living color',ramp:'Gradient · colors flow along the stroke',
   smoke:'Smoke · drifting wisps',cloud:'Cloud · slow billowing puffs',brush:'Brush',plain:'Colored pencil'};
 const BRUSHFX={airbrush:'Brush · soft sprayed edges',watercolor:'Brush · translucent wash with pooled edges'};
@@ -2071,7 +2127,7 @@ window.addEventListener('pagehide',()=>{if(window.__resetting)LS.wipe();});
 const UPG={
   pencils:{kicker:'✦ Premium Pencils',title:'Unlock Premium Pencils',
     sub:'Metallic sheen, mirror chrome, sparkling glitter, glowing neon, white-hot lightning and lantern glow, breathing pulse colors, plus a soft airbrush and a watercolor wash. They work with the pencil, the fill tool and saved pictures.',
-    list:[['5 jewels','ruby, emerald, sapphire, amethyst, topaz with a living shimmer'],['5 metallics','gold, silver, copper, rose gold, bronze'],['12 chromes','live mirror shimmer, plus a Chrome finish for any color'],['6 glitters','with real sparkle'],['9 lightnings','neon glow with white-hot flashes, any color'],['5 neons + 5 glows','outer glow and soft light halos'],['5 pulse colors','gently breathe in the app'],['2 brushes','soft airbrush and watercolor wash']]},
+    list:[['5 jewels','ruby, emerald, sapphire, amethyst, topaz with a living shimmer'],['5 metallics','gold, silver, copper, rose gold, bronze'],['12 chromes','live mirror shimmer, plus a Chrome finish for any color'],['6 glitters','with real sparkle'],['Wood, brick, stone, flowers','flat color with a subtle, small texture, any color'],['9 lightnings','neon glow with white-hot flashes, any color'],['5 neons + 5 glows','outer glow and soft light halos'],['5 pulse colors','gently breathe in the app'],['2 brushes','soft airbrush and watercolor wash']]},
   palettes:{kicker:'✦ Palettes',title:'Unlock All Palettes',sub:'Eight themed pencil palettes to flip through with the arrows above your pencils.',
     list:THEMES.map(t=>[t.name,t.colors.length+' pencils'])},
   effects3d:{kicker:'✦ 3D',title:'Unlock 3D',sub:'Paint depth with the Pop Pencil: every pass lifts a little more (or presses in), with soft light and shadow. Pop Erase flattens, and the 3D idea shows a ready-made look for each page.',
@@ -2127,6 +2183,9 @@ for(const key of ['pencils','palettes','effects3d','smoke','clouds','gradients']
 
 /* ---------- test / debug hooks (read-only helpers) ---------- */
 window.EP={
+  texVariant:(k,h)=>texVariant(k,h),
+  compCrop:(x,y,w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(composite(),x,y,w,h,0,0,w,h);return c.toDataURL('image/png');},
+  texAt:(k,h,x,y)=>{const D=texTile(k,texVariant(k,h),hex2rgb(h)).data,j=((y&255)*256+(x&255))*4;return [D[j],D[j+1],D[j+2]];},
   fxDrawNow:()=>fxDraw(performance.now()),
   boltI:(t)=>boltI(t),bolt:()=>(S.fx||[]).filter(r=>r.kind==='boltfx').map(r=>({hex:r.hex,I:r.lastI||0,off:r.bolt?r.bolt.off:null})),boltClock:(t)=>{if(t==null){BFIX=false;return CLK.boltSpeed;}BFIX=true;CLK.boltSpeed=t;fxDraw(performance.now());return t;},openUpgrade:(k)=>openUpgrade(null,k),fxSets:(k)=>SETS.filter(q=>q.product===k&&q.type==='ink').map(q=>q.name),
 clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
