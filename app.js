@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=14;
+const EP_BUILD=15;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -88,6 +88,8 @@ const PREMIUM=[
   {id:'tf-blossom',kind:'flower',hex:'#f4b6c8',tex:'blossom',name:'Blossom'},{id:'tf-daisy',kind:'flower',hex:'#f3d65a',tex:'daisy',name:'Daisy'},
   {id:'tf-lavender',kind:'flower',hex:'#b9a3dd',tex:'lavender',name:'Lavender'},{id:'tf-forget',kind:'flower',hex:'#8fb8e8',tex:'forget',name:'Forget-me-not'},
   {id:'tf-rose',kind:'flower',hex:'#d9495b',tex:'rose',name:'Rose'},{id:'tf-mint',kind:'flower',hex:'#9fd8b8',tex:'mint',name:'Mint sprig'},
+  {id:'fh-short',kind:'fur',hex:'#d9822b',tex:'short',name:'Short fur'},{id:'fh-long',kind:'fur',hex:'#f1e3c6',tex:'long',name:'Long fur'},
+  {id:'fh-straight',kind:'fur',hex:'#e8cf8f',tex:'straight',name:'Straight hair'},{id:'fh-wavy',kind:'fur',hex:'#7b4526',tex:'wavy',name:'Wavy hair'},{id:'fh-curly',kind:'fur',hex:'#1e1b1a',tex:'curly',name:'Curly hair'},
   {id:'l-white',kind:'lightning',hex:'#cfe6ff',name:'White lightning'},{id:'l-blue',kind:'lightning',hex:'#3f9bff',name:'Blue lightning'},
   {id:'l-violet',kind:'lightning',hex:'#a45cff',name:'Violet lightning'},{id:'l-pink',kind:'lightning',hex:'#ff4fb8',name:'Pink lightning'},
   {id:'l-red',kind:'lightning',hex:'#ff3b3b',name:'Red lightning'},{id:'l-orange',kind:'lightning',hex:'#ff951f',name:'Orange lightning'},
@@ -130,7 +132,7 @@ for(const [k,n] of [['rainbow','Rainbow'],['tropical','Tropical'],['ocean','Ocea
   ['miami','Miami'],['gold','Gold ramp'],['chrome','Chrome ramp'],['copper','Copper ramp']])PREMIUM.splice(PREMIUM.length-2,0,{id:'r-'+k,kind:'ramp',ramp:k,hex:RAMPS[k][Math.floor(RAMPS[k].length/2)],name:n});
 const PREM={};PREMIUM.forEach(p=>PREM[p.id]=p);
 PREM['c-any']={id:'c-any',kind:'chrome',hex:'#d9dde3',name:'Chrome finish'};
-const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',lightning:'Lightning',wood:'Wood',brick:'Brick',stone:'Stone',flower:'Flowers',glow:'Glow',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
+const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',lightning:'Lightning',wood:'Wood',brick:'Brick',stone:'Stone',flower:'Flowers',fur:'Fur & Hair',glow:'Glow',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
 for(const k in ANY_KINDS)if(k!=='chrome')PREM['any-'+k]={id:'any-'+k,kind:k,hex:'#ffffff',name:ANY_KINDS[k]+' finish'};
 const anyId=k=>k==='chrome'?'c-any':'any-'+k;   // Chrome finish: any colour, as chrome (not a pencil of its own)
 let ink={kind:'plain',hex:color,id:null};
@@ -146,8 +148,11 @@ function hash2(x,y){let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))*1274126177|
 /* 256px seamless tile used to "paint through" the stroke coverage (anchored to the page, like paper tooth) */
 /* ---------- v14 texture pencils: a flat colour plus a subtle, small pattern that is anchored to the page (a 256 px seamless tile,
    so neighbouring strokes and fills line up), contained in the lines like any colour. Wood, brick, stone and flowers. ---------- */
-const TEXK=new Set(['wood','brick','stone','flower']),TEXDEF={wood:'oak',brick:'red',stone:'granite',flower:'blossom'};
-const texVariant=(k,hex)=>{const p=PREMIUM.find(q=>q.kind===k&&q.hex===hex);return p&&p.tex||TEXDEF[k];};
+const TEXK=new Set(['wood','brick','stone','flower','fur']),TEXDEF={wood:'oak',brick:'red',stone:'granite',flower:'blossom',fur:'short'};
+/* v15 Fur & Hair: the style (short / long fur, straight / wavy / curly hair) stays with the last fur pencil picked, so Any color keeps it */
+let furStyle=(()=>{try{return JSON.parse(localStorage.getItem('ep-furStyle'))||'short';}catch(_){return 'short';}})();
+const FURPAL=['#f3e0a6','#e8cf8f','#d9a441','#d9822b','#c0642a','#f1e3c6','#e9d9bf','#c8a27a','#a0714a','#7b4526','#5a3521','#3b2518','#1e1b1a','#2e2c2b','#4d4d50','#8a8a8e','#b3b4b8','#d6d7da','#f7f5f0'];
+const texVariant=(k,hex)=>{if(k==='fur')return furStyle;const p=PREMIUM.find(q=>q.kind===k&&q.hex===hex);return p&&p.tex||TEXDEF[k];};
 function pnoise(seed,cx,cy){cy=cy||cx;const g=new Float32Array((cx+1)*(cy+1));for(let j=0;j<=cy;j++)for(let i=0;i<=cx;i++)g[j*(cx+1)+i]=hash2((i%cx)*31+seed*101,(j%cy)*17+seed*7);
   const sx=256/cx,sy=256/cy;return (x,y)=>{x=((x%256)+256)%256;y=((y%256)+256)%256;const fx=x/sx,fy=y/sy,ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy,u=tx*tx*(3-2*tx),v=ty*ty*(3-2*ty),q=(a,b)=>g[b*(cx+1)+a];
     return (q(ix,iy)*(1-u)+q(ix+1,iy)*u)*(1-v)+(q(ix,iy+1)*(1-u)+q(ix+1,iy+1)*u)*v;};}
@@ -174,6 +179,12 @@ function texTile(k,v,rgb){const key=k+v+rgb.join();if(TEXCACHE[key])return TEXCA
       else if(v==='sand'){f+=(pnoise(29,1,12)(x,y+6*n1(x,y))-.5)*.12+(h-.5)*.08;}
       else if(v==='marble'){const t=Math.sin(2*Math.PI*(x/n*2+y/n+2.2*n1(x,y)+.6*n3(x,y))),vein=Math.exp(-Math.abs(t)*14);f=1-.2*vein-.04*(n3(x,y)-.5);}
       put(y*n+x,sh(rgb,f));}}
+  else if(k==='fur'){const c=document.createElement('canvas');c.width=c.height=n;const x=c.getContext('2d');x.fillStyle=`rgb(${rgb.map(Math.round)})`;x.fillRect(0,0,n,n);
+    const lt=mix(rgb,WHITE,.34).map(Math.round),dk=rgb.map(q=>Math.round(q*.62)),P={short:[1100,9,1.1,0],long:[650,34,1.2,1.2],straight:[520,90,.9,0],wavy:[520,90,1,4],curly:[420,0,1,0]}[v]||[1100,9,1.1,0];
+    x.lineCap='round';for(let i=0;i<P[0];i++){const r=q=>hash2(i*7+q,i*13+q*3),sx=r(1)*n,sy=r(2)*n,L=P[1]*(.6+.8*r(3)),col=r(4)<.5?lt:dk;x.strokeStyle=`rgba(${col},${.3+.4*r(5)})`;x.lineWidth=P[2];
+      for(const ox of [-n,0,n])for(const oy of [-n,0,n]){x.beginPath();if(v==='curly'){const R0=2.5+2*r(6),a0=r(7)*6.283;x.arc(sx+ox,sy+oy,R0,a0,a0+4.2);}
+        else{x.moveTo(sx+ox,sy+oy);for(let t=3;t<=L;t+=3)x.lineTo(sx+ox+P[3]*Math.sin(t/9+r(8)*6.283)+(v==='long'?(r(9)-.5)*t*.15:0),sy+oy+t);}x.stroke();}}
+    const im2=x.getImageData(0,0,n,n);return TEXCACHE[key]=im2;}
   else if(k==='flower'){const C={blossom:['#fff4f7','#e6a23c'],daisy:['#ffffff','#c8871a'],lavender:['#f1eaff','#8e6cc7'],forget:['#f4f9ff','#f0c93e'],rose:['#ffd6dc','#8f1e2e'],mint:['#f2fff7','#3f8f63']}[v]||['#ffffff','#e6a23c'];
     const pet=mix(hex2rgb(C[0]),rgb,.25),ctr=hex2rgb(C[1]),G=8,S=n/G,fl=[];for(let j=0;j<G;j++)for(let i=0;i<G;i++){fl.push([(i+.2+.6*hash2(i+3,j+60))*S,(j+.2+.6*hash2(i+60,j+3))*S,3.6+hash2(i,j*3)*1.4,hash2(i*5,j)*6.283]);
         fl.push([(i+.5+.4*(hash2(i+7,j+80)-.5))*S+S/2,(j+.5+.4*(hash2(i+80,j+7)-.5))*S+S/2,2.2,hash2(i,j*7)*6.283]);}
@@ -217,7 +228,7 @@ function inkTile(k,hex,style){
 function setGrainColor(hex){grainPat=sctx.createPattern(inkTile('plain',hex),'repeat');}
 function strokeStyle(){return tool==='airbrush'?'air':tool==='watercolor'?'water':null;}
 const inkKind=()=>ink.kind==='mix'?((ink.mix&&ink.mix.finish)||'plain'):ink.kind;
-function setInkPattern(){const st=strokeStyle();grainPat=sctx.createPattern(inkTile(st?'plain':inkKind(),ink.hex,st),'repeat');}
+function setInkPattern(){const st=strokeStyle();const ftx=ink&&ink.kind==='fur'&&(ink.tex||(PREM[ink.id]&&PREM[ink.id].tex));if(ftx&&ftx!==furStyle){furStyle=ftx;try{localStorage.setItem('ep-furStyle',JSON.stringify(furStyle));}catch(_){}}grainPat=sctx.createPattern(inkTile(st?'plain':inkKind(),ink.hex,st),'repeat');}
 /* fill shading for the tap-to-fill tool (premium inks get a metallic gradient + highlight, sparkle, or a neon core) */
 function shader(bx,by,bw,bh){const rgb=hex2rgb(ink.hex),K=inkKind();
   if(TEXK.has(K)){const D=texTile(K,texVariant(K,ink.hex),rgb).data;return (x,y)=>{const j=((y&255)*256+(x&255))*4;return [D[j],D[j+1],D[j+2]];};}   /* v14: textures are page-anchored, so fills and strokes line up */
@@ -360,7 +371,7 @@ function premiumIcon(p){
   if(p.kind==='ramp'){const cs=RAMPS[p.ramp],gid='rg-'+p.ramp,st=cs.map((c,i)=>`<stop offset="${(i/(cs.length-1)).toFixed(2)}" stop-color="${c}"/>`).join('');
     return `<svg viewBox="0 0 30 74"><defs><linearGradient id="${gid}" x1="0" x2="0" y1="0" y2="1">${st}</linearGradient></defs><path d="M15 1 L8.5 19 H21.5 Z" fill="#e9cfa6"/><path d="M15 1 L12.4 8.2 H17.6 Z" fill="${cs[0]}"/><rect x="8.5" y="19" width="13" height="52" rx="2" fill="url(#${gid})"/><rect x="10" y="21" width="3" height="48" rx="1.5" fill="#fff" opacity=".35"/></svg>`;}
   const id='pg-'+p.id,c=p.hex,rgb=hex2rgb(c),lt=mix(rgb,WHITE,.6).map(Math.round),dk=rgb.map(v=>Math.round(v*.45));
-  if(TEXK.has(p.kind)){const t=texIconURL(p.kind,texVariant(p.kind,c),c);return `<svg viewBox="0 0 30 74"><defs><pattern id="${id}" patternUnits="userSpaceOnUse" width="13" height="47"><image href="${t}" width="13" height="47" preserveAspectRatio="none"/></pattern></defs><path d="M15 1 L8.5 19 H21.5 Z" fill="#e9cfa6"/><path d="M15 1 L12.4 8.2 H17.6 Z" fill="${c}"/><rect x="8.5" y="19" width="13" height="47" fill="url(#${id})" transform="translate(0 0)"/><rect x="8.5" y="64" width="13" height="9" rx="1.5" fill="#c8ad80"/><rect x="18" y="19" width="3.5" height="47" fill="#000" opacity=".12"/></svg>`;}
+  if(TEXK.has(p.kind)){const t=texIconURL(p.kind,p.tex||texVariant(p.kind,c),c);return `<svg viewBox="0 0 30 74"><defs><pattern id="${id}" patternUnits="userSpaceOnUse" width="13" height="47"><image href="${t}" width="13" height="47" preserveAspectRatio="none"/></pattern></defs><path d="M15 1 L8.5 19 H21.5 Z" fill="#e9cfa6"/><path d="M15 1 L12.4 8.2 H17.6 Z" fill="${c}"/><rect x="8.5" y="19" width="13" height="47" fill="url(#${id})" transform="translate(0 0)"/><rect x="8.5" y="64" width="13" height="9" rx="1.5" fill="#c8ad80"/><rect x="18" y="19" width="3.5" height="47" fill="#000" opacity=".12"/></svg>`;}
   const grad=p.kind==='metal'||p.kind==='chrome';const body=grad?`url(#${id})`:c;
   const defs=p.kind==='chrome'?`<defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="rgb(${dk})"/><stop offset=".3" stop-color="rgb(${lt})"/><stop offset=".47" stop-color="#fff"/><stop offset=".5" stop-color="rgb(${rgb.map(v=>Math.round(v*.1))})"/><stop offset=".7" stop-color="rgb(${dk})"/><stop offset=".92" stop-color="rgb(${lt})"/><stop offset="1" stop-color="#fff"/></linearGradient></defs>`
     :p.kind==='metal'?`<defs><linearGradient id="${id}" x1="0" x2="1"><stop offset="0" stop-color="rgb(${dk})"/><stop offset=".38" stop-color="rgb(${lt})"/><stop offset=".55" stop-color="#fff"/><stop offset=".75" stop-color="${c}"/><stop offset="1" stop-color="rgb(${dk})"/></linearGradient></defs>`:'';
@@ -384,7 +395,7 @@ const THEMES=[
   {id:'earth2',name:'Earth Tones',colors:['#f1e3c6','#e0c89a','#cba877','#b28958','#8f6a40','#6e4f2e','#4d3620','#9a6a4a','#b5754f','#8c4a2f','#6a3a26','#7f7a4a','#5f6b3a','#a39a72','#c2b280','#3b2f23']});}
 const SETS=[{id:'book',name:'Book palette',product:null,type:'plain',colors:EXTRA}]
   .concat(THEMES.map(t=>({id:t.id,name:t.name,product:'palettes',type:'plain',colors:t.colors})))
-  .concat([['metal','Metallic'],['chrome','Chrome'],['glitter','Glitter'],['jewel','Jewel'],['neon','Neon'],['lightning','Lightning'],['glow','Glow'],['pulse','Pulse'],['ramp','Gradients','gradients'],['smoke','Smoke','smoke'],['cloud','Clouds','clouds'],['wood','Wood'],['brick','Brick'],['stone','Stone'],['flower','Flowers'],['brush','Brushes']]
+  .concat([['metal','Metallic'],['chrome','Chrome'],['glitter','Glitter'],['jewel','Jewel'],['neon','Neon'],['lightning','Lightning'],['glow','Glow'],['pulse','Pulse'],['ramp','Gradients','gradients'],['smoke','Smoke','smoke'],['cloud','Clouds','clouds'],['wood','Wood'],['brick','Brick'],['stone','Stone'],['flower','Flowers'],['fur','Fur & Hair'],['brush','Brushes']]
     .map(([k,n,pr])=>({id:k,name:n,product:pr||'pencils',type:'ink',items:PREMIUM.filter(p=>p.kind===k)})));
 const SETI={};SETS.forEach((t,i)=>SETI[t.id]=i);
 let setIdx=SETI[settings.pset];if(!(setIdx>=0&&setIdx<SETS.length)||!((SETS[setIdx].colors||SETS[setIdx].items||[]).length)){setIdx=0;settings.pset=SETS[0].id;}   // unknown / old saved set -> default
@@ -425,14 +436,15 @@ function buildPalette(){
   if(set.id==='book'){const t=document.createElement('button');t.className='moresets';t.innerHTML='<b>✦ More sets</b><span>Palettes, metallic, chrome, glow…</span>';
     t.onclick=()=>flipSet(1);fr.appendChild(t);}
   markColor();}
-function anyColors(){ // this page's colour guide first, then the book palette and the full colour range (deduped)
+function anyColors(set){ // this page's colour guide first, then the book palette and the full colour range (deduped)
   const out=[],seen=new Set(),add=(name,cs)=>{const g=[];for(const h of cs){const k=h.toLowerCase();if(seen.has(k))continue;seen.add(k);g.push(h);}if(g.length)out.push([name,g]);};
+  if(set&&set.id==='fur')add('Fur & hair colors',FURPAL);   /* v15: blonde → calico orange, cream, browns, black, gray, white */
   if(S)add(`This page's color guide`,S.d.palette);add('Book palette',EXTRA);
   for(const id of ['spec-light','spec','spec-deep','neutrals','skin','earth2']){const t=SETS[SETI[id]];if(t)add(t.name,t.colors);}
   for(const t of SETS)if(t.type==='plain'&&t.id!=='book')add(t.name,t.colors);return out;}
 function anyPicker(set,show=true){let d=$('#anyPop');if(d)d.remove();if(!show)return;
   d=document.createElement('div');d.id='anyPop';d.className='anypop';d.setAttribute('role','dialog');d.setAttribute('aria-label','Any color');
-  const g=anyColors();d.innerHTML=`<header><b>${esc(set.name)} · any color</b><button class="x" aria-label="Close">×</button></header>`+g.map(([n,cs])=>`<h4>${esc(n)}</h4><div class="agrid">${cs.map(h=>`<button class="asw" data-c="${h}" title="${h}" style="background:${h}"></button>`).join('')}</div>`).join('');
+  const g=anyColors(set);d.innerHTML=`<header><b>${esc(set.name)} · any color</b><button class="x" aria-label="Close">×</button></header>`+g.map(([n,cs])=>`<h4>${esc(n)}</h4><div class="agrid">${cs.map(h=>`<button class="asw" data-c="${h}" title="${h}" style="background:${h}"></button>`).join('')}</div>`).join('');
   d.querySelector('.x').onclick=()=>anyPicker(set,false);
   d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;const base=PREM[anyId(set.id)],p={...base,hex:b.dataset.c,name:base.name};anyPicker(set,false);usePremium(set,p);buildPalette();};
   document.body.appendChild(d);const r=$('#anyBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
@@ -640,6 +652,7 @@ function beginStroke(x,y,pr,ptype){
   strokeC.style.filter=stroke.neon?(ink.kind==='glow'?`drop-shadow(0 0 8px ${ink.hex}) drop-shadow(0 0 18px ${ink.hex})`:`drop-shadow(0 0 3px ${ink.hex}) drop-shadow(0 0 9px ${ink.hex})`):'';
   if(stroke.region)setMask(r);
   if(ink.kind==='ramp'&&!stroke.er&&!stroke.st){rampC=rampC||mk();rampT=rampT||mk();rampC.getContext('2d').clearRect(0,0,W,H);rampT.getContext('2d').clearRect(0,0,W,H);stroke.ramp={k:ink.ramp,d:0,last:[x,y]};}
+  if(inkKind()==='fur'&&!stroke.er&&!stroke.st){furC=furC||mk();furC.getContext('2d').clearRect(0,0,W,H);stroke.fur={dx:0,dy:1,has:false,s:0,lx:x,ly:y,lanes:null};}
   if(!stroke.er)showTry(r||labAt(x,y));
   stamp(x,y,pr); flush();
 }
@@ -651,12 +664,30 @@ function stamp(x,y,pr){
       cov.drawImage(tip,x+Math.cos(a)*d-rr,y+Math.sin(a)*d-rr,2*rr,2*rr);}}
   else if(stroke.st==='water'){R*=2.3;cov.globalAlpha=.09;cov.drawImage(tip,x-R,y-R,2*R,2*R);}
   else{const j=R*.15,rich=['metal','glitter','neon','jewel','chrome','lightning'].includes(inkKind())||TEXK.has(inkKind());if(ink.kind==='smoke'||ink.kind==='cloud'){R*=1.5;cov.globalAlpha=ink.kind==='smoke'?.4+.3*p:.5+.35*p;cov.drawImage(tip,x-R,y-R,2*R,2*R);}else{
-    cov.globalAlpha=rich?.75+.25*p:.45+.4*p; cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);}
+    cov.globalAlpha=rich?.75+.25*p:.45+.4*p; cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);if(stroke.fur)furStamp(x,y,R);}
   const d=stroke.dirty,a=[x-R-2,y-R-2,x+R+2,y+R+2];
   stroke.dirty=d?[Math.min(d[0],a[0]),Math.min(d[1],a[1]),Math.max(d[2],a[2]),Math.max(d[3],a[3])]:a;
 }
+let furC=null;
+const FURP={short:{n:16,life:[.7,1.3],gap:.35,amp:0,lam:1,lw:1.05},long:{n:13,life:[2.4,4],gap:.5,amp:.07,lam:4,lw:1.15},straight:{n:17,life:[5,10],gap:0,amp:0,lam:1,lw:.85},
+  wavy:{n:15,life:[6,12],gap:0,amp:.32,lam:2.3,lw:.95},curly:{n:11,life:[6,12],gap:0,curl:.2,lw:.95}};
+function furStamp(x,y,R){const f=stroke.fur,c=furC.getContext('2d'),rgb=hex2rgb(ink.hex),P=FURP[furStyle]||FURP.short;
+  c.save();c.globalCompositeOperation='destination-over';c.fillStyle=ink.hex;c.beginPath();c.arc(x,y,R+1.5,0,6.283);c.fill();c.restore();   /* flat colour under the strands */
+  const ds=Math.hypot(x-f.lx,y-f.ly),s0=f.s;f.s+=ds;const px0=f.lx,py0=f.ly;f.lx=x;f.ly=y;if(!f.has)return;
+  const lt=mix(rgb,WHITE,.36).map(Math.round),dk=rgb.map(q=>Math.round(q*.6)),lum=.3*rgb[0]+.59*rgb[1]+.11*rgb[2];
+  const newLane=L=>{L.off=(Math.random()*2-1)*.92;L.ph=Math.random()*6.283;L.col=Math.random()<(lum<60?.7:.5)?lt:dk;L.a=.45+.45*Math.random();L.left=R*(P.life[0]+Math.random()*(P.life[1]-P.life[0]));L.on=true;L.prev=null;};
+  if(!f.lanes){f.lanes=[];for(let i=0;i<P.n;i++){const L={};newLane(L);L.off=-.92+1.84*(i+Math.random()*.8)/P.n;L.left*=Math.random();f.lanes.push(L);}}
+  const nx=-f.dy,ny=f.dx,sub=Math.max(1,Math.ceil(ds/1.5));c.lineCap='butt';c.lineJoin='round';c.lineWidth=Math.max(.8,Math.min(2,R*.07))*P.lw/Math.max(.6,Math.min(1.6,zoomSizeDiv()));
+  for(const L of f.lanes){L.left-=ds;if(L.left<=0){if(L.on&&P.gap){L.on=false;L.prev=null;L.left=R*P.gap*(.5+Math.random());}else newLane(L);}
+    if(!L.on)continue;c.strokeStyle=`rgba(${L.col},${L.a})`;c.beginPath();let st=!!L.prev;if(st)c.moveTo(L.prev[0],L.prev[1]);
+    for(let k=1;k<=sub;k++){const t=k/sub,cx=px0+(x-px0)*t,cy=py0+(y-py0)*t,sv=s0+ds*t;let o=L.off*R,a=0;
+      if(P.amp)o+=P.amp*R*Math.sin(sv/(P.lam*R)*6.283+L.ph*.25);
+      if(P.curl){const rc=P.curl*R,th=sv/rc+L.ph;o+=Math.sin(th)*rc;a=Math.cos(th)*rc;}
+      const qx=cx+nx*o+f.dx*a,qy=cy+ny*o+f.dy*a;if(!st){c.moveTo(qx,qy);st=true;}else c.lineTo(qx,qy);L.prev=[qx,qy];}
+    c.stroke();}}
 function moveStroke(x,y,pr){
   const [lx,ly]=stroke.last,dx=x-lx,dy=y-ly,dist=Math.hypot(dx,dy);
+  if(stroke.fur&&dist>.5){const f=stroke.fur,ux=dx/dist,uy=dy/dist;if(!f.has){f.dx=ux;f.dy=uy;f.has=true;}else{f.dx=f.dx*.65+ux*.35;f.dy=f.dy*.65+uy*.35;const m=Math.hypot(f.dx,f.dy)||1;f.dx/=m;f.dy/=m;}}
   const step=Math.max(.5,(stroke.er?ERASER_R:PENCIL_R)[sizeIdx]*(stroke.st?.45:.3)/zoomSizeDiv()), n=Math.floor(dist/step);
   for(let i=1;i<=n;i++){const px=lx+dx*i/n,py=ly+dy*i/n; stroke.region?lockedStamp(px,py,pr):stamp(px,py,pr);}
   if(n){stroke.last=[x,y];const pl=stroke.path,q=pl&&pl[pl.length-1];if(q&&pl.length<800&&Math.hypot(x-q[0],y-q[1])>=3)pl.push([x,y]);} flush();
@@ -689,7 +720,7 @@ function flush(){
   if(stroke.region){cov.save();cov.beginPath();cov.rect(x,y,w,h);cov.clip();cov.globalAlpha=1;cov.globalCompositeOperation='destination-in';
     cov.drawImage(maskC,x,y,w,h,x,y,w,h);cov.restore();}
   sctx.save();sctx.beginPath();sctx.rect(x,y,w,h);sctx.clip();sctx.clearRect(x,y,w,h);sctx.drawImage(covC,x,y,w,h,x,y,w,h);
-  sctx.globalCompositeOperation='source-in';if(stroke.ramp)sctx.drawImage(rampC,x,y,w,h,x,y,w,h);else{sctx.fillStyle=grainPat;sctx.fillRect(x,y,w,h);}sctx.restore();
+  sctx.globalCompositeOperation='source-in';if(stroke.ramp)sctx.drawImage(rampC,x,y,w,h,x,y,w,h);else if(stroke.fur)sctx.drawImage(furC,x,y,w,h,x,y,w,h);else{sctx.fillStyle=grainPat;sctx.fillRect(x,y,w,h);}sctx.restore();
 }
 function commitPaint(){
   if(!stroke.er){const c=stroke.pulse?pulseLayer().ctx:S.free.ctx;c.save();if(stroke.pulse){S.pulseUsed=true;dirty('pulse');}
@@ -1390,10 +1421,10 @@ async function loadFx(st){st.fxL={free:[],cbn:[]};for(const [md,key] of [['free'
 function fxSetList(st){if(!st)return;st.fxL=st.fxL||{free:st.fx||[],cbn:[]};st.fxL[mode==='cbn'?'free':'cbn']=st.fxL[mode==='cbn'?'free':'cbn']||[];st.fx=st.fxL[mode]=st.fxL[mode]||[];}
 
 /* ---------- animated previews: pencil-set box strip, mixer, store rows and the upgrade sheet ---------- */
-const MIXK={finish:[['plain','Plain',null],['metal','Metallic','pencils'],['chrome','Chrome','pencils'],['neon','Neon','pencils'],['jewel','Jewel','pencils'],['wood','Wood','pencils'],['brick','Brick','pencils'],['stone','Stone','pencils'],['flower','Flowers','pencils']],
+const MIXK={finish:[['plain','Plain',null],['metal','Metallic','pencils'],['chrome','Chrome','pencils'],['neon','Neon','pencils'],['jewel','Jewel','pencils'],['wood','Wood','pencils'],['brick','Brick','pencils'],['stone','Stone','pencils'],['flower','Flowers','pencils'],['fur','Fur & Hair','pencils']],
   anim:[['none','None',null],['pulse','Pulse','pencils'],['glow','Glow','pencils'],['shimmer','Shimmer','pencils'],['lightning','Lightning','pencils']],
   part:[['none','None',null],['glitter','Glitter','pencils'],['smoke','Smoke','smoke'],['cloud','Cloud','clouds']]};
-const MIXSET={wood:'wood',brick:'brick',stone:'stone',flower:'flower',lightning:'lightning',metal:'metal',chrome:'chrome',neon:'neon',jewel:'jewel',pulse:'pulse',glow:'glow',shimmer:'jewel',glitter:'glitter',smoke:'smoke',cloud:'cloud'};
+const MIXSET={fur:'fur',wood:'wood',brick:'brick',stone:'stone',flower:'flower',lightning:'lightning',metal:'metal',chrome:'chrome',neon:'neon',jewel:'jewel',pulse:'pulse',glow:'glow',shimmer:'jewel',glitter:'glitter',smoke:'smoke',cloud:'cloud'};
 const MIX=Object.assign({on:false,finish:'metal',anim:'pulse',part:'glitter'},LS.get('mix',{}));MIX.on=false;
 function specOfSet(set){if(set.id==='ramp')return {kinds:['ramp'],ramps:['rainbow','sunset','ocean','gold'],colors:['#ef4444','#fb923c','#0891b2','#d4a015']};if(set.type==='plain')return {kinds:['plain'],colors:[set.colors[3],set.colors[7],set.colors[11]||set.colors[1],set.colors[5]]};
   const it=set.items;if(set.id==='brush')return {kinds:['brush'],colors:['#3a6ad6','#c9473d','#4c9a5b']};
@@ -1752,7 +1783,7 @@ function nameColors(list,setId){const used=new Set(),out={};for(const hex of lis
   used.add(n);out[hex]=NAMEC[k]=n;}return out;}
 const PNAME={Gold:'Gilded Gold',Silver:'Sterling Silver',Copper:'Burnished Copper',Bronze:'Antique Bronze',Ruby:'Ruby Heart',Emerald:'Emerald Isle',Sapphire:'Deep Sapphire',Amethyst:'Amethyst Dusk',Topaz:'Golden Topaz'};
 const tcase=s=>s.replace(/\b[a-z]/g,c=>c.toUpperCase());
-const EFFECT={wood:'Wood · flat color with a fine wood grain',brick:'Brick · small bricks with mortar lines',stone:'Stone · a subtle stone surface',flower:'Flowers · a tiny flower print',lightning:'Lightning · neon glow with white-hot flashes',metal:'Metallic · polished shine that sweeps over the shape',chrome:'Chrome · mirror shine that follows your tilt',glitter:'Glitter · twinkling sparkles',
+const EFFECT={fur:'Fur & Hair · strands that follow your stroke',wood:'Wood · flat color with a fine wood grain',brick:'Brick · small bricks with mortar lines',stone:'Stone · a subtle stone surface',flower:'Flowers · a tiny flower print',lightning:'Lightning · neon glow with white-hot flashes',metal:'Metallic · polished shine that sweeps over the shape',chrome:'Chrome · mirror shine that follows your tilt',glitter:'Glitter · twinkling sparkles',
   jewel:'Jewel · faceted glints and shimmer',neon:'Neon · bright glowing edge',glow:'Glow · soft lantern light',pulse:'Pulse · breathing, living color',ramp:'Gradient · colors flow along the stroke',
   smoke:'Smoke · drifting wisps',cloud:'Cloud · slow billowing puffs',brush:'Brush',plain:'Colored pencil'};
 const BRUSHFX={airbrush:'Brush · soft sprayed edges',watercolor:'Brush · translucent wash with pooled edges'};
@@ -2127,7 +2158,7 @@ window.addEventListener('pagehide',()=>{if(window.__resetting)LS.wipe();});
 const UPG={
   pencils:{kicker:'✦ Premium Pencils',title:'Unlock Premium Pencils',
     sub:'Metallic sheen, mirror chrome, sparkling glitter, glowing neon, white-hot lightning and lantern glow, breathing pulse colors, plus a soft airbrush and a watercolor wash. They work with the pencil, the fill tool and saved pictures.',
-    list:[['5 jewels','ruby, emerald, sapphire, amethyst, topaz with a living shimmer'],['5 metallics','gold, silver, copper, rose gold, bronze'],['12 chromes','live mirror shimmer, plus a Chrome finish for any color'],['6 glitters','with real sparkle'],['Wood, brick, stone, flowers','flat color with a subtle, small texture, any color'],['9 lightnings','neon glow with white-hot flashes, any color'],['5 neons + 5 glows','outer glow and soft light halos'],['5 pulse colors','gently breathe in the app'],['2 brushes','soft airbrush and watercolor wash']]},
+    list:[['5 jewels','ruby, emerald, sapphire, amethyst, topaz with a living shimmer'],['5 metallics','gold, silver, copper, rose gold, bronze'],['12 chromes','live mirror shimmer, plus a Chrome finish for any color'],['6 glitters','with real sparkle'],['Wood, brick, stone, flowers','flat color with a subtle, small texture, any color'],['Fur & hair','short / long fur, straight / wavy / curly hair that follows your stroke'],['9 lightnings','neon glow with white-hot flashes, any color'],['5 neons + 5 glows','outer glow and soft light halos'],['5 pulse colors','gently breathe in the app'],['2 brushes','soft airbrush and watercolor wash']]},
   palettes:{kicker:'✦ Palettes',title:'Unlock All Palettes',sub:'Eight themed pencil palettes to flip through with the arrows above your pencils.',
     list:THEMES.map(t=>[t.name,t.colors.length+' pencils'])},
   effects3d:{kicker:'✦ 3D',title:'Unlock 3D',sub:'Paint depth with the Pop Pencil: every pass lifts a little more (or presses in), with soft light and shadow. Pop Erase flattens, and the 3D idea shows a ready-made look for each page.',
@@ -2183,7 +2214,7 @@ for(const key of ['pencils','palettes','effects3d','smoke','clouds','gradients']
 
 /* ---------- test / debug hooks (read-only helpers) ---------- */
 window.EP={
-  texVariant:(k,h)=>texVariant(k,h),
+  texVariant:(k,h)=>texVariant(k,h),furStyle:()=>furStyle,furAt:(x,y)=>{const d=(furC||mk()).getContext('2d').getImageData(x|0,y|0,1,1).data;return [d[0],d[1],d[2],d[3]];},
   compCrop:(x,y,w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(composite(),x,y,w,h,0,0,w,h);return c.toDataURL('image/png');},
   texAt:(k,h,x,y)=>{const D=texTile(k,texVariant(k,h),hex2rgb(h)).data,j=((y&255)*256+(x&255))*4;return [D[j],D[j+1],D[j+2]];},
   fxDrawNow:()=>fxDraw(performance.now()),
