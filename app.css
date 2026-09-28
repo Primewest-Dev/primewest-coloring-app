@@ -560,3 +560,31 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 /* v12: Start over confirm */
 #soDlg{z-index:45}.so-card{max-width:440px}.so-card p{color:#d9c7b2;font:400 13px/1.5 Poppins;margin:8px 0 14px}
 .so-btns{display:flex;gap:10px;justify-content:flex-end}.so-btns .chip{height:38px;padding:0 16px}.so-go{background:#c9473d!important;color:#fff!important;border-color:transparent!important}
+/* v13: color guide as colored pencils (about 12 in a row), number on the pencil, color wheel at the end */
+.sw.swp{width:36px;height:86px;border:0;border-radius:0;background:none!important;display:block;padding:0;transform:none;transition:transform .15s;margin-bottom:4px}
+.sw.swp svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.5))}
+.sw.swp .n{position:absolute;left:50%;top:50%;transform:translate(-50%,-10%);padding:0 5px;border-radius:8px;font-size:12px;line-height:18px;min-width:12px;text-align:center}
+.sw.swp .left{right:-8px;top:14px}
+.sw.swp.done::after{left:-6px;top:14px}
+.sw.swp.on{transform:translateY(-6px);border:0;box-shadow:none}
+.sw.swp.on svg{filter:drop-shadow(0 0 9px rgba(255,170,80,.9))}
+.free .sw.swp{width:36px;height:86px}.free .sw.swp .n{font-size:11px;line-height:16px;opacity:.85}
+#numrow{gap:8px}
+.wheelbtn{flex:none;align-self:center;display:flex;flex-direction:column;align-items:center;gap:3px;width:58px;padding:6px 2px;margin-left:6px;border-radius:12px;border:1px solid rgba(255,179,92,.35);background:rgba(255,255,255,.04);color:#ffe2bd;font:600 10px/1.1 Poppins;cursor:pointer}
+.wheelbtn i{display:block;width:34px;height:34px;border-radius:50%;background:conic-gradient(#f44,#fa3,#ee4,#4c6,#3cd,#46f,#a5f,#f4a,#f44);box-shadow:inset 0 0 0 3px rgba(0,0,0,.2),0 0 0 2px rgba(255,255,255,.15)}
+.wheelbtn:hover{background:rgba(255,179,92,.14)}
+@media (max-width:760px){.sw.swp,.free .sw.swp{width:28px;height:70px}.sw.swp .n{font-size:10px;line-height:15px;padding:0 3px}#numrow{gap:5px}.wheelbtn{width:48px}.wheelbtn i{width:28px;height:28px}}
+#colors{min-height:124px;padding-top:14px}
+
+/* v13: compact number boxes next to every effect slider (typed decimals, synced both ways) */
+.fxn{width:42px;height:18px;box-sizing:border-box;padding:0 3px;border:1px solid rgba(255,217,166,.35);border-radius:5px;background:rgba(0,0,0,.35);color:#ffe2bd;font:600 10px Poppins;text-align:right;-moz-appearance:textfield}
+.fxn::-webkit-inner-spin-button,.fxn::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.fxn:focus{outline:2px solid #ffb35c;outline-offset:0}
+.plabel .fxs input.fxn{width:40px;height:16px;accent-color:auto;cursor:text;touch-action:auto}
+.plabel .fxs em{display:none}
+.plabel .fxs input[type=range]{width:56px}
+.pph .fxn{width:46px}
+.pencil.premium.lightning svg{filter:drop-shadow(0 0 3px rgba(255,255,255,.9)) drop-shadow(0 0 6px var(--c,#9cf))}
+.pph input[type=range]{width:84px}
+.pph b{min-width:50px}
+.pph .fxn{width:40px}

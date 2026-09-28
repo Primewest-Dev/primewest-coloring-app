@@ -46,8 +46,26 @@ Open: https://primewest-dev.github.io/primewest-coloring-app/
 - Pop is back to the v8 Pop Pencil (each pass adds a little more) with one two-way height slider: left presses in,
   the middle is flat (smooths areas back), right raises. Pop stays strictly inside the one line-enclosed area where the
   stroke starts, like Fill; every black line is a wall, so small circles and dots pop on their own. Clouds, lightning
-  and other shapes drawn in the sky pop; only the open background stays flat. Coloring or filling a popped area
+  and other shapes drawn in the sky pop on their own. Coloring or filling a popped area
   changes its color and keeps its height and shading.
+- v13: the open background pops again, raised or pressed in (3D Pop tap, Pop Pencil + slider, Pop Erase, both modes).
+  Only the background changes: clouds, lightning and other shapes stay flat and read as framed by a recessed edge.
+- v13: the Pop height slider controls the one area you last drew in or tapped (including the background); its thumb
+  shows that area's height, and every other popped area keeps its own height.
+- v13: the color guide is a row of colored pencils (numbered in Color by Number) with a color wheel at the end for every
+  other color; hover a pencil to see its color name (a tap or long-press shows it briefly on touch screens).
+- v13: chrome shimmer travels along each chrome stroke the way it was drawn, following curves (tap fills keep the
+  diagonal sweep). The Chrome box has a Speed slider (slower to faster, remembered) next to the Shimmer amount.
+- v13: in every effect box the most recent pick wins: a listed pencil replaces an Any color pick (and the other way round),
+  and the round Any color swatch shows the active color of that effect.
+- v13: Lightning pencils (9 colors plus Any color): a calm neon glow with irregular lightning flashes where the centre of
+  the stroke burns white-hot and the color glows around it, fading outward. Flash and Speed sliders; works with Mix, Pop,
+  undo and both modes, and stays inside the lines.
+- v13: every effect Speed slider (chrome/metallic/jewel shimmer, glitter twinkle, neon, glow, pulse, lightning) goes
+  about 3x slower than before at its slow end; defaults are unchanged. Every effect slider and the Pop height slider
+  has a small number box: type a value such as 0.3 (clamped to the slider's range, remembered).
+- v13: lots of chrome no longer freezes the shimmer: all chrome colors are drawn in one batch, so the frame cost stays
+  small however many chrome strokes and Any-color picks there are, also after a reload.
 - Start over: wipes the whole page back to blank (colors in both modes, effects, pops and 3D heights, line settings)
   after a confirm, and deletes that page's saved copies so a reload doesn't bring it back. Other pages aren't touched.
 

@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=12;
+const EP_BUILD=13;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -79,6 +79,11 @@ const PREMIUM=[
   {id:'w-amber',kind:'glow',hex:'#ffb347',name:'Lantern glow'},{id:'w-rose',kind:'glow',hex:'#ff7a9c',name:'Rose glow'},
   {id:'w-mint',kind:'glow',hex:'#7dffc4',name:'Mint glow'},{id:'w-sky',kind:'glow',hex:'#7cc8ff',name:'Sky glow'},
   {id:'w-violet',kind:'glow',hex:'#c79bff',name:'Violet glow'},
+  {id:'l-white',kind:'lightning',hex:'#cfe6ff',name:'White lightning'},{id:'l-blue',kind:'lightning',hex:'#3f9bff',name:'Blue lightning'},
+  {id:'l-violet',kind:'lightning',hex:'#a45cff',name:'Violet lightning'},{id:'l-pink',kind:'lightning',hex:'#ff4fb8',name:'Pink lightning'},
+  {id:'l-red',kind:'lightning',hex:'#ff3b3b',name:'Red lightning'},{id:'l-orange',kind:'lightning',hex:'#ff951f',name:'Orange lightning'},
+  {id:'l-gold',kind:'lightning',hex:'#ffd21f',name:'Gold lightning'},{id:'l-green',kind:'lightning',hex:'#3dff7a',name:'Green lightning'},
+  {id:'l-cyan',kind:'lightning',hex:'#27f0ff',name:'Cyan lightning'},
   {id:'p-ember',kind:'pulse',hex:'#ff7b2e',name:'Ember pulse'},{id:'p-gold',kind:'pulse',hex:'#ffd257',name:'Gold pulse'},
   {id:'p-aqua',kind:'pulse',hex:'#3fe0d0',name:'Aqua pulse'},{id:'p-magenta',kind:'pulse',hex:'#ff4fd8',name:'Magenta pulse'},
   {id:'p-ice',kind:'pulse',hex:'#a9d8ff',name:'Ice pulse'},
@@ -116,7 +121,7 @@ for(const [k,n] of [['rainbow','Rainbow'],['tropical','Tropical'],['ocean','Ocea
   ['miami','Miami'],['gold','Gold ramp'],['chrome','Chrome ramp'],['copper','Copper ramp']])PREMIUM.splice(PREMIUM.length-2,0,{id:'r-'+k,kind:'ramp',ramp:k,hex:RAMPS[k][Math.floor(RAMPS[k].length/2)],name:n});
 const PREM={};PREMIUM.forEach(p=>PREM[p.id]=p);
 PREM['c-any']={id:'c-any',kind:'chrome',hex:'#d9dde3',name:'Chrome finish'};
-const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',glow:'Glow',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
+const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',lightning:'Lightning',glow:'Glow',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
 for(const k in ANY_KINDS)if(k!=='chrome')PREM['any-'+k]={id:'any-'+k,kind:k,hex:'#ffffff',name:ANY_KINDS[k]+' finish'};
 const anyId=k=>k==='chrome'?'c-any':'any-'+k;   // Chrome finish: any colour, as chrome (not a pencil of its own)
 let ink={kind:'plain',hex:color,id:null};
@@ -144,7 +149,7 @@ function inkTile(k,hex,style){
       col=metalAt(rgb,v);a=205+50*g;}
     else if(k==='glitter'){const h=hash2(xx,yy);col=rgb.map(c=>c*(.78+.18*g));a=200+40*g;
       if(h<.075){col=mix(rgb,WHITE,.7+.3*hash2(yy,xx));a=255;}else if(h<.11){col=rgb.map(c=>c*.45);a=255;}}
-    else if(k==='neon'){col=mix(rgb,WHITE,.28);a=225+30*g;}
+    else if(k==='neon'||k==='lightning'){col=mix(rgb,WHITE,.28);a=225+30*g;}
     else if(k==='chrome'){const t=(xx*.35+yy)/n*2+.06*Math.sin(T*xx/n*2);col=chromeAt(rgb,t);a=235+20*g;}
     else if(k==='glow'){col=mix(rgb,WHITE,.18);a=230+25*g;}
     else if(k==='pulse'){col=mix(rgb,WHITE,.1*g);a=225+30*g;}
@@ -182,7 +187,7 @@ function shader(bx,by,bw,bh){const rgb=hex2rgb(ink.hex),K=inkKind();
     return (x,y)=>{const d=Math.min(1,Math.hypot((x-cx)/(bw/2||1),(y-cy)/(bh/2||1)));return mix(core,rgb,d);};}
   if(K==='glitter')return (x,y)=>{const h=hash2(x,y),g=grainA[(y&255)*256+(x&255)]/255;
     return h<.06?mix(rgb,WHITE,.75+.25*hash2(y,x)):h<.1?rgb.map(c=>c*.5):rgb.map(c=>c*(.8+.18*g));};
-  if(K==='neon'){const cx=bx+bw/2,cy=by+bh/2,R=Math.max(bw,bh)/2||1;const core=mix(rgb,WHITE,.45);
+  if(K==='neon'||K==='lightning'){const cx=bx+bw/2,cy=by+bh/2,R=Math.max(bw,bh)/2||1;const core=mix(rgb,WHITE,.45);
     return (x,y)=>{const d=Math.min(1,Math.hypot((x-cx)/(bw/2||1),(y-cy)/(bh/2||1)));return mix(core,rgb,Math.pow(d,.8));};}
   return ()=>rgb;}
 /* entitlement: demo unlock, codes, and a hook for Stripe / license servers (see premium-config.js) */
@@ -324,7 +329,7 @@ const THEMES=[
   {id:'earth2',name:'Earth Tones',colors:['#f1e3c6','#e0c89a','#cba877','#b28958','#8f6a40','#6e4f2e','#4d3620','#9a6a4a','#b5754f','#8c4a2f','#6a3a26','#7f7a4a','#5f6b3a','#a39a72','#c2b280','#3b2f23']});}
 const SETS=[{id:'book',name:'Book palette',product:null,type:'plain',colors:EXTRA}]
   .concat(THEMES.map(t=>({id:t.id,name:t.name,product:'palettes',type:'plain',colors:t.colors})))
-  .concat([['metal','Metallic'],['chrome','Chrome'],['glitter','Glitter'],['jewel','Jewel'],['neon','Neon'],['glow','Glow'],['pulse','Pulse'],['ramp','Gradients','gradients'],['smoke','Smoke','smoke'],['cloud','Clouds','clouds'],['brush','Brushes']]
+  .concat([['metal','Metallic'],['chrome','Chrome'],['glitter','Glitter'],['jewel','Jewel'],['neon','Neon'],['lightning','Lightning'],['glow','Glow'],['pulse','Pulse'],['ramp','Gradients','gradients'],['smoke','Smoke','smoke'],['cloud','Clouds','clouds'],['brush','Brushes']]
     .map(([k,n,pr])=>({id:k,name:n,product:pr||'pencils',type:'ink',items:PREMIUM.filter(p=>p.kind===k)})));
 const SETI={};SETS.forEach((t,i)=>SETI[t.id]=i);
 let setIdx=SETI[settings.pset];if(!(setIdx>=0&&setIdx<SETS.length)||!((SETS[setIdx].colors||SETS[setIdx].items||[]).length)){setIdx=0;settings.pset=SETS[0].id;}   // unknown / old saved set -> default
@@ -354,7 +359,7 @@ function buildPalette(){
     g.innerHTML=`<div class="plabel"><span class="plock">${LOCK}</span><span class="ptxt">${esc(set.name)}${own?' ✓':''}</span></div><div class="pitems"></div>`;fr.appendChild(g);host=g.querySelector('.pitems');}
   {let g0=null;const lab=host===fr?null:fr.querySelector('.plabel');if(lab){const cv=pvCanvas('pstrip',118,30);lab.appendChild(cv);
     pvAdd(cv,t=>drawFxPreview(cv,MIX.on&&set.type==='ink'&&set.id!=='brush'?specOfMix(set.items.slice(0,3).map(p=>p.hex)):specOfSet(set),t));
-    const fk={chrome:'shimmer',metal:'shimmer',jewel:'shimmer',glitter:'sparkle',pulse:'pulseSpeed',glow:'glowStr'}[set.id];if(fk){lab.appendChild(fxSlider(fk));g0=host.parentNode;requestAnimationFrame(()=>{if(g0.isConnected)g0.style.minWidth=Math.ceil(lab.scrollWidth+22)+'px';});}}}
+    const fks={chrome:['shimmer','shimmerSpeed'],metal:['shimmer','shimmerSpeed'],jewel:['shimmer','shimmerSpeed'],glitter:['sparkle','twinkleSpeed'],pulse:['pulseSpeed'],glow:['glowStr','glowSpeed'],neon:['neonSpeed'],lightning:['boltStr','boltSpeed']}[set.id],fk=fks&&fks[0];if(fk){fks.forEach(q=>lab.appendChild(fxSlider(q)));g0=host.parentNode;requestAnimationFrame(()=>{if(g0.isConnected)g0.style.minWidth=Math.ceil(lab.scrollWidth+22)+'px';});}}}
   $('#mixBtn')&&$('#mixBtn').classList.toggle('on',MIX.on);
   if(set.type==='plain')set.colors.forEach(h=>{const b=document.createElement('button');b.className='pencil'+(set.id==='jewel'?' jewelc':'')+(own?'':' dim');b.dataset.c=h;b.title=h;b.innerHTML=pencilSVG(h);
       b.onclick=()=>usePlain(set,h);host.appendChild(b);});
@@ -377,6 +382,14 @@ function anyPicker(set,show=true){let d=$('#anyPop');if(d)d.remove();if(!show)re
   d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;const base=PREM[anyId(set.id)],p={...base,hex:b.dataset.c,name:base.name};anyPicker(set,false);usePremium(set,p);buildPalette();};
   document.body.appendChild(d);const r=$('#anyBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
   setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected||d.contains(e.target)){if(!d.isConnected)document.removeEventListener('pointerdown',f,true);return;}document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#anyBtn'))d.remove();},true),0);}
+function wheelPicker(show=true){let d=$('#anyPop');if(d)d.remove();if(!show)return;
+  d=document.createElement('div');d.id='anyPop';d.className='anypop';d.setAttribute('role','dialog');d.setAttribute('aria-label','Color wheel');
+  d.innerHTML=`<header><b>Color wheel · every color</b><button class="x" aria-label="Close">×</button></header>`+anyColors().map(([n,cs])=>`<h4>${esc(n)}</h4><div class="agrid">${cs.map(h=>`<button class="asw" data-c="${h}" style="background:${h}" aria-label="${esc(colorName(h))}"></button>`).join('')}</div>`).join('');
+  d.querySelector('.x').onclick=()=>wheelPicker(false);
+  d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;wheelPicker(false);pickColor(b.dataset.c);toast(mode==='cbn'?`${tcase(colorName(b.dataset.c))} · ready for Free Color (in Color by Number the numbers choose the colors)`:tcase(colorName(b.dataset.c)));};
+  d.addEventListener('pointerover',e=>{const b=e.target.closest('.asw');if(b)b.title=colorName(b.dataset.c);});
+  document.body.appendChild(d);const r=$('#wheelBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
+  setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected){document.removeEventListener('pointerdown',f,true);return;}if(d.contains(e.target))return;document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#wheelBtn'))d.remove();},true),0);}
 function flipSet(d){anyPicker(null,false);setIdx=(setIdx+d+SETS.length)%SETS.length;settings.pset=SETS[setIdx].id;LS.set('settings',settings);buildPalette();$('#colors').scrollLeft=$('#numrow').offsetWidth;}
 function usePlain(set,h){
   if(!owned(set)){const ps=Trials.palScene();
@@ -408,14 +421,19 @@ function pickPremium(p){if(mode==='cbn'&&p.kind!=='brush')setTimeout(()=>toast(`
   setInkPattern();$$('#pgroup .brush').forEach(b=>{b.innerHTML=premiumIcon(PREM[b.dataset.p]);});markColor();}
 function buildColors(){
   const nr=$('#numrow');nr.innerHTML='';
-  S.d.palette.forEach((h,i)=>{const k=i+1,b=document.createElement('button');b.className='sw';b.dataset.k=k;b.style.background=h;
-    b.innerHTML=`<span class="n">${k}</span><span class="left"></span>`;b.onclick=()=>pickNum(k);nr.appendChild(b);});
+  // v13: the color guide is a row of colored pencils (number on the pencil in Color by Number), then the color wheel at the end
+  S.d.palette.forEach((h,i)=>{const k=i+1,b=document.createElement('button');b.className='sw swp';b.dataset.k=k;b.style.setProperty('--c',h);
+    b.innerHTML=pencilSVG(h)+`<span class="n">${k}</span><span class="left"></span>`;b.onclick=()=>pickNum(k);nr.appendChild(b);});
+  const wb=document.createElement('button');wb.id='wheelBtn';wb.className='wheelbtn';wb.setAttribute('aria-label','Color wheel: every color');wb.innerHTML='<i></i><span>More<br>colors</span>';
+  wb.onclick=e=>{e.stopPropagation();wheelPicker();};nr.appendChild(wb);
   buildPalette();
 }
 function markColor(){const sl=$('#saveLoop');if(sl)sl.hidden=!(S&&S.pulseUsed&&mode==='free');
   $$('#numrow .sw').forEach(b=>b.classList.toggle('on',mode==='cbn'?+b.dataset.k===selNum:S.d.palette[b.dataset.k-1]===color));
   $$('#freerow .pencil:not(.premium)').forEach(b=>b.classList.toggle('on',(ink.kind==='plain'||ink.id==='c-any')&&b.dataset.c===color));const cb=$('#chromeBtn');if(cb){cb.classList.toggle('on',!!settings.chromeFinish);cb.setAttribute('aria-pressed',String(!!settings.chromeFinish));}
   $$('#freerow .premium').forEach(b=>b.classList.toggle('on',b.dataset.p===tool||b.dataset.p===ink.id));
+  {const ab=$('#anyBtn'),st=SETS[setIdx];if(ab&&st){const k=st.id,mine=ink.kind===k&&!PREM[tool],sw=ab.querySelector('i');   /* v13: the last pick wins; the Any color swatch shows the active color of this effect, from the grid or a pencil */
+    ab.classList.toggle('on',ink.id===anyId(k));ab.classList.toggle('cur',mine);if(sw)sw.style.background=mine?ink.hex:'conic-gradient(#f44,#fa3,#ee4,#4c6,#3cd,#46f,#a5f,#f4a,#f44)';ab.dataset.c=mine?ink.hex:'';}}
 }
 function pickNum(k){ if(mode==='free'){pickColor(S.d.palette[k-1]);return;} selNum=k;markColor();highlight();drawNums();}
 function pickColor(h){color=h;ink=settings.chromeFinish&&!MIX.on?{kind:'chrome',hex:h,id:'c-any'}:{kind:'plain',hex:h,id:null};if(ink.id==='c-any')enableTilt();if(tool==='eraser')setTool('pencil');if(MIX.on)mixInk();setInkPattern();markColor();
@@ -561,7 +579,7 @@ function beginStroke(x,y,pr,ptype){
   snap(); let r=labAt(x,y);
   const locked=tool!=='eraser'&&clip, onInk=locked&&(!r||isInk(x,y));
   if(onInk){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q){r=labAt(q[0],q[1]);x=q[0]+.5;y=q[1]+.5;}}  // started on a line: snap
-  stroke={last:[x,y],region:locked?r:0,er:tool==='eraser',st:strokeStyle(),neon:(ink.kind==='neon'||ink.kind==='glow'||(ink.kind==='mix'&&ink.mix.finish==='neon'))&&!strokeStyle(),pulse:ink.kind==='pulse'&&!strokeStyle()&&tool!=='eraser',dirty:null,
+  stroke={last:[x,y],path:[[x,y]],region:locked?r:0,er:tool==='eraser',st:strokeStyle(),neon:(ink.kind==='neon'||ink.kind==='glow'||(ink.kind==='mix'&&ink.mix.finish==='neon'))&&!strokeStyle(),pulse:ink.kind==='pulse'&&!strokeStyle()&&tool!=='eraser',dirty:null,
     pen:ptype==='pen',inPt:[x,y],exit:null,brace:null};
   lastStroke={snapped:onInk,start:r,regions:locked&&r?[r]:[],breaks:0,locked};
   strokeC.style.filter=stroke.neon?(ink.kind==='glow'?`drop-shadow(0 0 8px ${ink.hex}) drop-shadow(0 0 18px ${ink.hex})`:`drop-shadow(0 0 3px ${ink.hex}) drop-shadow(0 0 9px ${ink.hex})`):'';
@@ -577,7 +595,7 @@ function stamp(x,y,pr){
   if(stroke.st==='air'){R*=2.4;cov.globalAlpha=.16;for(let k=0;k<16;k++){const a=Math.random()*6.283,d=R*Math.sqrt(-2*Math.log(Math.random()+1e-6))*.42,rr=1+Math.random()*1.8;
       cov.drawImage(tip,x+Math.cos(a)*d-rr,y+Math.sin(a)*d-rr,2*rr,2*rr);}}
   else if(stroke.st==='water'){R*=2.3;cov.globalAlpha=.09;cov.drawImage(tip,x-R,y-R,2*R,2*R);}
-  else{const j=R*.15,rich=['metal','glitter','neon','jewel','chrome'].includes(inkKind());if(ink.kind==='smoke'||ink.kind==='cloud'){R*=1.5;cov.globalAlpha=ink.kind==='smoke'?.4+.3*p:.5+.35*p;cov.drawImage(tip,x-R,y-R,2*R,2*R);}else{
+  else{const j=R*.15,rich=['metal','glitter','neon','jewel','chrome','lightning'].includes(inkKind());if(ink.kind==='smoke'||ink.kind==='cloud'){R*=1.5;cov.globalAlpha=ink.kind==='smoke'?.4+.3*p:.5+.35*p;cov.drawImage(tip,x-R,y-R,2*R,2*R);}else{
     cov.globalAlpha=rich?.75+.25*p:.45+.4*p; cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);}
   const d=stroke.dirty,a=[x-R-2,y-R-2,x+R+2,y+R+2];
   stroke.dirty=d?[Math.min(d[0],a[0]),Math.min(d[1],a[1]),Math.max(d[2],a[2]),Math.max(d[3],a[3])]:a;
@@ -586,7 +604,7 @@ function moveStroke(x,y,pr){
   const [lx,ly]=stroke.last,dx=x-lx,dy=y-ly,dist=Math.hypot(dx,dy);
   const step=Math.max(.5,(stroke.er?ERASER_R:PENCIL_R)[sizeIdx]*(stroke.st?.45:.3)/zoomSizeDiv()), n=Math.floor(dist/step);
   for(let i=1;i<=n;i++){const px=lx+dx*i/n,py=ly+dy*i/n; stroke.region?lockedStamp(px,py,pr):stamp(px,py,pr);}
-  if(n)stroke.last=[x,y]; flush();
+  if(n){stroke.last=[x,y];const pl=stroke.path,q=pl&&pl[pl.length-1];if(q&&pl.length<800&&Math.hypot(x-q[0],y-q[1])>=3)pl.push([x,y]);} flush();
 }
 function lockedStamp(x,y,pr){
   const r=labAt(x,y);
@@ -625,7 +643,7 @@ function commitPaint(){
     else if(stroke.st==='water'){c.globalCompositeOperation='multiply';c.globalAlpha=.9;}
     c.drawImage(strokeC,0,0);c.restore();
     if(stroke.ramp){const tm=mk(),tx=tm.getContext('2d');tx.drawImage(rampT,0,0);tx.globalCompositeOperation='destination-in';tx.drawImage(strokeC,0,0);fxAdd(['rampfx'],stroke.ramp.k,tm);}
-    else fxAdd(fxKindsOf(ink),ink.hex,strokeC);}
+    else fxAdd(fxKindsOf(ink),ink.hex,strokeC,0,0,stroke.path);}
 }
 function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er)setTimeout(fxClip,0);
   dirty('free'); strokeC.style.filter='';
@@ -726,7 +744,7 @@ const POP={depth:Math.abs(+(settings.popDepth||60)),pressed:settings.popMode==='
 POP.whole=true;
 {const h=typeof settings.popH==='number'?Math.max(-1,Math.min(1,settings.popH)):(POP.pressed?-.6:.6);POP.hv=Math.abs(h);POP.flat=h===0;POP.pressed=h<0;POP.depth=Math.max(10,Math.round(POP.hv*100));}
 const popH=()=>POP.flat?0:(POP.pressed?-1:1)*POP.hv;   // v12: one two-way height: + raises, 0 flat, - insets
-function setPopH(v){v=Math.max(-1,Math.min(1,Math.round(v*20)/20));POP.flat=v===0;if(v)POP.pressed=v<0;POP.hv=Math.abs(v);if(v)POP.depth=Math.max(10,Math.round(POP.hv*100));
+function setPopH(v){v=Math.max(-1,Math.min(1,Math.round(v*100)/100));POP.flat=v===0;if(v)POP.pressed=v<0;POP.hv=Math.abs(v);if(v)POP.depth=Math.max(10,Math.round(POP.hv*100));
   settings.popH=v;settings.popMode=POP.flat?'flat':POP.pressed?'inset':'raised';LS.set('settings',settings);popUI();}
 const popModeName=()=>POP.pressed?'Inset':'Raise';
 function chamfer(d,w,h){for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!d[i])continue;let v=d[i];
@@ -735,12 +753,13 @@ function chamfer(d,w,h){for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;i
     if(x<w-1)v=Math.min(v,d[i+1]+1);if(y<h-1){v=Math.min(v,d[i+w]+1);if(x<w-1)v=Math.min(v,d[i+w+1]+1.414);if(x>0)v=Math.min(v,d[i+w-1]+1.414);}d[i]=v;}}
 function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and light ctx `li` (both W×H)
   const rs0=pop.rs||[pop.r],inG=new Set(rs0),A=adjacency(st),rs=rs0.slice();
-  for(const r of rs0)for(const b of A[r])if(!inG.has(b)&&st.cnt[b]<6000&&[...A[b]].every(q=>inG.has(q)||q===b)){inG.add(b);rs.push(b);}  // fill enclosed holes (stars, specks)
+  const one=rs0.length===1;   // v13: a single line-enclosed area keeps its holes, so enclosed shapes (clouds, lightning, stars) get a clean frame
+  if(!one)for(const r of rs0)for(const b of A[r])if(!inG.has(b)&&st.cnt[b]<6000&&[...A[b]].every(q=>inG.has(q)||q===b)){inG.add(b);rs.push(b);}  // fill enclosed holes (stars, specks)
   let bx0=W,by0=H,bx1=-1,by1=-1;for(const r of rs){const b=r*4;if(st.bb[b+2]<0)continue;bx0=Math.min(bx0,st.bb[b]);by0=Math.min(by0,st.bb[b+1]);bx1=Math.max(bx1,st.bb[b+2]);by1=Math.max(by1,st.bb[b+3]);}
   if(bx1<0)return;const D=(4+pop.depth*.22)*(pop.hz!=null?.45+.9*pop.hz:1)*(pop.k==null?1:.3+.7*pop.k),M=Math.ceil(D*1.6)+10;
   const x0=Math.max(0,bx0-M),y0=Math.max(0,by0-M),x1=Math.min(W-1,bx1+M),y1=Math.min(H-1,by1+M),w=x1-x0+1,h=y1-y0+1;
   const m=new Uint8Array(w*h);for(const r of rs)for(let p=st.off[r];p<st.off[r+1];p++){const i=st.pix[p],x=i%W-x0,y=((i/W)|0)-y0;m[y*w+x]=1;}
-  { // close the mask across thin line ink (rays, outlines between same-group regions) so lines don't read as grooves
+  if(!one){ // close the mask across thin line ink (rays, outlines between same-group regions) so lines don't read as grooves
     const R=5,cham=(src)=>{const o=new Float32Array(w*h);for(let i=0;i<w*h;i++)o[i]=src(i)?1e9:0;chamfer(o,w,h);return o;};
     const dOut=cham(i=>!m[i]),dil=new Uint8Array(w*h);for(let i=0;i<w*h;i++)dil[i]=dOut[i]<=R;
     const dIn=cham(i=>dil[i]);for(let i=0;i<w*h;i++)if(!m[i]&&dIn[i]>R)m[i]=1;}
@@ -750,11 +769,11 @@ function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and ligh
   for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){const i=y*w+x;if(!d[i])continue;let v=d[i];
     if(x<w-1)v=Math.min(v,d[i+1]+1);if(y<h-1){v=Math.min(v,d[i+w]+1);if(x<w-1)v=Math.min(v,d[i+w+1]+1.414);if(x>0)v=Math.min(v,d[i+w-1]+1.414);}d[i]=v;}
   const hg=new Float32Array(w*h);for(let i=0;i<w*h;i++){const t=Math.min(1,d[i]/D);hg[i]=t*t*(3-2*t);}
-  const im=new ImageData(w,h),P=im.data,sg=pop.pressed?-1:1,bw=bx1-bx0+1,bh=by1-by0+1;
+  const im=new ImageData(w,h),P=im.data,sg=pop.pressed?-1:1,bw=bx1-bx0+1,bh=by1-by0+1,bgp=one&&isBackdrop(st,rs0[0]);
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(!m[i])continue;
     const gx=(hg[i+1]-hg[i-1])*.5,gy=(hg[i+w]-hg[i-w])*.5,dot=sg*(gx+gy)*.7071*D*.9;   // light from the top-left
     const j=i*4,u=((x+x0-bx0)/bw+(y+y0-by0)/bh)/2,amb=sg*(.5-u)*.16;       // soft top-left sheen across the face
-    const v=dot+amb-(pop.pressed?.28*hg[i]:0);   // inset: darker toward the middle
+    const v=dot+amb-(pop.pressed&&!bgp?.28*hg[i]:0);   // inset: darker toward the middle (the pressed background keeps the older even look)
     if(v>0){P[j]=255;P[j+1]=250;P[j+2]=240;P[j+3]=Math.min(175,v*240);}else{P[j]=45;P[j+1]=28;P[j+2]=14;P[j+3]=Math.min(165,-v*230);}}
   const t=document.createElement('canvas');t.width=w;t.height=h;t.getContext('2d').putImageData(im,0,0);li.drawImage(t,x0,y0);
   if(!pop.pressed){ // soft drop shadow outside the region only
@@ -778,7 +797,7 @@ function popAnim(p,from,to,done,ms=240){const t0=performance.now();p.k=from;
   const step=now=>{const u=Math.min(1,(now-t0)/ms),e=u<.5?2*u*u:1-2*(1-u)*(1-u);p.k=from+(to-from)*e;renderPops();
     if(u<1)requestAnimationFrame(step);else{delete p.k;if(done)done();}};
   if(RM.matches||document.hidden){p.k=to;renderPops();delete p.k;if(done)done();return;}requestAnimationFrame(step);}
-function popTap(x,y){const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];const i=S.pops.findIndex(p=>(p.rs||[p.r]).includes(r));
+function popTap(x,y){const r=labAt(x,y);if(!r)return;S.popSel={k:'pop',r};setTimeout(()=>{if(S&&S.popSel&&S.popSel.r===r)popSelect('pop',r);},560);S.pops=S.pops||[];const i=S.pops.findIndex(p=>(p.rs||[p.r]).includes(r));
   const T=depthOf(S);S.popNext=S.popNext||{};
   if(POP.flat){if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');toast('Flattened');}else toast('Flat: tap a raised or inset area to flatten it');return;}
   if(i>=0){const p=S.pops[i],rsP=p.rs||[p.r],drop=()=>{const j=S.pops.indexOf(p);if(j>=0)S.pops.splice(j,1);renderPops();dirty('pop');};
@@ -790,19 +809,34 @@ function popTap(x,y){const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];const i=S
   const want=S.popNext[r],pressed=want?want==='inset':POP.pressed;
   if(!Effects3D.unlocked()){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
     const l=Trials.popsLeft();toast(l?`3D Pop · free tries: ${l} left`:'That was your last free 3D Pop ✦');}
-  if(isBackdrop(S,r)){shake();toast('Background stays flat · clouds, lightning and other drawn shapes pop');return;}
   const rs=[r];   // v12: only the tapped line-enclosed area
   rs.forEach(q=>delete S.popNext[q]);delete S.popNext[r];
   const p={r,rs,depth:POP.depth,pressed,hz:null};
   S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;renderPops();dirty('pop');});if(want==='inset')toast('Inset · tap again to raise it');}
 function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}}
-function popRestyle(){ // slider / toggle apply to the most recent pop, and to new ones
-  if(POP.flat)return;if(S&&S.pops&&S.pops.length){const p=S.pops[S.pops.length-1];p.depth=POP.depth;p.pressed=POP.pressed;renderPops();dirty('pop');}}
-function popUI(){const hs=$('#ppH');if(hs){const v=Math.round(popH()*100);if(+hs.value!==v)hs.value=v;const o=$('#ppHv');if(o)o.textContent=v>0?'Raise '+v:v<0?'Inset '+(-v):'Flat';hs.style.setProperty('--p',((v+100)/2)+'%');}
+function popRestyle(){applySelHeight(popH());}   // v13: the slider / switch drive only the selected section
+/* v13: the Pop height slider follows the section you last drew in or tapped (Pop Pencil, 3D Pop, Pop Erase). Moving it sets
+   that one section's height (whole line-enclosed area, + raise / - inset / 0 flat); other sections keep their own heights. */
+function popSelect(k,r){if(!S||!r)return;S.popSel={k,r};const h=selHeight();if(h!=null){POP.hv=Math.abs(h)||POP.hv;if(h){POP.pressed=h<0;POP.flat=false;}popUI(Math.round(h*100));}}
+function selHeight(){if(!S||!S.popSel)return null;const {k,r}=S.popSel;
+  if(k==='pop'){const p=(S.pops||[]).find(q=>(q.rs||[q.r]).includes(r));return p?(p.pressed?-1:1)*Math.min(1,p.depth/100):0;}
+  const P=S.pp;if(!P)return 0;const b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;if(bw<=0)return 0;
+  const d=P.rx.getImageData(bx,by,bw,bh).data,e=P.ix.getImageData(bx,by,bw,bh).data,n=S.off[r+1]-S.off[r],st=Math.max(1,(n/4000)|0);let best=0;
+  for(let q=S.off[r];q<S.off[r+1];q+=st){const i=S.pix[q],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3,v=(d[j]-e[j])/255;if(Math.abs(v)>Math.abs(best))best=v;}return best;}
+function applySelHeight(v){if(!S||!S.popSel)return false;const {k,r}=S.popSel;
+  if(k==='pop'){S.pops=S.pops||[];const i=S.pops.findIndex(q=>(q.rs||[q.r]).includes(r));
+    if(!v){if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');}return true;}
+    if(i>=0){const p=S.pops[i];p.depth=Math.max(10,Math.round(Math.abs(v)*100));p.pressed=v<0;}else S.pops.push({r,rs:[r],depth:Math.max(10,Math.round(Math.abs(v)*100)),pressed:v<0,hz:null});
+    renderPops();dirty('pop');return true;}
+  const P=ppCanvases(S),b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;if(bw<=0)return false;
+  const R=P.rx.getImageData(bx,by,bw,bh),I=P.ix.getImageData(bx,by,bw,bh),a=Math.round(Math.abs(v)*255);
+  for(let q=S.off[r];q<S.off[r+1];q++){const i=S.pix[q],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3;R.data[j]=v>0?a:0;I.data[j]=v<0?a:0;}
+  P.rx.putImageData(R,bx,by);P.ix.putImageData(I,bx,by);clearTimeout(applySelHeight.t);applySelHeight.t=setTimeout(()=>{ppRender(S);dirty('pp');},40);return true;}
+function popUI(show){const hs=$('#ppH');if(hs){const v=show!=null?show:Math.round(popH()*100);if(+hs.value!==v)hs.value=v;const nb=$('#ppHn');if(nb&&document.activeElement!==nb)nb.value=fxNum(v/100);const o=$('#ppHv');if(o)o.textContent=v>0?'Raise '+v:v<0?'Inset '+(-v):'Flat';hs.style.setProperty('--p',((v+100)/2)+'%');}
   const m=$('#popMode');m.setAttribute('aria-pressed',String(POP.pressed));m.dataset.m=popModeName().toLowerCase();
   m.querySelectorAll('i').forEach(b=>b.classList.toggle('on',b.dataset.v===m.dataset.m));}
 /* Pop Erase: flattens a manual pop (2D) or the template relief of an area (3D modes); tap again in 3D to restore */
-function popErase(x,y){const r=labAt(x,y);if(!r||!S)return;if(ppEraseAt(r)){toast('Flattened');return;}
+function popErase(x,y){const r=labAt(x,y);if(!r||!S)return;const hadPop=(S.pops||[]).some(q=>(q.rs||[q.r]).includes(r));S.popSel={k:hadPop?'pop':'pp',r};setTimeout(()=>popUI(0),0);if(ppEraseAt(r)){toast('Flattened');return;}
   if(!D3.on){const i=(S.pops||[]).findIndex(p=>(p.rs||[p.r]).includes(r));if(i<0){toast('Nothing raised here');return;}S.pops.splice(i,1);renderPops();dirty('pop');toast('Flattened');return;}
   const T=depthOf(S);if(!T)return;S.flat3d=S.flat3d||[];const fl=new Set(S.flat3d);
   if(!T.lv[r]){toast('Already flat');return;}
@@ -825,7 +859,7 @@ function needDepth(n){return new Promise(res=>{if((window.EP_DEPTH||{})[n])retur
 const depthOf=st=>st&&(window.EP_DEPTH||{})[st.n]||null;
 function objectOf(st,r){const T=depthOf(st),o=T.ob[r],l=T.lv[r],out=[];for(let q=1;q<st.N;q++)if(T.ob[q]===o&&T.lv[q]===l)out.push(q);return out;}
 function cleanPops(st){const T=depthOf(st);if(!T||!st.pops||!st.pops.length)return;const n0=st.pops.length;
-  st.pops=st.pops.map(p=>({...p,rs:(p.rs||[p.r]).filter(q=>!isBackdrop(st,q))})).filter(p=>p.rs.length);/* v12: anything but the open backdrop can stay popped */if(st.pops.length!==n0){renderPops(st);savePops(st);}}
+  st.pops=st.pops.filter(p=>(p.rs||[p.r]).length);/* v13: every area can stay popped, the open background too */if(st.pops.length!==n0){renderPops(st);savePops(st);}}
 const D3={on:false,want:!!settings.view3d,band:false,lastMove:0};
 const allowed3D=n=>n===FREE_3D_SCENE||Effects3D.unlocked();
 const FREE_3D_SCENE=4;
@@ -904,24 +938,33 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)');
 /* v11 effect sliders (remembered): Shimmer / Sparkle go from Off (standard, still) to Full; Pulse speed; Glow strength */
 const FXS={shimmer:{lab:'Shimmer',def:.7,min:0,max:1,step:.05,tip:'Shimmer: how much chrome, metallic and jewel light moves (Off = still, standard)'},
   sparkle:{lab:'Sparkle',def:.7,min:0,max:1,step:.05,tip:'Sparkle: how much glitter twinkles (Off = still, standard)'},
-  pulseSpeed:{lab:'Speed',def:1,min:.4,max:2.5,step:.05,tip:'Pulse speed: slow to fast'},glowStr:{lab:'Glow',def:1,min:.2,max:2,step:.05,tip:'Glow strength: soft to strong'}};
+  shimmerSpeed:{lab:'Speed',def:1,min:.08,max:3,step:.01,tip:'Shimmer speed: slower to faster (chrome, metallic, jewel)'},
+  twinkleSpeed:{lab:'Speed',def:1,min:.1,max:3,step:.01,tip:'Twinkle speed: slower to faster'},neonSpeed:{lab:'Speed',def:1,min:.1,max:3,step:.01,tip:'Neon flicker speed: slower to faster'},
+  glowSpeed:{lab:'Speed',def:1,min:.1,max:3,step:.01,tip:'Glow breathing speed: slower to faster'},boltSpeed:{lab:'Speed',def:1,min:.1,max:3,step:.01,tip:'Lightning flash speed: slower to faster'},
+  boltStr:{lab:'Flash',def:1,min:0,max:2,step:.01,tip:'Lightning flash intensity: calm glow only (0) to blinding'},
+  pulseSpeed:{lab:'Speed',def:1,min:.13,max:2.5,step:.01,tip:'Pulse speed: slow to fast'},glowStr:{lab:'Glow',def:1,min:.2,max:2,step:.05,tip:'Glow strength: soft to strong'}};
 function motionLvl(k){const v=settings[k];if(typeof v==='number'&&isFinite(v))return v;return FXS[k].def*(RM.matches&&(k==='shimmer'||k==='sparkle')?.5:1);}
-const fxsLabel=(k,v)=>(k==='shimmer'||k==='sparkle')?(v<=0?'Off':v>=.99?'Full':Math.round(v*100)+'%'):(k==='pulseSpeed'?(v<.8?'slow':v>1.6?'fast':'normal'):Math.round(v*100)+'%');
+const fxsLabel=(k,v)=>(k==='shimmer'||k==='sparkle')?(v<=0?'Off':v>=.99?'Full':Math.round(v*100)+'%'):(k==='pulseSpeed'?(v<.8?'slow':v>1.6?'fast':'normal'):/Speed$/.test(k)?(Math.round(v*100)/100)+'×':Math.round(v*100)+'%');
+const fxNum=v=>String(Math.round(v*100)/100);
 let fxsT=0;function setFxs(k,v){settings[k]=v;clearTimeout(fxsT);fxsT=setTimeout(()=>LS.set('settings',settings),250);applyFxs();}
-function applyFxs(){app.style.setProperty('--pulseDur',(2.4/motionLvl('pulseSpeed')).toFixed(2)+'s');$$('.fxs').forEach(l=>{const k=l.dataset.k,v=motionLvl(k),i=l.querySelector('input');if(document.activeElement!==i)i.value=v;l.querySelector('em').textContent=fxsLabel(k,v);l.classList.toggle('off',(k==='shimmer'||k==='sparkle')&&v<=0);});
+function applyFxs(){app.style.setProperty('--pulseDur',(2.4/motionLvl('pulseSpeed')).toFixed(2)+'s');$$('.fxs').forEach(l=>{const k=l.dataset.k,v=motionLvl(k),i=l.querySelector('input[type=range]'),nb=l.querySelector('.fxn');if(document.activeElement!==i)i.value=v;if(nb&&document.activeElement!==nb)nb.value=fxNum(v);l.querySelector('em').textContent=fxsLabel(k,v);l.classList.toggle('off',(k==='shimmer'||k==='sparkle')&&v<=0);});
   if(S&&S.fxC){fxDraw(performance.now());fxStart();}}
+function numBox(nb,mn,mx,set){const rd=()=>{const v=parseFloat(String(nb.value).replace(',','.'));return isFinite(v)?Math.max(mn,Math.min(mx,v)):null;};
+  nb.addEventListener('input',()=>{const v=rd();if(v!=null)set(v);});nb.addEventListener('change',()=>{const v=rd();if(v!=null){set(v);nb.value=fxNum(v);}});
+  nb.addEventListener('keydown',e=>{e.stopPropagation();if(e.key==='Enter'){nb.dispatchEvent(new Event('change'));nb.blur();}});['pointerdown','click','keyup'].forEach(ev=>nb.addEventListener(ev,e=>e.stopPropagation()));}
 function fxSlider(k){const f=FXS[k],l=document.createElement('label');l.className='fxs';l.dataset.k=k;l.title=f.tip;
-  l.innerHTML=`<span>${f.lab}</span><input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${motionLvl(k)}" aria-label="${esc(f.tip)}"><em>${fxsLabel(k,motionLvl(k))}</em>`;
-  const i=l.querySelector('input');i.oninput=()=>setFxs(k,+i.value);['pointerdown','click'].forEach(ev=>l.addEventListener(ev,e=>e.stopPropagation()));return l;}
-let fxNow=0,PCLK=0,pclkLast=0;
+  l.innerHTML=`<span>${f.lab}</span><input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${motionLvl(k)}" aria-label="${esc(f.tip)}"><input type="number" class="fxn" min="${f.min}" max="${f.max}" step="0.01" value="${fxNum(motionLvl(k))}" inputmode="decimal" aria-label="${esc(f.lab)} value"><em>${fxsLabel(k,motionLvl(k))}</em>`;
+  const i=l.querySelector('input[type=range]'),nb=l.querySelector('.fxn');i.oninput=()=>setFxs(k,+i.value);   /* v13: typed values (e.g. 0.3), clamped to the slider's range, both stay in sync */
+  numBox(nb,f.min,f.max,v=>setFxs(k,v));['pointerdown','click'].forEach(ev=>l.addEventListener(ev,e=>e.stopPropagation()));return l;}
+let fxNow=0,PCLK=0,pclkLast=0,CCLK=0,CFIX=false;const CLK={};let BFIX=false;   /* v13: one clock per Speed slider (glitter, neon, glow, lightning) */   /* v13: CCLK = the chrome shimmer clock (runs at the Speed slider's rate) */
 const GEMS=new Set(['g-emerald','g-sapphire','g-amethyst','g-rose']);
 const FXCAP={smoke:70,cloud:12,twinkle:70,total:230};
 function fxKindsOf(k){ // ink -> list of live effects
   if(!k)return [];if(k.kind==='mix'){const m=k.mix||{},o=[];if(m.finish==='jewel')o.push('shimmer');
-    if(m.anim==='pulse')o.push('pulsefx');if(m.anim==='glow')o.push('glowfx');if(m.anim==='shimmer')o.push('shimmer');
+    if(m.anim==='pulse')o.push('pulsefx');if(m.anim==='glow')o.push('glowfx');if(m.anim==='shimmer')o.push('shimmer');if(m.anim==='lightning')o.push('boltfx');
     if(m.finish==='chrome')o.push('mirror');if(m.finish==='metal')o.push('shine');if(m.finish==='jewel')o.push('jshine');if(m.finish==='neon')o.push('neonfx');if(m.part==='glitter')o.push('twinkle');if(m.part==='smoke')o.push('smoke');if(m.part==='cloud')o.push('cloud');return [...new Set(o)];}
   if(k.kind==='jewel')return ['shimmer','jshine'];if(k.fx==='shimmer'||GEMS.has(k.id))return ['shimmer'];if(k.kind==='metal')return ['shine'];
-  if(k.kind==='chrome')return ['mirror'];if(k.kind==='pulse')return ['pulsefx'];if(k.kind==='neon')return ['neonfx'];
+  if(k.kind==='chrome')return ['mirror'];if(k.kind==='pulse')return ['pulsefx'];if(k.kind==='neon')return ['neonfx'];if(k.kind==='lightning')return ['boltfx'];
   if(k.kind==='glow')return ['glowfx'];if(k.kind==='smoke')return ['smoke'];if(k.kind==='cloud')return ['cloud'];if(k.kind==='glitter')return ['twinkle'];
   return [];}
 const sprite=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,0,32,32,32);
@@ -934,15 +977,15 @@ const tintCache={};function tinted(hex,a=1){const k=hex+a;if(tintCache[k])return
 function fxLayer(){if(!S.fxC){const c=mk();c.className='fx-layer';S.fxC=c;}return S.fxC;}
 function fxRec(kind,hex){fxSetList(S);let r=S.fx.find(q=>q.kind===kind&&q.hex===hex);
   if(!r){const m=mk();r={kind,hex,mask:m,mx:m.getContext('2d',{willReadFrequently:true}),bb:null,pts:[],parts:[],dirty:true};S.fx.push(r);}return r;}
-function fxAdd(kinds,hex,src,sx=0,sy=0){if(!kinds.length||!S)return;const u={n:S.free.undo.length,m:[]};
-  for(const k of kinds){const r=fxRec(k,hex),c=mk();c.getContext('2d').drawImage(r.mask,0,0);u.m.push([r,c]);r.mx.drawImage(src,sx,sy);r.dirty=true;r.boost=performance.now()/1000;}
+function fxAdd(kinds,hex,src,sx=0,sy=0,path=null){if(!kinds.length||!S)return;const u={n:S.free.undo.length,m:[]};
+  for(const k of kinds){const r=fxRec(k,hex),c=mk();c.getContext('2d').drawImage(r.mask,0,0);u.m.push(k==='mirror'?[r,c,phCopy(r)]:[r,c]);r.mx.drawImage(src,sx,sy);r.dirty=true;r.boost=performance.now()/1000;if(k==='mirror')chromePhase(r,src,sx,sy,path);}
   S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-5);
   fxAttach();fxStart();dirty('fx');}
 function fxScan(r){ // bbox + sample points of a mask (for particles and sheen extents)
   const d=r.mx.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;const pts=[];
   for(let y=0;y<H;y+=3)for(let x=0;x<W;x+=3){if(d[(y*W+x)*4+3]>60){if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;pts.push(x,y);}}
   r.bb=x1<0?null:[x0,y0,x1-x0+1,y1-y0+1];const n=pts.length/2,keep=[];for(let i=0;i<Math.min(n,500);i++){const j=(Math.random()*n)|0;keep.push([pts[j*2],pts[j*2+1]]);}
-  r.pts=keep;r.dirty=false;r.sf=null;r.loose=null;r.tint=null;r.nm=null;r.cf=null;r.shade=null;r.td=null;r.dq=null;if(!r.bb)r.parts=[];}
+  r.pts=keep;r.dirty=false;r.sf=null;r.loose=null;r.tint=null;r.nm=null;r.cf=null;r.shade=null;r.td=null;r.dq=null;r.bolt=null;r.mv=(r.mv||0)+1;if(!r.bb)r.parts=[];}
 function fxLoose(r,blur,n=2){ // soft, spread mask so wisps / puffs can hover just around the colour
   const c=mk(),x=c.getContext('2d');x.filter=`blur(${blur}px)`;for(let i=0;i<n;i++)x.drawImage(r.mask,0,0);x.filter='none';return c;}
 function fxShade(r){if(r.shade)return r.shade;const c=mk(),x=c.getContext('2d');x.drawImage(r.mask,0,0);x.globalCompositeOperation='source-in';x.fillStyle='rgba(20,10,30,1)';x.fillRect(0,0,W,H);return r.shade=c;}
@@ -958,7 +1001,7 @@ function fxAttach(){if(!S)return;const c=fxLayer();under3D(c);c.style.display=''
 const scratch=mk(),scx=scratch.getContext('2d');
 function star(x,cx,cy,R,a){x.globalAlpha=a;x.beginPath();for(let i=0;i<8;i++){const rr=i%2?R*.22:R,an=i*Math.PI/4;x.lineTo(cx+Math.cos(an)*rr,cy+Math.sin(an)*rr);}x.closePath();x.fill();}
 function fxDrawRec(x,r,t){ // t in seconds
-  if(r.kind==='pulsefx'&&!RM.matches)t=PCLK;if(r.kind==='shimmer'){const lv=motionLvl('shimmer');t=lv>0?fxNow:1.2;}
+  if(r.kind==='pulsefx'&&!RM.matches)t=PCLK;if(r.kind==='glowfx'||r.kind==='neonfx')t=RM.matches?1.2:(CLK[r.kind==='glowfx'?'glowSpeed':'neonSpeed']||0);if(r.kind==='shimmer'){const lv=motionLvl('shimmer');t=lv>0?CCLK:1.2;}
   if(r.dirty)fxScan(r);if(!r.bb)return;const [bx,by,bw,bh]=r.bb,s=.5+.5*Math.sin(t*2*Math.PI/3.2);
   if(r.kind==='shimmer'){ // sheen band sweeping diagonally + soft glow pulse + a few glints
     x.save();x.globalAlpha=.16+.16*s;x.shadowColor=r.hex;x.shadowBlur=16+10*s;x.drawImage(fxTint(r),0,0);x.restore();
@@ -981,16 +1024,17 @@ function fxDrawRec(x,r,t){ // t in seconds
     const b=.5+.5*Math.sin(t*2*Math.PI/2.4);x.save();
     if(b<.5){x.globalAlpha=(.5-b)*.7;x.drawImage(fxShade(r),0,0);}
     x.globalCompositeOperation='lighter';x.globalAlpha=.06+.5*b*b;x.shadowColor=r.hex;x.shadowBlur=4+16*b;x.drawImage(fxTint(r),0,0);x.restore();return;}
+  if(r.kind==='boltfx'){drawBolt(x,r);return;}
   if(r.kind==='neonfx'){ // neon hum: a steady glow with a soft flicker now and then
     const f=hash2((t*14)|0,7)<.06?.35:1,b=(.75+.25*Math.sin(t*5.3))*f;x.save();x.globalCompositeOperation='lighter';x.globalAlpha=.14+.3*b;x.shadowColor=r.hex;x.shadowBlur=10+14*b;x.drawImage(fxTint(r),0,0);x.restore();return;}
   if(r.kind==='twinkle'){ // glitter: a field of sparkle points that pop on and off all over the glitter, plus drifting 4-point glints
-    const lv=motionLvl('sparkle'),still=lv<=0;t=still?1.2:fxNow;
+    const lv=motionLvl('sparkle'),still=lv<=0;t=still?1.2:(CLK.twinkleSpeed||0);
     if(!r.sf){const n=Math.min(r.pts.length,Math.max(24,Math.round(bw*bh/650)));r.sf=[];for(let i=0;i<n;i++){const q=r.pts[(i*97)%r.pts.length];r.sf.push([q[0]+(hash2(i,3)-.5)*3,q[1]+(hash2(i,5)-.5)*3,hash2(i,7)*6.283,.7+hash2(i,11)*2.2,hash2(i,13)<.22]);}}
     x.save();x.globalCompositeOperation='lighter';const tg=tinted(mix(hex2rgb(r.hex),WHITE,.35).map(v=>Math.round(v)).reduce((a,v)=>a+v.toString(16).padStart(2,'0'),'#'),1);
     for(const [px,py,ph,sp,hot] of r.sf){let a;if(still)a=hash2(px|0,py|0)>.78?.55:0;else{const w=Math.sin(t*sp*(1.2+lv*1.6)+ph);a=Math.pow(Math.max(0,w),hot?8:14);}
       if(a<.04)continue;const R2=(hot?5.5:2.6)*(.5+.5*a);x.globalAlpha=Math.min(1,a*(still?1:.55+.6*lv));x.drawImage(GLINT,px-R2*2,py-R2*2,R2*4,R2*4);if(hot){x.globalAlpha*=.5;x.drawImage(tg,px-R2*1.6,py-R2*1.6,R2*3.2,R2*3.2);}}
     x.restore();if(still)return;
-    const boost=Math.max(0,1-(t-(r.boost||0))/1.4);   // sparkle boost: a burst of glints right after new glitter goes down
+    const boost=Math.max(0,1-(fxNow-(r.boost||0))/1.4);   // sparkle boost: a burst of glints right after new glitter goes down
     const cap=Math.min(FXCAP.twinkle*(1+boost),Math.max(6,Math.round(bw*bh/2600*(.4+lv)))*(1+1.5*boost),r.pts.length*2),dt=Math.min(.1,Math.max(0,t-(r.lt||t)));r.lt=t;
     const born=()=>{const q=r.pts[(Math.random()*r.pts.length)|0],hot=Math.random()<.18+.4*boost;return {x:q[0]+(Math.random()-.5)*3,y:q[1]+(Math.random()-.5)*3,vx:(Math.random()-.5)*4,vy:(Math.random()-.5)*4-1,
       age:-Math.random()*1.6,life:.35+Math.random()*.75,sz:hot?5+Math.random()*4:1.6+Math.random()*2.4,pk:hot?1:.45+Math.random()*.4,rot:Math.random()*.6};};
@@ -1089,10 +1133,51 @@ function shineStatic(r,style,lq){ // the still part (reflection colour, specular
   const cv=(im,pad)=>{const c=document.createElement('canvas');c.width=w+pad*2;c.height=h+pad*2;const x=c.getContext('2d');if(!pad){x.putImageData(im,0,0);return c;}
     const t=document.createElement('canvas');t.width=w;t.height=h;t.getContext('2d').putImageData(im,0,0);x.filter='blur(2.2px)';x.drawImage(t,pad,pad);x.filter='none';return c;};
   pts.sort((a,b)=>a[2]-b[2]);
-  return r.ss={key,F,base:cv(q,0),glint:cv(g,0),bloom:cv(bq,4),pts:pts.slice(0,40),X0,Y0,w,h};}
+  const mq=new ImageData(w,h);for(let i=0;i<w*h;i++)if(m[i])mq.data[i*4+3]=255;
+  return r.ss={key,F,base:cv(q,0),glint:cv(g,0),bloom:cv(bq,4),mq:cv(mq,0),pts:pts.slice(0,40),X0,Y0,w,h};}
+/* v13: per-stroke shimmer direction for chrome. r.phC (quarter res) stores, for every pixel a chrome stroke covered, how far along
+   that stroke's drawn path it lies (R = 0..255 from start to end, alpha = covered). Later paint replaces earlier; fills clear it (default diagonal). */
+function phCanvas(r){if(!r.phC){const c=document.createElement('canvas');c.width=WQ;c.height=HQ;r.phC=c;r.phX=c.getContext('2d',{willReadFrequently:true});}return r.phC;}
+function phCopy(r){if(!r.phC)return null;const c=document.createElement('canvas');c.width=WQ;c.height=HQ;c.getContext('2d').drawImage(r.phC,0,0);return c;}
+function phRestore(r,pc){phCanvas(r);r.phX.clearRect(0,0,WQ,HQ);if(pc)r.phX.drawImage(pc,0,0);r.phV=(r.phV||0)+1;}
+function chromePhase(r,src,sx,sy,path){phCanvas(r);r.phV=(r.phV||0)+1;
+  const t=document.createElement('canvas');t.width=WQ;t.height=HQ;const tx=t.getContext('2d',{willReadFrequently:true});tx.drawImage(src,sx/MQ,sy/MQ,src.width/MQ,src.height/MQ);
+  r.phX.save();r.phX.globalCompositeOperation='destination-out';r.phX.drawImage(t,0,0);r.phX.restore();
+  if(!path||path.length<2)return;const cum=[0];let Ls=0;for(let i=1;i<path.length;i++){Ls+=Math.hypot(path[i][0]-path[i-1][0],path[i][1]-path[i-1][1]);cum.push(Ls);}if(Ls<16)return;
+  let x0=W,y0=H,x1=0,y1=0;for(const [a,b] of path){x0=Math.min(x0,a);y0=Math.min(y0,b);x1=Math.max(x1,a);y1=Math.max(y1,b);}
+  const M=90,X0=Math.max(0,((x0-M)/MQ)|0),Y0=Math.max(0,((y0-M)/MQ)|0),X1=Math.min(WQ-1,((x1+M)/MQ)|0),Y1=Math.min(HQ-1,((y1+M)/MQ)|0),w=X1-X0+1,h=Y1-Y0+1;if(w<1||h<1)return;
+  const d=tx.getImageData(X0,Y0,w,h).data,o=new ImageData(w,h),O=o.data,P=path.map(([a,b])=>[a/MQ,b/MQ]),C=cum.map(v=>v/Ls);
+  for(let y=0;y<h;y++)for(let X=0;X<w;X++){const j=(y*w+X)*4;if(d[j+3]<60)continue;const px=X+X0+.5,py=y+Y0+.5;let bd=1e18,bs=0;
+    for(let i=1;i<P.length;i++){const ax=P[i-1][0],ay=P[i-1][1],vx=P[i][0]-ax,vy=P[i][1]-ay,ll=vx*vx+vy*vy,q=ll?Math.max(0,Math.min(1,((px-ax)*vx+(py-ay)*vy)/ll)):0,ex=ax+vx*q-px,ey=ay+vy*q-py,dd=ex*ex+ey*ey;
+      if(dd<bd){bd=dd;bs=C[i-1]+(C[i]-C[i-1])*q;}}
+    O[j]=Math.round(bs*255);O[j+3]=255;}
+  const oc=document.createElement('canvas');oc.width=w;oc.height=h;oc.getContext('2d').putImageData(o,0,0);r.phX.drawImage(oc,X0,Y0);}
+function phaseList(r,ss){if(!r.phC)return null;const key=r.phV+'|'+ss.X0+','+ss.Y0+','+ss.w+','+ss.h;if(r.phL&&r.phL.key===key)return r.phL.v;
+  const {X0,Y0,w,h}=ss,d=r.phX.getImageData(X0,Y0,w,h).data,idx=[],ph=[];for(let i=0;i<w*h;i++)if(d[i*4+3]>=128){idx.push(i);ph.push(d[i*4]/255);}
+  let v=null;if(idx.length){const m=document.createElement('canvas');m.width=w;m.height=h;const mx=m.getContext('2d'),mi=mx.createImageData(w,h);for(const i of idx)mi.data[i*4+3]=255;mx.putImageData(mi,0,0);
+    const c=document.createElement('canvas');c.width=w;c.height=h;v={idx:Int32Array.from(idx),ph:Float32Array.from(ph),mask:m,im:new ImageData(w,h),c,cx:c.getContext('2d')};}
+  r.phL={key,v};return v;}
+/* v13 Lightning: a calm neon glow, then irregular lightning flashes where the CENTRE of the stroke burns white-hot with the colour glowing
+   around it and fading outward. Everything stays inside the line-enclosed areas the lightning was painted in. */
+function boltI(t){let v=0;const P=.9,k=Math.floor(t/P);for(let j=k-2;j<=k;j++){if(hash2(j,17)<.42)continue;const t0=j*P+hash2(j,29)*.55,n=1+((hash2(j,41)*3)|0);
+    for(let i=0;i<n;i++){const ts=t0+i*(.06+hash2(j,53+i)*.09),d=t-ts;if(d>=0&&d<.5)v=Math.max(v,(i===n-1?1:.55+.3*hash2(j,61+i))*Math.exp(-d*(i===n-1?9:18)));}}return v;}
+function boltPrep(r){if(r.bolt)return r.bolt;const [bx,by,bw,bh]=r.bb,pad=24,X0=Math.max(0,bx-pad),Y0=Math.max(0,by-pad),X1=Math.min(W,bx+bw+pad),Y1=Math.min(H,by+bh+pad),w=X1-X0,h=Y1-Y0;
+  const md=r.mx.getImageData(bx,by,bw,bh).data,mark=new Uint8Array(S.N);for(let y=0;y<bh;y++)for(let X=0;X<bw;X++)if(md[(y*bw+X)*4+3]>60)mark[S.lab[(y+by)*W+X+bx]]=1;mark[0]=0;
+  const rm=regionMask(S,mark),cv=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
+  const bl=cv(),bx2=bl.getContext('2d',{willReadFrequently:true});bx2.filter='blur(2.5px)';bx2.drawImage(r.mask,X0,Y0,w,h,0,0,w,h);bx2.filter='none';
+  const bd=bx2.getImageData(0,0,w,h),D=bd.data,mm=r.mx.getImageData(X0,Y0,w,h).data;for(let i=0;i<D.length;i+=4){const a=mm[i+3]>60?Math.max(0,Math.min(1,(D[i+3]-150)/85)):0;D[i]=D[i+1]=D[i+2]=255;D[i+3]=a*255;}
+  const core=cv();core.getContext('2d').putImageData(bd,0,0);
+  const inner=cv(),ix=inner.getContext('2d');ix.filter='blur(2px)';ix.drawImage(fxTint(r),X0,Y0,w,h,0,0,w,h);ix.filter='none';ix.globalCompositeOperation='destination-in';ix.drawImage(r.mask,X0,Y0,w,h,0,0,w,h);
+  const halo=cv(),hx=halo.getContext('2d');hx.filter='blur(9px)';hx.drawImage(fxTint(r),X0,Y0,w,h,0,0,w,h);hx.drawImage(fxTint(r),X0,Y0,w,h,0,0,w,h);hx.filter='none';hx.globalCompositeOperation='destination-in';hx.drawImage(rm,X0,Y0,w,h,0,0,w,h);
+  let hs=0;for(const c of r.hex)hs=(hs*31+c.charCodeAt(0))%997;return r.bolt={X0,Y0,core,inner,halo,off:hs*.137};}
+function drawBolt(x,r){const B=boltPrep(r),still=RM.matches,t=still?0:(CLK.boltSpeed||0)+B.off,str=motionLvl('boltStr'),I=still?0:Math.min(1.6,boltI(t)*str),hum=.8+.2*Math.sin(t*5.1);
+  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,.26*hum+.6*Math.min(1,I));x.drawImage(B.halo,B.X0,B.Y0);if(I>1){x.globalAlpha=I-1;x.drawImage(B.halo,B.X0,B.Y0);}
+  x.globalAlpha=Math.min(1,.18+.7*Math.min(1,I));x.drawImage(B.inner,B.X0,B.Y0);x.restore();
+  if(I>.03){x.save();x.globalAlpha=Math.min(1,I*1.15);x.drawImage(B.core,B.X0,B.Y0);if(I>.6){x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,(I-.6)*.8);x.drawImage(B.core,B.X0,B.Y0);}x.restore();}
+  r.lastI=I;}
 function drawShine(x,r,t,style){if(!r.bb)return;const lvl=motionLvl('shimmer'),still=lvl<=0,live=!still&&performance.now()-LIGHT.t<2500,plx=live?LIGHT.x:0,ply=live?LIGHT.y:0,lq=[Math.round(plx*4)/20,Math.round(ply*4)/20];   // pointer / tilt: a small, quantised nudge
   const now=performance.now();let ss=r.ss;if(!ss||!r.ssT||now-r.ssT>180||contourField(r)!==ss.F){ss=shineStatic(r,style,lq);r.ssT=now;}
-  const {X0,Y0,w,h}=ss;if(w<=2||h<=2)return;const bx=X0*MQ,by=Y0*MQ,bw=w*MQ,bh=h*MQ,T=still?1.3:fxNow,add=style==='jewel';
+  const {X0,Y0,w,h}=ss;if(w<=2||h<=2)return;const bx=X0*MQ,by=Y0*MQ,bw=w*MQ,bh=h*MQ,T=still?1.3:CCLK,PL=style==='chrome'&&!still?phaseList(r,ss):null,add=style==='jewel';
   // 1) polished surface
   scx.clearRect(bx,by,bw,bh);scx.globalCompositeOperation='source-over';scx.imageSmoothingEnabled=true;scx.drawImage(ss.base,bx,by,bw,bh);
   // 1b) live shimmer (v11): a slow colour shift washing over the surface and two soft bands of light that keep flowing
@@ -1103,12 +1188,16 @@ function drawShine(x,r,t,style){if(!r.bb)return;const lvl=motionLvl('shimmer'),s
     fx2.clearRect(0,0,w,h);const L2=w+h;for(const [per,off,wd] of [[6.5,0,.16],[10,.55,.1]]){const p2=(((T/per)+off)%1)*1.6-.3,g2=fx2.createLinearGradient(0,0,L2*.7,L2*.7);
       const a0=Math.max(0,Math.min(1,p2-wd)),a1=Math.max(0,Math.min(1,p2)),a2=Math.max(0,Math.min(1,p2+wd));g2.addColorStop(0,'rgba(255,255,255,0)');if(a0>0)g2.addColorStop(a0,'rgba(255,255,255,0)');g2.addColorStop(a1,'rgba(255,255,255,1)');if(a2<1)g2.addColorStop(a2,'rgba(255,255,255,0)');g2.addColorStop(1,'rgba(255,255,255,0)');
       fx2.fillStyle=g2;fx2.fillRect(0,0,w,h);}
+    if(PL){const P1=((T/6.5)%1)*1.6-.3,P2=(((T/10)+.55)%1)*1.6-.3,D=PL.im.data;for(let n=0;n<PL.idx.length;n++){const f=PL.ph[n],v=Math.max(0,1-Math.abs(f-P1)/.16,1-Math.abs(f-P2)/.1),j=PL.idx[n]*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=v*255;}
+      PL.cx.putImageData(PL.im,0,0);fx2.globalCompositeOperation='destination-out';fx2.drawImage(PL.mask,0,0);fx2.globalCompositeOperation='source-over';fx2.drawImage(PL.c,0,0);}   /* v13: on chrome strokes the light bands travel along the stroke, the way it was drawn */
     scx.globalCompositeOperation='lighter';scx.globalAlpha=Math.min(1,.55*lvl*k);scx.drawImage(fl,bx,by,bw,bh);scx.globalAlpha=1;scx.globalCompositeOperation='source-over';}
   // 2) travelling glint: a bright diagonal band that sweeps across every ~3.6 s, strongest on the lit rims and highlights
   const per=3.6,u=((T%per)/per)*1.8-.4,gc=r.gc||(r.gc=document.createElement('canvas'));if(gc.width!==w||gc.height!==h){gc.width=w;gc.height=h;}
   const gx=gc.getContext('2d');gx.globalCompositeOperation='source-over';gx.clearRect(0,0,w,h);const L=w+h,p=u*L,gr=gx.createLinearGradient(p-L*.12,0,p+L*.12,0);
   gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.5,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');
   gx.save();gx.transform(1,0,1,1,0,0);gx.fillStyle=gr;gx.fillRect(-h,0,L+h,h);gx.restore();   // sheared: the band runs top-left -> bottom-right diagonal
+  if(PL){const D=PL.im.data;for(let n=0;n<PL.idx.length;n++){const v=Math.max(0,1-Math.abs(PL.ph[n]-u)/.12),j=PL.idx[n]*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=v*255;}
+    PL.cx.putImageData(PL.im,0,0);gx.globalCompositeOperation='destination-out';gx.drawImage(PL.mask,0,0);gx.globalCompositeOperation='source-over';gx.drawImage(PL.c,0,0);}   /* v13: the glint follows each chrome stroke's own path (tap fills keep the diagonal) */
   gx.globalCompositeOperation='destination-in';gx.drawImage(ss.glint,0,0);
   if(!still){scx.globalCompositeOperation='lighter';scx.globalAlpha=Math.min(1,.35+.65*lvl);scx.drawImage(gc,bx,by,bw,bh);scx.globalAlpha=.6*lvl;scx.drawImage(gc,bx,by,bw,bh);scx.globalAlpha=1;}
   scx.globalCompositeOperation='destination-in';scx.drawImage(r.mask,bx,by,bw,bh,bx,by,bw,bh);scx.globalCompositeOperation='source-over';
@@ -1120,7 +1209,44 @@ function drawShine(x,r,t,style){if(!r.bb)return;const lvl=motionLvl('shimmer'),s
   // 4) specular shimmer: tiny star glints on the brightest spots, twinkling
   for(const [px,py,ph] of ss.pts){const a=Math.pow(Math.max(0,Math.sin(T*2.6+ph*40)),6);if(a<.05)continue;const R2=3+5*a;x.globalAlpha=a*.9;x.drawImage(GLINT,px-R2*2,py-R2*2,R2*4,R2*4);}
   x.restore();}
-function drawMirror(x,r,t){drawShine(x,r,t,'chrome');}
+function drawMirror(x,r,t){drawMirrors(x,[r]);}
+/* v13: all chrome is drawn in ONE batch. Before, every chrome colour (each Any-color pick is its own colour) did ~8 full-size canvas passes
+   every frame, so 20+ colours took ~300 ms a frame: the throttle then redrew only every ~0.7 s and the shimmer looked frozen. Now each
+   colour is composed at quarter size and the page gets 3 full-size passes in total, however many chrome strokes there are. */
+const CQ={};function cqC(k,w,h){let c=CQ[k];if(!c||c.width!==w||c.height!==h){c=document.createElement('canvas');c.width=w;c.height=h;CQ[k]=c;}return c;}
+function drawMirrors(x,recs){const lvl=motionLvl('shimmer'),still=lvl<=0,live=!still&&performance.now()-LIGHT.t<2500,plx=live?LIGHT.x:0,ply=live?LIGHT.y:0,lq=[Math.round(plx*4)/20,Math.round(ply*4)/20],T=still?1.3:CCLK,now=performance.now();
+  const lo=cqC('lo',WQ,HQ),lx=lo.getContext('2d'),bl=cqC('bl',WQ,HQ),blx=bl.getContext('2d'),gl=cqC('gl',WQ,HQ),glx=gl.getContext('2d');lx.clearRect(0,0,WQ,HQ);blx.clearRect(0,0,WQ,HQ);glx.clearRect(0,0,WQ,HQ);
+  const stars=[],live2=[];
+  for(const r of recs){if(r.dirty)fxScan(r);if(!r.bb)continue;let ss=r.ss;if(!ss||!r.ssT||now-r.ssT>180||contourField(r)!==ss.F){ss=shineStatic(r,'chrome',lq);r.ssT=now;}
+    const {X0,Y0,w,h}=ss;if(w<=2||h<=2)continue;live2.push(r);const PL=!still?phaseList(r,ss):null;
+    const rc=r.rc||(r.rc=document.createElement('canvas'));if(rc.width!==w||rc.height!==h){rc.width=w;rc.height=h;}const cx=rc.getContext('2d');cx.globalCompositeOperation='source-over';cx.globalAlpha=1;cx.clearRect(0,0,w,h);cx.drawImage(ss.base,0,0);
+    if(!still){const fl=r.fl||(r.fl=document.createElement('canvas'));if(fl.width!==w||fl.height!==h){fl.width=w;fl.height=h;}const fx2=fl.getContext('2d');
+      fx2.globalCompositeOperation='source-over';fx2.clearRect(0,0,w,h);const hs=(T*24)%360,g1=fx2.createLinearGradient(0,0,w,h);
+      for(let q=0;q<=4;q++)g1.addColorStop(q/4,`hsl(${(hs+q*80)%360},75%,60%)`);fx2.fillStyle=g1;fx2.fillRect(0,0,w,h);
+      cx.globalCompositeOperation='soft-light';cx.globalAlpha=Math.min(1,.5*lvl);cx.drawImage(fl,0,0);
+      fx2.clearRect(0,0,w,h);const L2=w+h;for(const [per,off,wd] of [[6.5,0,.16],[10,.55,.1]]){const p2=(((T/per)+off)%1)*1.6-.3,g2=fx2.createLinearGradient(0,0,L2*.7,L2*.7);
+        const a0=Math.max(0,Math.min(1,p2-wd)),a1=Math.max(0,Math.min(1,p2)),a2=Math.max(0,Math.min(1,p2+wd));g2.addColorStop(0,'rgba(255,255,255,0)');if(a0>0)g2.addColorStop(a0,'rgba(255,255,255,0)');g2.addColorStop(a1,'rgba(255,255,255,1)');if(a2<1)g2.addColorStop(a2,'rgba(255,255,255,0)');g2.addColorStop(1,'rgba(255,255,255,0)');
+        fx2.fillStyle=g2;fx2.fillRect(0,0,w,h);}
+      if(PL){const P1=((T/6.5)%1)*1.6-.3,P2=(((T/10)+.55)%1)*1.6-.3,D=PL.im.data;for(let n=0;n<PL.idx.length;n++){const f=PL.ph[n],v=Math.max(0,1-Math.abs(f-P1)/.16,1-Math.abs(f-P2)/.1),j=PL.idx[n]*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=v*255;}
+        PL.cx.putImageData(PL.im,0,0);fx2.globalCompositeOperation='destination-out';fx2.drawImage(PL.mask,0,0);fx2.globalCompositeOperation='source-over';fx2.drawImage(PL.c,0,0);}   /* on chrome strokes the light bands travel along the stroke, the way it was drawn */
+      cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,.55*lvl);cx.drawImage(fl,0,0);cx.globalAlpha=1;}
+    const per=3.6,u=((T%per)/per)*1.8-.4,gc=r.gc||(r.gc=document.createElement('canvas'));if(gc.width!==w||gc.height!==h){gc.width=w;gc.height=h;}
+    const gx=gc.getContext('2d');gx.globalCompositeOperation='source-over';gx.clearRect(0,0,w,h);const L=w+h,p=u*L,gr=gx.createLinearGradient(p-L*.12,0,p+L*.12,0);
+    gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.5,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');
+    gx.save();gx.transform(1,0,1,1,0,0);gx.fillStyle=gr;gx.fillRect(-h,0,L+h,h);gx.restore();
+    if(PL){const D=PL.im.data;for(let n=0;n<PL.idx.length;n++){const v=Math.max(0,1-Math.abs(PL.ph[n]-u)/.12),j=PL.idx[n]*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=v*255;}
+      PL.cx.putImageData(PL.im,0,0);gx.globalCompositeOperation='destination-out';gx.drawImage(PL.mask,0,0);gx.globalCompositeOperation='source-over';gx.drawImage(PL.c,0,0);}   /* the glint follows each chrome stroke's own path (tap fills keep the diagonal) */
+    gx.globalCompositeOperation='destination-in';gx.drawImage(ss.glint,0,0);
+    if(!still){cx.globalCompositeOperation='lighter';cx.globalAlpha=Math.min(1,.35+.65*lvl);cx.drawImage(gc,0,0);cx.globalAlpha=.6*lvl;cx.drawImage(gc,0,0);cx.globalAlpha=1;glx.globalCompositeOperation='lighter';glx.drawImage(gc,X0,Y0);}
+    cx.globalCompositeOperation='destination-in';cx.drawImage(ss.mq,0,0);cx.globalCompositeOperation='source-over';
+    lx.drawImage(rc,X0,Y0);blx.globalCompositeOperation='lighter';blx.drawImage(ss.bloom,X0-4,Y0-4);stars.push(ss.pts);}
+  if(!live2.length)return;
+  const key=live2.map(r=>r.hex+':'+(r.mv||0)).join('|');let un=CQ.un;if(!un||CQ.unKey!==key){un=cqC('un',W,H);const ux=un.getContext('2d');ux.clearRect(0,0,W,H);for(const r of live2)ux.drawImage(r.mask,0,0);CQ.unKey=key;}
+  scx.save();scx.globalCompositeOperation='source-over';scx.globalAlpha=1;scx.clearRect(0,0,W,H);scx.imageSmoothingEnabled=true;scx.drawImage(lo,0,0,WQ*MQ,HQ*MQ);scx.globalCompositeOperation='destination-in';scx.drawImage(un,0,0);scx.restore();
+  x.save();x.drawImage(scratch,0,0);x.globalCompositeOperation='lighter';x.globalAlpha=.5*(.85+.15*Math.sin(T*1.7));x.drawImage(bl,0,0,WQ*MQ,HQ*MQ);
+  if(!still){const gb=cqC('gb',WQ,HQ),gbx=gb.getContext('2d');gbx.clearRect(0,0,WQ,HQ);gbx.filter='blur(1.6px)';gbx.drawImage(gl,0,0);gbx.filter='none';x.globalAlpha=.45*Math.min(1,.4+lvl);x.drawImage(gb,0,0,WQ*MQ,HQ*MQ);}
+  for(const P of stars)for(const [px,py,ph] of P){const a=Math.pow(Math.max(0,Math.sin(T*2.6+ph*40)),6);if(a<.05)continue;const R2=3+5*a;x.globalAlpha=a*.9;x.drawImage(GLINT,px-R2*2,py-R2*2,R2*4,R2*4);}
+  x.restore();}
 const PUFF={};function puffSprite(hex){if(PUFF[hex])return PUFF[hex];const [R0,G0,B0]=hex2rgb(hex),s=96,c=document.createElement('canvas');c.width=c.height=s;const x=c.getContext('2d');let sd=7;const rnd=()=>((sd=(sd*16807)%2147483647)/2147483647);
   for(let k=0;k<7;k++){const bx=s/2+(rnd()-.5)*s*.34,by=s/2+(rnd()-.5)*s*.34,br=s*(.17+rnd()*.2),g=x.createRadialGradient(bx,by,0,bx,by,br);
     g.addColorStop(0,`rgba(${R0},${G0},${B0},.34)`);g.addColorStop(.55,`rgba(${R0},${G0},${B0},.14)`);g.addColorStop(1,`rgba(${R0},${G0},${B0},0)`);x.fillStyle=g;x.beginPath();x.arc(bx,by,br,0,6.2832);x.fill();}return PUFF[hex]=c;}
@@ -1194,24 +1320,24 @@ function ppPulse(x,t){ // light pulses travel up through raised Pop Pencil areas
   const c=P.pc||(P.pc=Object.assign(document.createElement('canvas'),{width:WQ,height:HQ}));c.getContext('2d').putImageData(q,0,0);
   x.save();x.globalCompositeOperation='lighter';x.imageSmoothingQuality='high';x.drawImage(c,0,0,W,H);x.restore();}
 let fxTotal=0,fxRaf=0,fxLast=0;
-function fxDraw(now){if(!S||!S.fxC)return;const x=S.fxC.getContext('2d');x.clearRect(0,0,W,H);const t=RM.matches?1.2:now/1000;fxNow=now/1000;{const d=Math.min(.1,Math.max(0,fxNow-pclkLast));pclkLast=fxNow;PCLK+=d*motionLvl('pulseSpeed');}
-  const t0=performance.now();fxTotal=(S.fx||[]).reduce((a,r)=>a+r.parts.length,0);for(const r of S.fx||[]){const q=performance.now();fxDrawRec(x,r,t);r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;}ppPulse(x,t);fxMs=fxMs*.8+(performance.now()-t0)*.2;}
+function fxDraw(now){if(!S||!S.fxC)return;const x=S.fxC.getContext('2d');x.clearRect(0,0,W,H);const t=RM.matches?1.2:now/1000;fxNow=now/1000;{const d=Math.min(.1,Math.max(0,fxNow-pclkLast));pclkLast=fxNow;PCLK+=d*motionLvl('pulseSpeed');if(!CFIX)CCLK+=d*motionLvl('shimmerSpeed');for(const k of ['twinkleSpeed','neonSpeed','glowSpeed','boltSpeed'])if(!(BFIX&&k==='boltSpeed'))CLK[k]=(CLK[k]||0)+d*motionLvl(k);}
+  const t0=performance.now();fxTotal=(S.fx||[]).reduce((a,r)=>a+r.parts.length,0);{const mir=(S.fx||[]).filter(r=>r.kind==='mirror');let mDone=false;for(const r of S.fx||[]){const q=performance.now();if(r.kind==='mirror'){if(!mDone){mDone=true;drawMirrors(x,mir);}}else fxDrawRec(x,r,t);r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;}}ppPulse(x,t);fxMs=fxMs*.8+(performance.now()-t0)*.2;}
 let fxMs=0;
 const fxLive=()=>S&&((S.fx&&S.fx.length)||(S.pp&&S.pp.any));
 const fxNeedsLoop=()=>!RM.matches||(S&&(S.fx||[]).some(r=>(motionLvl('shimmer')>0&&['mirror','shine','jshine','shimmer'].includes(r.kind))||(motionLvl('sparkle')>0&&r.kind==='twinkle')));
 function fxStart(){if(fxRaf||!fxLive())return;fxAttach();if(!fxNeedsLoop()||document.hidden){fxDraw(performance.now());return;}
   const step=now=>{fxRaf=0;if(!fxLive()||document.hidden)return;if(!fxNeedsLoop()){fxDraw(now);return;}if(now-fxLast>=Math.max(32,fxMs*2.2)){fxLast=now;fxDraw(now);}/* adaptive: slow machines draw effects less often so taps and strokes stay responsive */fxRaf=requestAnimationFrame(step);};fxRaf=requestAnimationFrame(step);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(fxRaf);fxRaf=0;cancelAnimationFrame(pvRaf);pvRaf=0;}else{fxStart();pvStart();}});
-function saveFx(st){const L=st.fxL||{free:st.fx||[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){const a=(L[md]||[]).filter(r=>r.bb||r.dirty).map(r=>({kind:r.kind,hex:r.hex,m:r.mask.toDataURL('image/png')}));a.length?LS.set(key+st.n,a):LS.del(key+st.n);}}
+function saveFx(st){const L=st.fxL||{free:st.fx||[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){const a=(L[md]||[]).filter(r=>r.bb||r.dirty).map(r=>Object.assign({kind:r.kind,hex:r.hex,m:r.mask.toDataURL('image/png')},r.phC?{ph:r.phC.toDataURL('image/png')}:{}));a.length?LS.set(key+st.n,a):LS.del(key+st.n);}}
 async function loadFx(st){st.fxL={free:[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){st.fx=st.fxL[md];const a=LS.get(key+st.n,[]);for(const q of a){try{const im=await loadImg(q.m);const m=mk();const mx=m.getContext('2d',{willReadFrequently:true});mx.drawImage(im,0,0);
-  st.fx.push({kind:q.kind,hex:q.hex,mask:m,mx,bb:null,pts:[],parts:[],dirty:true});}catch(e){}}}st.fx=st.fxL[mode];}
+  const rr={kind:q.kind,hex:q.hex,mask:m,mx,bb:null,pts:[],parts:[],dirty:true};if(q.ph){try{phCanvas(rr);rr.phX.drawImage(await loadImg(q.ph),0,0);rr.phV=1;}catch(e){}}st.fx.push(rr);}catch(e){}}}st.fx=st.fxL[mode];}
 function fxSetList(st){if(!st)return;st.fxL=st.fxL||{free:st.fx||[],cbn:[]};st.fxL[mode==='cbn'?'free':'cbn']=st.fxL[mode==='cbn'?'free':'cbn']||[];st.fx=st.fxL[mode]=st.fxL[mode]||[];}
 
 /* ---------- animated previews: pencil-set box strip, mixer, store rows and the upgrade sheet ---------- */
 const MIXK={finish:[['plain','Plain',null],['metal','Metallic','pencils'],['chrome','Chrome','pencils'],['neon','Neon','pencils'],['jewel','Jewel','pencils']],
-  anim:[['none','None',null],['pulse','Pulse','pencils'],['glow','Glow','pencils'],['shimmer','Shimmer','pencils']],
+  anim:[['none','None',null],['pulse','Pulse','pencils'],['glow','Glow','pencils'],['shimmer','Shimmer','pencils'],['lightning','Lightning','pencils']],
   part:[['none','None',null],['glitter','Glitter','pencils'],['smoke','Smoke','smoke'],['cloud','Cloud','clouds']]};
-const MIXSET={metal:'metal',chrome:'chrome',neon:'neon',jewel:'jewel',pulse:'pulse',glow:'glow',shimmer:'jewel',glitter:'glitter',smoke:'smoke',cloud:'cloud'};
+const MIXSET={lightning:'lightning',metal:'metal',chrome:'chrome',neon:'neon',jewel:'jewel',pulse:'pulse',glow:'glow',shimmer:'jewel',glitter:'glitter',smoke:'smoke',cloud:'cloud'};
 const MIX=Object.assign({on:false,finish:'metal',anim:'pulse',part:'glitter'},LS.get('mix',{}));MIX.on=false;
 function specOfSet(set){if(set.id==='ramp')return {kinds:['ramp'],ramps:['rainbow','sunset','ocean','gold'],colors:['#ef4444','#fb923c','#0891b2','#d4a015']};if(set.type==='plain')return {kinds:['plain'],colors:[set.colors[3],set.colors[7],set.colors[11]||set.colors[1],set.colors[5]]};
   const it=set.items;if(set.id==='brush')return {kinds:['brush'],colors:['#3a6ad6','#c9473d','#4c9a5b']};
@@ -1231,10 +1357,12 @@ function drawFxPreview(cv,spec,t){const x=cv.getContext('2d'),w=cv.width,h=cv.he
       for(let q=0;q<=12;q++){const c=rampRgb(k,pingpong(q/12*1.6+t/9));g.addColorStop(q/12,`rgb(${c[0]},${c[1]},${c[2]})`);}x.strokeStyle=g;}
     else x.strokeStyle=(base==='plain'||base==='mix')?hex:tilePat(x,base==='smoke'||base==='cloud'?base:base,hex);
     if(finish==='neon'){x.shadowColor=hex;x.shadowBlur=lw*1.6;}
+    const bI=(finish==='lightning'||anim==='lightning')?boltI(t*motionLvl('boltSpeed')+i*1.3)*motionLvl('boltStr'):0;if(finish==='lightning'||anim==='lightning'){x.shadowColor=hex;x.shadowBlur=lw*(1.2+2.4*Math.min(1,bI));}
     if(anim==='glow'){const s=.5+.5*Math.sin(t*2*Math.PI/3.2+i);x.shadowColor=hex;x.shadowBlur=lw*(1.5+2.2*s);}
     if(anim==='pulse'){const b=.5+.5*Math.sin(t*2*Math.PI/2.4+i*.6);x.globalAlpha=fade*(.62+.38*b);x.shadowColor=hex;x.shadowBlur=lw*1.4*b;}
     if(finish==='smoke'||finish==='cloud')x.globalAlpha*=finish==='smoke'?.7:.55;
     const tipPt=pvPath(x,w,h,i,n,prog);x.stroke();
+    if(bI>.04){x.save();x.shadowBlur=lw*1.4;x.shadowColor=hex;x.strokeStyle=`rgba(255,255,255,${Math.min(1,bI)})`;x.lineWidth=lw*.42;pvPath(x,w,h,i,n,prog);x.stroke();x.restore();}
     if(finish==='chrome'){const [lx,ly]=lightAt(t),rgb=hex2rgb(hex),g=x.createLinearGradient(0,h*(i+.3)/(n+.6)-lw,w*.15,h*(i+.3)/(n+.6)+lw*1.4);
       for(let k=0;k<=8;k++){const c=chromeAt(rgb,k/8+lx*.35+ly*.2);g.addColorStop(k/8,`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`);}
       x.globalCompositeOperation='source-atop';x.shadowBlur=0;x.strokeStyle=g;pvPath(x,w,h,i,n,prog);x.stroke();
@@ -1329,8 +1457,7 @@ function ppBegin(x,y){
   if(!Effects3D.unlocked()&&S.n!==FREE_3D_SCENE){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
     const l=Trials.popsLeft();toast(l?`Pop Pencil · free tries: ${l} left`:'That was your last free 3D try ✦');}
   let r=labAt(x,y);if(!r)return;if(isInk(x,y)){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q)r=labAt(q[0],q[1]);}
-  if(isBackdrop(S,r)){shake();toast('Background stays flat · clouds, lightning and other drawn shapes pop');return;}
-  ppCanvases(S);const tmp=mk(),rs=ppRegions(r,x,y);pps={r,rs,mask:ppMaskFor(rs),tmp,tx:tmp.getContext('2d'),last:[x,y],inset:POP.pressed,v:popH()};ppStamp(x,y);ppFlush();}
+  ppCanvases(S);const tmp=mk(),rs=ppRegions(r,x,y);pps={r,rs,mask:ppMaskFor(rs),tmp,tx:tmp.getContext('2d'),last:[x,y],inset:POP.pressed,v:POP.flat?0:(POP.pressed?-1:1)};ppStamp(x,y);ppFlush();}
 function ppStamp(x,y){const R=PP_R[sizeIdx]/zoomSizeDiv();pps.tx.globalAlpha=.16;pps.tx.drawImage(sprite,x-R,y-R,2*R,2*R);}
 function ppMove(x,y){const [lx,ly]=pps.last,d=Math.hypot(x-lx,y-ly),step=Math.max(1,PP_R[sizeIdx]*.3/zoomSizeDiv()),n=Math.floor(d/step);
   for(let i=1;i<=n;i++)ppStamp(lx+(x-lx)*i/n,ly+(y-ly)*i/n);if(n)pps.last=[x,y];if(!ppFlush.t)ppFlush.t=setTimeout(()=>{ppFlush.t=0;ppFlush();},90);}
@@ -1340,17 +1467,18 @@ function ppFlush(){if(!pps)return;const st=S.pp,t=pps.tx,r=pps.r,b=r*4,bx=S.bb[b
   for(let y=0;y<bh;y++){const o=(by+y)*W+bx;for(let x=0;x<bw;x++){const j=(y*bw+x)*4+3,a=Tm[j];if(!a||lab[o+x]!==r)continue;
     const k=a/255,h0=(dr[j]-di[j])/255,h=v>0?(h0>=v?h0:Math.min(v,h0+k)):v<0?(h0<=v?h0:Math.max(v,h0-k)):(h0>0?Math.max(0,h0-k):Math.min(0,h0+k));dr[j]=h>0?Math.round(h*255):0;di[j]=h<0?Math.round(-h*255):0;}}
   st.rx.putImageData(R,bx,by);st.ix.putImageData(I,bx,by);t.clearRect(0,0,W,H);ppRender(S);}   // v8 feel: every pass adds a little more, up to the slider height
-function ppEnd(){if(!pps)return;clearTimeout(ppFlush.t);ppFlush.t=0;ppFlush();pps=null;dirty('pp');}
+function ppEnd(){if(!pps)return;clearTimeout(ppFlush.t);ppFlush.t=0;ppFlush();const sr=pps.r;setTimeout(()=>popSelect('pp',sr),0);pps=null;dirty('pp');}
 function ppRender(st){const P=st.pp;if(!P)return;const N=W*H,dr=P.rx.getImageData(0,0,W,H).data,di=P.ix.getImageData(0,0,W,H).data;
   const h=new Float32Array(N),lab=st.lab,mark=new Uint8Array(st.N);let any=false;for(let i=0;i<N;i++){const v=(dr[i*4+3]-di[i*4+3])/255;h[i]=v;if(v){any=true;mark[lab[i]]=1;}}   // alpha caps at 255: the height cap
   mark[0]=0;
   const lx=P.li.getContext('2d'),sx=P.sh.getContext('2d');lx.clearRect(0,0,W,H);sx.clearRect(0,0,W,H);P.any=any;if(!any){ppAttach(st);return;}
-  const b=new Float32Array(N),R=3;for(let pass=0;pass<2;pass++){for(let y=0;y<H;y++){let s=0;const o=y*W;for(let x=-R;x<W;x++){if(x+R<W)s+=h[o+x+R];if(x-R-1>=0)s-=h[o+x-R-1];if(x>=0)b[o+x]=s/(2*R+1);}}
-    for(let x=0;x<W;x++){let s=0;for(let y=-R;y<H;y++){if(y+R<H)s+=b[(y+R)*W+x];if(y-R-1>=0)s-=b[(y-R-1)*W+x];if(y>=0)h[y*W+x]=s/(2*R+1);}}}
+  /* v13: the soft bevel blur only mixes pixels of the SAME area (other areas count as flat), so one section's height never bleeds into a neighbour's rim */
+  const b=new Float32Array(N),R=3,D7=2*R+1;for(let pass=0;pass<2;pass++){for(let y=0;y<H;y++){const o=y*W;for(let x=0;x<W;x++){const i=o+x,L=lab[i];if(!mark[L]){b[i]=0;continue;}let s=0;const x0=Math.max(0,x-R),x1=Math.min(W-1,x+R);for(let q=o+x0;q<=o+x1;q++)if(lab[q]===L)s+=h[q];b[i]=s/D7;}}
+    for(let x=0;x<W;x++){for(let y=0;y<H;y++){const i=y*W+x,L=lab[i];if(!mark[L]){h[i]=0;continue;}let s=0;const y0=Math.max(0,y-R),y1=Math.min(H-1,y+R);for(let q=y0*W+x;q<=y1*W+x;q+=W)if(lab[q]===L)s+=b[q];h[i]=s/D7;}}}
   for(let i=0;i<N;i++)if(!mark[lab[i]])h[i]=0;   // v12: nothing outside the popped areas (lines and neighbours stay untouched)
   const im=lx.createImageData(W,H),D=im.data,K=44;
   for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(!h[i]&&!h[i-1]&&!h[i+1]&&!h[i-W]&&!h[i+W])continue;
-    const gx=(h[i+1]-h[i-1])*.5,gy=(h[i+W]-h[i-W])*.5,v=(gx+gy)*.7071*K+(h[i]<0?h[i]*.3:h[i]*.06),j=i*4;
+    const L=lab[i],hn=q=>lab[q]===L?h[q]:0,gx=(hn(i+1)-hn(i-1))*.5,gy=(hn(i+W)-hn(i-W))*.5,v=(gx+gy)*.7071*K+(h[i]<0?h[i]*.3:h[i]*.06),j=i*4;
     if(v>0){D[j]=255;D[j+1]=250;D[j+2]=238;D[j+3]=Math.min(165,v*240);}else if(v<0){D[j]=44;D[j+1]=27;D[j+2]=12;D[j+3]=Math.min(170,-v*240);}}
   lx.putImageData(im,0,0);
   const m=sx.createImageData(W,H);for(let i=0;i<N;i++)if(h[i]>.03)m.data[i*4+3]=Math.min(255,h[i]*500);const mc=mk();mc.getContext('2d').putImageData(m,0,0);
@@ -1568,7 +1696,7 @@ function nameColors(list,setId){const used=new Set(),out={};for(const hex of lis
   used.add(n);out[hex]=NAMEC[k]=n;}return out;}
 const PNAME={Gold:'Gilded Gold',Silver:'Sterling Silver',Copper:'Burnished Copper',Bronze:'Antique Bronze',Ruby:'Ruby Heart',Emerald:'Emerald Isle',Sapphire:'Deep Sapphire',Amethyst:'Amethyst Dusk',Topaz:'Golden Topaz'};
 const tcase=s=>s.replace(/\b[a-z]/g,c=>c.toUpperCase());
-const EFFECT={metal:'Metallic · polished shine that sweeps over the shape',chrome:'Chrome · mirror shine that follows your tilt',glitter:'Glitter · twinkling sparkles',
+const EFFECT={lightning:'Lightning · neon glow with white-hot flashes',metal:'Metallic · polished shine that sweeps over the shape',chrome:'Chrome · mirror shine that follows your tilt',glitter:'Glitter · twinkling sparkles',
   jewel:'Jewel · faceted glints and shimmer',neon:'Neon · bright glowing edge',glow:'Glow · soft lantern light',pulse:'Pulse · breathing, living color',ramp:'Gradient · colors flow along the stroke',
   smoke:'Smoke · drifting wisps',cloud:'Cloud · slow billowing puffs',brush:'Brush',plain:'Colored pencil'};
 const BRUSHFX={airbrush:'Brush · soft sprayed edges',watercolor:'Brush · translucent wash with pooled edges'};
@@ -1586,7 +1714,7 @@ function tipFor(el){if(el.dataset.p){const p=PREM[el.dataset.p];if(!p)return nul
   host.addEventListener('pointerover',e=>{if(e.pointerType!=='mouse')return;const el=target(e);if(!el){return;}if(el===cur)return;clearTimeout(t);t=setTimeout(()=>show(el),tip.hidden?160:0);});
   host.addEventListener('pointerout',e=>{if(e.pointerType!=='mouse')return;const el=target(e);if(el&&!el.contains(e.relatedTarget))hide();});
   host.addEventListener('pointerdown',e=>{const el=target(e);if(!el)return;if(e.pointerType==='mouse'){hide();return;}clearTimeout(lp);lp=setTimeout(()=>{show(el);setTimeout(()=>{if(cur===el)hide();},1800);},420);});
-  host.addEventListener('pointerup',()=>clearTimeout(lp));host.addEventListener('pointercancel',()=>clearTimeout(lp));host.addEventListener('scroll',hide,{passive:true});
+  host.addEventListener('pointerup',e=>{clearTimeout(lp);const el=target(e);if(el&&e.pointerType!=='mouse'&&cur!==el){show(el);const me=el;setTimeout(()=>{if(cur===me)hide();},1400);}});   /* v13: a tap shows the name briefly too */host.addEventListener('pointercancel',()=>clearTimeout(lp));host.addEventListener('scroll',hide,{passive:true});
   // the custom tip replaces the slow native title tooltip
   new MutationObserver(()=>{$$('#freerow .pencil[title],#numrow .sw[title]').forEach(b=>{b.setAttribute('aria-label',b.title);b.removeAttribute('title');});}).observe(host,{childList:true,subtree:true});})();
 function adjacency(st=S){if(st.adj)return st.adj;const S=st;const A=Array.from({length:S.N},()=>new Set()),L=S.lab;
@@ -1705,7 +1833,7 @@ function undo(){
     for(const r of b){c.filled[r]=0;paintRegion(r,[0,0,0],0);if(S.tgt[r]){c.doneT[S.num[r]]--;c.done--;}}
     c.complete=false;highlight();drawNums();progress();dirty('cbn');fxClip();}
   else{const n=S.free.undo.length,u=S.free.undo.pop();if(u){unsnap(u);dirty('free');
-    while(S.fxUndo&&S.fxUndo.length&&S.fxUndo[S.fxUndo.length-1].n===n){for(const [r,c] of S.fxUndo.pop().m){r.mx.clearRect(0,0,W,H);r.mx.drawImage(c,0,0);r.dirty=true;if(!(S.fx||[]).includes(r))S.fx.push(r);}}
+    while(S.fxUndo&&S.fxUndo.length&&S.fxUndo[S.fxUndo.length-1].n===n){for(const [r,c,pc] of S.fxUndo.pop().m){r.mx.clearRect(0,0,W,H);r.mx.drawImage(c,0,0);r.dirty=true;if(pc!==undefined)phRestore(r,pc);if(!(S.fx||[]).includes(r))S.fx.push(r);}}
     fxClip();}}
 }
 let armT=0;
@@ -1760,7 +1888,8 @@ $('#d3sw').onclick=()=>set3D(!D3.want||!D3.on);
 $('#bandBtn').onclick=()=>{if(!D3.on)return;enableTilt();bandView(!D3.band);};$('#bandv').onclick=()=>bandView(false);
 $('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));
 $('#ppColor').onclick=()=>{settings.ppColor=settings.ppColor===false;LS.set('settings',settings);$('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));toast(settings.ppColor!==false?'Color while popping: on (uses your current pencil)':'Color while popping: off (only raises / insets)');};
-$('#ppH').oninput=e=>{setPopH(+e.target.value/100);if(tool!=='pop'&&tool!=='poppencil')setTool('poppencil');popRestyle();};
+numBox($('#ppHn'),-1,1,v=>{const e=$('#ppH');e.value=Math.round(v*100);e.oninput({target:e});});
+$('#ppH').oninput=e=>{setPopH(+e.target.value/100);if(tool!=='pop'&&tool!=='poppencil'&&tool!=='poperase')setTool(S&&S.popSel&&S.popSel.k==='pop'?'pop':'poppencil');applySelHeight(popH());};
 $('#ppH').onchange=()=>{const v=popH();toast(v>0?'Pop height: raise':v<0?'Pop height: inset':'Pop height: flat · the Pop Pencil smooths areas back to the page');};
 $('#popMode').onclick=e=>{const v=e.target&&e.target.dataset&&e.target.dataset.v;POP.pressed=v?v==='inset':!POP.pressed;POP.flat=false;if(!POP.hv)POP.hv=.6;settings.popH=popH();if(tool!=='pop'&&tool!=='poppencil'&&mode==='free')setTool('poppencil');   // simple switch: Raise <-> Inset (Pop Erase flattens)
   settings.popMode=POP.pressed?'inset':'raised';LS.set('settings',settings);popUI();popRestyle();toast(POP.pressed?'Inset: press areas into the page':'Raise: lift areas off the page');};
@@ -1941,8 +2070,8 @@ window.addEventListener('pagehide',()=>{if(window.__resetting)LS.wipe();});
 /* ---------- upgrade sheet ---------- */
 const UPG={
   pencils:{kicker:'✦ Premium Pencils',title:'Unlock Premium Pencils',
-    sub:'Metallic sheen, mirror chrome, sparkling glitter, glowing neon and lantern glow, breathing pulse colors, plus a soft airbrush and a watercolor wash. They work with the pencil, the fill tool and saved pictures.',
-    list:[['5 jewels','ruby, emerald, sapphire, amethyst, topaz with a living shimmer'],['5 metallics','gold, silver, copper, rose gold, bronze'],['12 chromes','live mirror shimmer, plus a Chrome finish for any color'],['6 glitters','with real sparkle'],['5 neons + 5 glows','outer glow and soft light halos'],['5 pulse colors','gently breathe in the app'],['2 brushes','soft airbrush and watercolor wash']]},
+    sub:'Metallic sheen, mirror chrome, sparkling glitter, glowing neon, white-hot lightning and lantern glow, breathing pulse colors, plus a soft airbrush and a watercolor wash. They work with the pencil, the fill tool and saved pictures.',
+    list:[['5 jewels','ruby, emerald, sapphire, amethyst, topaz with a living shimmer'],['5 metallics','gold, silver, copper, rose gold, bronze'],['12 chromes','live mirror shimmer, plus a Chrome finish for any color'],['6 glitters','with real sparkle'],['9 lightnings','neon glow with white-hot flashes, any color'],['5 neons + 5 glows','outer glow and soft light halos'],['5 pulse colors','gently breathe in the app'],['2 brushes','soft airbrush and watercolor wash']]},
   palettes:{kicker:'✦ Palettes',title:'Unlock All Palettes',sub:'Eight themed pencil palettes to flip through with the arrows above your pencils.',
     list:THEMES.map(t=>[t.name,t.colors.length+' pencils'])},
   effects3d:{kicker:'✦ 3D',title:'Unlock 3D',sub:'Paint depth with the Pop Pencil: every pass lifts a little more (or presses in), with soft light and shadow. Pop Erase flattens, and the 3D idea shows a ready-made look for each page.',
@@ -1998,6 +2127,14 @@ for(const key of ['pencils','palettes','effects3d','smoke','clouds','gradients']
 
 /* ---------- test / debug hooks (read-only helpers) ---------- */
 window.EP={
+  fxDrawNow:()=>fxDraw(performance.now()),
+  boltI:(t)=>boltI(t),bolt:()=>(S.fx||[]).filter(r=>r.kind==='boltfx').map(r=>({hex:r.hex,I:r.lastI||0,off:r.bolt?r.bolt.off:null})),boltClock:(t)=>{if(t==null){BFIX=false;return CLK.boltSpeed;}BFIX=true;CLK.boltSpeed=t;fxDraw(performance.now());return t;},openUpgrade:(k)=>openUpgrade(null,k),fxSets:(k)=>SETS.filter(q=>q.product===k&&q.type==='ink').map(q=>q.name),
+clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
+  fxHexes:()=>(S.fx||[]).map(r=>[r.kind,r.hex]),
+  chromeClock:(t)=>{if(t==null){CFIX=false;return CCLK;}CFIX=true;CCLK=t;fxDraw(performance.now());return CCLK;},
+  chromePhaseAt:(x,y,hex)=>{const r=(S.fx||[]).find(q=>q.kind==='mirror'&&(!hex||q.hex===hex));if(!r||!r.phC)return null;const d=r.phX.getImageData((x/MQ)|0,(y/MQ)|0,1,1).data;return d[3]>=128?d[0]/255:null;},
+  fxLum:(pts)=>{const x=S.fxC.getContext('2d');return pts.map(([a,b])=>{const d=x.getImageData(a|0,b|0,1,1).data;return d[3]?(d[0]+d[1]+d[2])/3*d[3]/255:0;});},
+  selHeight:()=>selHeight(),popSel:()=>S&&S.popSel,
   isInk:(x,y)=>isInk(x,y),
   lineLock:()=>({on:clip,saved:settings.lineLock,...LINE_LOCK,tipShown:!!settings.llTip}),
   lastStroke:()=>lastStroke,
