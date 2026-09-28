@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="ep-build" content="15">
+<meta name="ep-build" content="16">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#14110f">
 <meta name="mobile-web-app-capable" content="yes">
@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="fonts.css">
-<link rel="stylesheet" href="app.css?v=15">
+<link rel="stylesheet" href="app.css?v=16">
 </head>
 <body>
 <div id="app">
@@ -52,7 +52,7 @@
       <div id="tryrow" class="tryrow" hidden><b>Try</b><span class="tsw"></span><button class="tx" aria-label="Hide suggestions">✕</button></div>
       <div id="ideasbar" class="ideasbar free-only"><button class="chip" id="ideasTog" aria-pressed="false" title="Show ideas: empty areas softly pulse a suggested color (just a hint)">✦ Show ideas</button><span class="inav"><button id="ideasPrev" aria-label="Previous idea set">‹</button><b id="ideasName">Color guide</b><button id="ideasNext" aria-label="Next idea set">›</button></span></div>
       <div id="nudge" class="nudge" role="status" hidden><span id="nudgeTxt"></span><span class="nsw"></span><button class="nx" aria-label="Dismiss">✕</button></div>
-      <div class="zoomui"><button id="zoomOut" title="Zoom out (−)" aria-label="Zoom out">−</button><span id="zoomPct">100%</span><button id="zoomIn" title="Zoom in (+)" aria-label="Zoom in">+</button><button id="zoomFit" title="Fit to screen (0)" aria-label="Fit">⤢</button><button id="bandBtn" class="d3only" title="Parallax view: the layers slide apart by depth as you tilt or move" aria-label="Parallax view"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="11" height="11" rx="2"/><rect x="10" y="4" width="11" height="11" rx="2"/></svg></button></div>
+      <div class="grabui"><span id="grabSw" class="grabsw" role="group" aria-label="Smart Grab: pointer mode"><button id="grabAuto" data-g="auto" title="Auto (Smart Grab): zoom in to draw, zoom out to grab and pan">Auto</button><button id="grabHand" data-g="hand" title="Hand: grab and pull to pan (hold Space for a quick hand any time)" aria-label="Hand"><svg viewBox="0 0 24 24"><path d="M8 12V5.5a1.5 1.5 0 013 0V11M11 11V4a1.5 1.5 0 013 0v7M14 11V5.5a1.5 1.5 0 013 0V13M8 12V9.5a1.5 1.5 0 00-3 0V14c0 4 3 7 7 7h1c3 0 5-2.5 5-6V9.5a1.5 1.5 0 00-3 0"/></svg></button><button id="grabDraw" data-g="draw" title="Draw: mouse or pencil clicks draw and color" aria-label="Draw"><svg viewBox="0 0 24 24"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z"/><path d="M14 5l2.5 2.5"/></svg></button></span></div><div class="zoomui"><button id="zoomOut" title="Zoom out (−)" aria-label="Zoom out">−</button><span id="zoomPct">100%</span><button id="zoomIn" title="Zoom in (+)" aria-label="Zoom in">+</button><button id="zoomFit" title="Fit to screen (0)" aria-label="Fit">⤢</button><button id="bandBtn" class="d3only" title="Parallax view: the layers slide apart by depth as you tilt or move" aria-label="Parallax view"><svg viewBox="0 0 24 24"><rect x="3" y="9" width="11" height="11" rx="2"/><rect x="10" y="4" width="11" height="11" rx="2"/></svg></button></div>
     </div>
     <div id="celebrate" hidden><div class="burst"></div><div class="msg"><div class="big">Picture complete</div><div class="small">Every region is lit. Tap to continue.</div></div></div>
     <div id="toast"></div>
@@ -106,10 +106,10 @@
     <div class="up-card show-card">
       <button class="up-x" id="showClose" title="Close">✕</button>
       <div class="up-kicker">✦ Effects showcase</div>
-      <h2>3D Pop + Gold metallic</h2>
+      <h2>Pop Fill + Gold metallic</h2>
       <canvas id="showC" width="1600" height="900"></canvas>
-      <p class="up-sub">The envelope is filled with a gold metallic pencil and raised with 3D Pop. Every premium set has free tries, and 3D Pop has 3 free pops.</p>
-      <div class="show-btns"><button class="big accent" id="showPop">Try 3D Pop</button><button class="big" id="showSets">See pencil sets</button></div>
+      <p class="up-sub">The envelope is filled with a gold metallic pencil and raised with Pop Fill. Every premium set has free tries, and Pop Fill has 3 free pops.</p>
+      <div class="show-btns"><button class="big accent" id="showPop">Try Pop Fill</button><button class="big" id="showSets">See pencil sets</button></div>
     </div>
   </div>
   <div id="cutscene" hidden>
@@ -150,10 +150,10 @@
       <div class="grp">
         <button class="tool big on" data-tool="pencil" title="Colored pencil"><svg viewBox="0 0 24 24"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z"/><path d="M14 5l2.5 2.5M17 2.5l4.5 4.5-2 2L15 4.5z"/></svg><span>Pencil</span></button>
         <button class="tool big" data-tool="fill" title="Tap to fill"><svg viewBox="0 0 24 24"><path d="M5 11l7-7 7 7-7 7z"/><path d="M19 15c0 0 2 2.5 2 4a2 2 0 01-4 0c0-1.5 2-4 2-4z"/></svg><span>Fill</span></button>
-        <button class="tool big" data-tool="eraser" title="Eraser"><svg viewBox="0 0 24 24"><path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/></svg><span>Eraser</span></button>
-        <button class="tool big poperase" data-tool="poperase" title="Pop Erase: tap a raised or inset part to flatten it"><svg viewBox="0 0 24 24"><path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/><path class="badge3d" d="M15 2.5l3-1.5 3 1.5v3.2l-3 1.5-3-1.5z M15 2.5l3 1.5 3-1.5M18 4v3.2"/></svg><span>Pop Erase</span></button>
-        <button class="tool big pop" data-tool="pop" title="3D Pop: tap an area to raise it off the page"><svg viewBox="0 0 24 24"><path d="M4 16l8 4 8-4M4 12l8 4 8-4"/><path d="M4 8l8-4 8 4-8 4z"/></svg><span>3D Pop</span></button>
+        <button class="tool big pop" data-tool="pop" title="Pop Fill (3D Pop): tap an enclosed area to raise it off the page (or press it in with Inset). Works like Fill and stays inside the lines · the height slider sets the area you last tapped · with Color while popping on, it colors the area too"><svg viewBox="0 0 24 24"><path d="M5 11l7-7 7 7-7 7z"/><path d="M19 15c0 0 2 2.5 2 4a2 2 0 01-4 0c0-1.5 2-4 2-4z"/><path class="badge3d" d="M1.5 3.5l3-1.5 3 1.5v3.2l-3 1.5-3-1.5z M1.5 3.5l3 1.5 3-1.5M4.5 5v3.2"/></svg><span>Pop Fill</span></button>
         <button class="tool big poppencil" data-tool="poppencil" title="Pop Pencil: paint over an area to lift it (or press it in). Every pass adds a little more."><svg viewBox="0 0 24 24"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z"/><path d="M14 5l2.5 2.5"/><path class="badge3d" d="M15 2.5l3-1.5 3 1.5v3.2l-3 1.5-3-1.5z M15 2.5l3 1.5 3-1.5M18 4v3.2"/></svg><span>Pop Pencil</span></button>
+        <button class="tool big poperase" data-tool="poperase" title="Pop Erase: tap a raised or inset part to flatten it"><svg viewBox="0 0 24 24"><path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/><path class="badge3d" d="M15 2.5l3-1.5 3 1.5v3.2l-3 1.5-3-1.5z M15 2.5l3 1.5 3-1.5M18 4v3.2"/></svg><span>Pop Erase</span></button>
+        <button class="tool big" data-tool="eraser" title="Eraser"><svg viewBox="0 0 24 24"><path d="M4 15l9-9 7 7-6 6H8z"/><path d="M9 10l7 7M8 19h12"/></svg><span>Eraser</span></button>
         <div class="popswwrap" role="group" aria-label="Pop Pencil direction"><button class="chip popsw" id="popMode" title="Pop Pencil direction: Raise lifts areas off the page, Inset presses them in" aria-pressed="false"><i data-v="raise" class="on">▲ Raise</i><i data-v="inset">▼ Inset</i></button><label class="pph" title="Pop height: middle is flat, right raises, left presses in"><span class="pphe">▼</span><input type="range" id="ppH" min="-100" max="100" step="1" value="60" aria-label="Pop height (left inset, middle flat, right raise)"><span class="pphe">▲</span><input type="number" id="ppHn" class="fxn" min="-1" max="1" step="0.01" value="0.6" inputmode="decimal" aria-label="Pop height value (-1 inset to 1 raise)"><b id="ppHv">Raise 60</b></label></div>
       </div>
       <div class="grp sizes">
@@ -177,18 +177,18 @@
         <button class="act big" id="save" title="Save PNG"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span>Save</span></button>
       </div>
     </div>
-    <div id="setbar"><button class="sarrow" id="setPrev" title="Previous set" aria-label="Previous pencil set">‹</button>
+    <div id="setbar"><div id="toolopts" class="toolopts"><b id="ctxtag" class="ctxtag">Pencil</b><span id="ctxhint" class="ctxhint"></span></div><button class="sarrow" id="setPrev" title="Previous set" aria-label="Previous pencil set">‹</button>
       <div class="slabel"><span class="slock" hidden><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></span><b class="sname">Book palette</b><span class="scount"></span><span class="sstate"></span></div>
       <button class="sarrow" id="setNext" title="Next set" aria-label="Next pencil set">›</button><div class="sdots"></div><button class="chip mixbtn" id="mixBtn" title="Mix: combine a finish, an animation and particles">✦ Mix</button><button class="chip chromebtn" id="chromeBtn" aria-pressed="false" title="Chrome finish: any color you pick becomes chrome (live mirror shimmer)">◈ Chrome</button></div>
     <div id="mixer" class="mixer" hidden><div class="mxhead"><b>Mix effects</b><canvas class="mxpv" width="480" height="96"></canvas><button class="mxx" title="Close mix">✕</button></div><div class="mxrows"></div></div>
-    <div id="colors"><div id="numrow"></div><div id="freerow"></div></div>
+    <div id="colors"><div id="ctxcard" class="ctxcard"></div><div id="numrow"></div><div id="freerow"></div></div>
   </footer>
 </div>
 <!-- Chapter list (data-driven). Scene art files (data/scene_XX.js) are loaded on demand as plain <script> tags:
      works from file:// and USB sticks; images are data: URIs so canvases never taint. -->
-<script>window.EP_BUILD_HTML=15;</script>
-<script src="data/story.js?v=15"></script>
-<script src="premium-config.js?v=15"></script>
-<script src="app.js?v=15"></script>
+<script>window.EP_BUILD_HTML=16;</script>
+<script src="data/story.js?v=16"></script>
+<script src="premium-config.js?v=16"></script>
+<script src="app.js?v=16"></script>
 </body>
 </html>

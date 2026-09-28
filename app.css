@@ -410,7 +410,6 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .d3only{display:none}.d3 .zoomui .d3only{display:inline-flex;align-items:center;justify-content:center}
 .zoomui #bandBtn svg{width:18px;height:18px;fill:none;stroke:#ffe2bd;stroke-width:1.8}
 #bandBtn.on{background:rgba(255,179,92,.3)}
-.d3 .tool.pop{display:none}
 .rel-sh,.rel-li{pointer-events:none;transition:transform .25s ease-out}
 #bandv{z-index:8;overflow:hidden;background:#fffdf8;cursor:pointer}
 #bandv .band{position:absolute;inset:0;width:100%;height:100%;transition:transform .2s ease-out}
@@ -548,7 +547,8 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .anypop{position:fixed;z-index:80;width:min(560px,calc(100vw - 16px));max-height:min(70vh,560px);overflow:auto;padding:10px 12px 12px;border-radius:16px;background:#221a14;border:1px solid rgba(255,179,92,.35);box-shadow:0 18px 50px rgba(0,0,0,.55);color:#f3e6d6}
 .anypop header{display:flex;align-items:center;justify-content:space-between;position:sticky;top:-10px;background:#221a14;padding:4px 0 6px;font:600 13px Poppins}
 .anypop .x{background:none;border:0;color:#f3e6d6;font-size:22px;cursor:pointer;line-height:1}
-.anypop h4{margin:8px 0 4px;font:600 11px Poppins;color:#c9b39a;letter-spacing:.02em}
+.anypop h4{margin:8px 0 4px;font:600 11px Poppins;color:#c9b39a;letter-spacing:.02em;position:relative}
+.anypop h4~h4{margin-top:14px;padding-top:12px}
 .agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(24px,1fr));gap:4px}
 .asw{width:100%;aspect-ratio:1;border-radius:6px;border:1px solid rgba(0,0,0,.35);cursor:pointer;padding:0}.asw:hover{outline:2px solid #ffd9a6;outline-offset:1px}
 /* v12: two-way Pop height slider (left inset, middle flat, right raise) */
@@ -588,3 +588,48 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .pph input[type=range]{width:84px}
 .pph b{min-width:50px}
 .pph .fxn{width:40px}
+
+/* ================= v16: contextual tool bar ================= */
+.free #numrow .sw{display:none}.free #numrow{order:2}   /* Free Color: no numbered guide row; the color wheel sits at the end of the pencils */
+#setbar{flex-wrap:wrap;row-gap:6px}
+.toolopts{display:flex;align-items:center;gap:10px;min-height:34px;min-width:0;flex:0 1 auto}
+.ctxtag{font:700 11px Poppins;letter-spacing:.08em;text-transform:uppercase;color:#2a1608;background:linear-gradient(180deg,#ffc27a,#ff9f45);padding:5px 11px;border-radius:999px;white-space:nowrap;flex:none}
+.ctxhint{font:500 12px Poppins;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:230px;flex:0 1 auto}
+#setbar .sdots{flex:0 1 auto;min-width:0;overflow:hidden}
+#toolopts .popswwrap{display:none}.tool-pop #toolopts .popswwrap{display:inline-flex;flex:none}#toolopts .popctl{flex:none}
+#app[data-ctx=poppencil] .ctxhint,#app[data-ctx=poppencil] #setbar .sdots,#app[data-ctx=pop] .ctxhint,#app[data-ctx=pop] #setbar .sdots{display:none}   /* v16: Pop Fill shows pencils like Pop Pencil (Color while popping) */
+#app[data-ctx=eraser] .ctxhint,#app[data-ctx=poperase] .ctxhint{max-width:none}
+.ctxcard{display:none;flex-direction:column;justify-content:center;gap:6px;min-height:96px;flex:1 0 100%;padding:10px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);box-sizing:border-box}
+.ctxcard b{font:600 15px Poppins;color:#ffe2bd}.ctxcard span{font:500 13px Poppins;color:var(--mute)}
+#app[data-ctx=eraser] #setbar>:not(#toolopts),#app[data-ctx=poperase] #setbar>:not(#toolopts),#app[data-ctx=eraser] #mixer,#app[data-ctx=poperase] #mixer,
+#app[data-ctx=eraser] #numrow,#app[data-ctx=poperase] #numrow,#app[data-ctx=eraser] #freerow,#app[data-ctx=poperase] #freerow{display:none}
+#app[data-ctx=eraser] #toolopts,#app[data-ctx=poperase] #toolopts{flex:1 1 auto}
+#app[data-ctx=eraser] .ctxcard,#app[data-ctx=poperase] .ctxcard{display:flex}
+@keyframes ctxIn{from{opacity:.1;transform:translateX(34px)}to{opacity:1;transform:none}}
+.ctxswap #setbar,.ctxswap #colors>*{animation:ctxIn .3s cubic-bezier(.2,.8,.3,1)}
+@media (prefers-reduced-motion:reduce){@keyframes ctxIn{from{opacity:.2}to{opacity:1}}}
+@media (max-width:1320px){#app:not([data-ctx=eraser]):not([data-ctx=poperase]) .ctxhint{display:none}}
+#toolopts .chip{white-space:nowrap}
+#app[data-ctx=poppencil] #setbar .slabel,#app[data-ctx=pop] #setbar .slabel{width:auto;flex:0 1 auto;grid-template-columns:14px minmax(0,150px)}#app[data-ctx=poppencil] #setbar .scount,#app[data-ctx=poppencil] #setbar .sstate,#app[data-ctx=poppencil] #chromeBtn,#app[data-ctx=pop] #setbar .scount,#app[data-ctx=pop] #setbar .sstate,#app[data-ctx=pop] #chromeBtn{display:none}
+#toolopts .chip,#toolopts .popsw{height:34px;min-height:0;box-sizing:border-box;align-items:center;padding-top:0;padding-bottom:0}#toolopts .popsw{padding:3px}
+
+/* v16: Pop Fill = a paint bucket with a raised 3D accent, next to Fill */
+.tool.pop .badge3d{fill:rgba(255,179,92,.35);stroke:#ffb35c}
+/* v16: Smart Grab switch next to the zoom controls (Auto | Hand | Draw) */
+.grabui{position:absolute;right:10px;bottom:58px;z-index:6;padding:3px;border-radius:12px;background:rgba(30,24,19,.82);box-shadow:0 6px 18px rgba(0,0,0,.28)}
+.grabsw{display:inline-flex;align-items:center;gap:1px}
+.grabui button{height:30px;border-radius:9px;color:#ffe2bd}
+@media (max-width:760px){.grabui{right:6px;bottom:44px;padding:2px}.grabui button{height:26px}}
+.grabui .grabsw button{width:auto;min-width:32px;padding:0 7px;font:600 11px/1 Poppins;display:inline-flex;align-items:center;justify-content:center}
+.grabui .grabsw svg{width:17px;height:17px;fill:none;stroke:#ffe2bd;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.grabui .grabsw button.on{background:rgba(255,179,92,.3);box-shadow:inset 0 0 0 1px rgba(255,179,92,.5)}
+.grabui .grabsw button.eff:not(.on){box-shadow:inset 0 -2px 0 rgba(255,179,92,.7)}
+#stage.handmode,#stage.handmode *{cursor:grab}
+/* v16: glowing dividers above each palette group: a white-hot core, thickest + brightest in the centre, tapering to both ends (pure CSS, absolutely placed: no layout shift) */
+.anypop h4~h4::before,.anypop h4~h4::after{content:'';position:absolute;left:3%;right:3%;pointer-events:none}
+.anypop h4~h4::before{top:3px;height:3px;background:radial-gradient(50% 50% at 50% 50%,#fff 0%,rgba(255,255,255,.95) 22%,rgba(255,244,224,.55) 55%,rgba(255,220,180,0) 100%)}
+.anypop h4~h4::after{top:-1px;height:11px;left:12%;right:12%;background:radial-gradient(50% 50% at 50% 50%,rgba(255,250,238,.7) 0%,rgba(255,214,160,.28) 45%,rgba(255,180,110,0) 100%);filter:blur(3px)}
+/* v16: locked palette groups in the Any color / wheel grids */
+.anypop h4.lk{color:#8f7d6a}.anypop h4 .alock svg{position:static;transform:none;filter:none;display:inline-block;width:11px;height:11px;vertical-align:-1px;margin-right:4px;fill:none;stroke:#ffb35c;stroke-width:2.2}.anypop h4 small{font-weight:500;color:#7d6b58}
+.anypop .asw.lk{opacity:.32;filter:saturate(.55);position:relative;cursor:pointer}
+.anypop .agrid.lk{position:relative}
