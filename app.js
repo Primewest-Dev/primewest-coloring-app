@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=18;
+const EP_BUILD=19;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -578,7 +578,7 @@ async function showScene(n){
   $$('.scene').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
   storyStrip();
   lineImg.src=S.d.line; lineImg.onload=()=>{scheduleLineTint();linesApply();linesDoneGlow();}; layers.innerHTML=''; layers.appendChild(S.cbn.c); layers.appendChild(S.free.c); if(S.pulse)layers.appendChild(S.pulse.c);
-  renderPops(); ppAttach(S); fxAttach(); fxStart(); if($('#idea3d').classList.contains('on'))idea3d(false); loadVectorLines(n);
+  renderPops(); ppAttach(S); fxAttach(); fxStart(); LTS=null; ltRender(); if($('#idea3d').classList.contains('on'))idea3d(false); loadVectorLines(n);
   selNum=firstOpen()||1; buildColors(); setMode(mode,true);
   needDepth(n).then(()=>{if(S.n!==n)return;cleanPops(S);apply3D(true);});
 }
@@ -798,6 +798,51 @@ function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er)se
 function cancelStroke(){ if(!stroke)return; cov.clearRect(0,0,W,H);sctx.clearRect(0,0,W,H);strokeC.style.filter='';
   const u=S.free.undo.pop(); if(u)unsnap(u); stroke=null;}
 
+
+/* ---------- v19: Color the lines only (Line pencil) ----------
+   When on, every stroke paints ONLY on the original outlines (the line art is always kept underneath, even when the lines are
+   faded or hidden), on a trace layer that sits above the line art. Drag = trace a line in the chosen color; tap a line = recolor
+   that stretch of line; Eraser rubs out tracing only. Its own undo + autosave. Off = the app behaves exactly as before. */
+const LT={on:false};let LTS=null;
+const ltrOf=st=>st.ltr||(st.ltr=mk());
+function ltMask(){if(S.ltM)return S.ltM;const m=inkMap();if(!m)return null;const M=new Uint8Array(W*H);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x;if(m[i]){M[i]=1;continue;}   // 1 px grow so the antialiased line edges are covered
+    if((x>0&&m[i-1])||(x<W-1&&m[i+1])||(y>0&&m[i-W])||(y<H-1&&m[i+W]))M[i]=1;}
+  const c=mk(),x=c.getContext('2d'),im=x.createImageData(W,H);for(let i=0;i<M.length;i++)if(M[i])im.data[i*4+3]=255;x.putImageData(im,0,0);
+  return (S.ltM={M,c});}
+let ltTmp=null,ltSC=null;
+function ltRender(){const v=$('#ltrV');if(!v)return;const x=v.getContext('2d');v.style.transform=zoomer.style.transform;x.clearRect(0,0,W,H);if(!S)return;if(S.ltr)x.drawImage(S.ltr,0,0);
+  if(LTS&&LTS.moved){const mm=ltMask();if(!mm)return;if(LTS.er){x.save();x.globalCompositeOperation='destination-out';x.drawImage(ltSC,0,0);x.restore();return;}
+    ltTmp=ltTmp||mk();const t=ltTmp.getContext('2d');t.clearRect(0,0,W,H);t.drawImage(ltSC,0,0);t.globalCompositeOperation='destination-in';t.drawImage(mm.c,0,0);t.globalCompositeOperation='source-over';x.drawImage(ltTmp,0,0);}}
+function ltColor(){return (ink&&ink.kind!=='mix'&&ink.hex)||color;}
+function ltWidth(){return Math.max(8,PENCIL_R[sizeIdx]*3)/zoomSizeDiv();}
+function ltSnap(){S.ltrUndo=S.ltrUndo||[];const c=mk();if(S.ltr)c.getContext('2d').drawImage(S.ltr,0,0);S.ltrUndo.push({t:Date.now(),c});if(S.ltrUndo.length>15)S.ltrUndo.shift();}
+function ltUndo(){const u=S.ltrUndo.pop();if(!u)return;const x=ltrOf(S).getContext('2d');x.clearRect(0,0,W,H);x.drawImage(u.c,0,0);dirty('ltr');ltRender();}
+function ltDown(x,y){if(!ltMask()){toast('Lines are still loading');return false;}ltSC=ltSC||mk();const c=ltSC.getContext('2d');c.clearRect(0,0,W,H);
+  LTS={er:tool==='eraser'||tool==='poperase',last:[x,y],start:[x,y],moved:false,w:ltWidth(),col:ltColor()};return true;}
+function ltMove(x,y){if(!LTS)return;const c=ltSC.getContext('2d');if(!LTS.moved&&Math.hypot(x-LTS.start[0],y-LTS.start[1])*scrScale()<5)return;
+  if(!LTS.moved){LTS.moved=true;c.fillStyle=LTS.col;c.beginPath();c.arc(LTS.start[0],LTS.start[1],LTS.w/2,0,6.2832);c.fill();}
+  c.strokeStyle=LTS.er?'#000':LTS.col;c.lineWidth=LTS.er?LTS.w*1.6:LTS.w;c.lineCap='round';c.lineJoin='round';c.beginPath();c.moveTo(LTS.last[0],LTS.last[1]);c.lineTo(x,y);c.stroke();LTS.last=[x,y];
+  cancelAnimationFrame(ltMove.r);ltMove.r=requestAnimationFrame(ltRender);}
+function ltUp(x,y){const L=LTS;LTS=null;if(!L)return;
+  if(!L.moved){ltTap(L.start[0],L.start[1],L.er);return;}
+  ltSnap();const d=ltrOf(S).getContext('2d');
+  if(L.er){d.save();d.globalCompositeOperation='destination-out';d.drawImage(ltSC,0,0);d.restore();}
+  else{const mm=ltMask();ltTmp=ltTmp||mk();const t=ltTmp.getContext('2d');t.clearRect(0,0,W,H);t.drawImage(ltSC,0,0);t.globalCompositeOperation='destination-in';t.drawImage(mm.c,0,0);t.globalCompositeOperation='source-over';d.drawImage(ltTmp,0,0);}
+  dirty('ltr');ltRender();}
+/* tap a line: that stretch of line (connected outline pixels, up to ~150 px along the line from the tap) takes the color */
+function ltTap(x,y,er){const mm=ltMask();if(!mm)return;const M=mm.M;x|=0;y|=0;let s=-1;
+  for(let r=0;r<=10&&s<0;r++)for(let dy=-r;dy<=r&&s<0;dy++)for(let dx=-r;dx<=r;dx++){const u=x+dx,v=y+dy;if(u>=0&&v>=0&&u<W&&v<H&&M[v*W+u]){s=v*W+u;break;}}
+  if(s<0){toast('Tap right on a line (or drag along it) to color it');return;}
+  const LIM=150,seen=new Uint8Array(W*H);let q=[s];seen[s]=1;const px=[s];
+  for(let d=0;d<LIM&&q.length;d++){const nq=[];for(const i of q){const ix=i%W,iy=(i/W)|0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const u=ix+dx,v=iy+dy;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(!seen[j]&&M[j]){seen[j]=1;nq.push(j);px.push(j);}}}q=nq;}
+  ltSnap();const d=ltrOf(S).getContext('2d');let x0=W,y0=H,x1=0,y1=0;for(const i of px){const a=i%W,b=(i/W)|0;if(a<x0)x0=a;if(a>x1)x1=a;if(b<y0)y0=b;if(b>y1)y1=b;}
+  const w=x1-x0+1,h=y1-y0+1,im=d.getImageData(x0,y0,w,h),D=im.data,rgb=hex2rgb(ltColor());
+  for(const i of px){const j=(((i/W)|0)-y0)*w*4+((i%W)-x0)*4;if(er){D[j+3]=0;}else{D[j]=rgb[0];D[j+1]=rgb[1];D[j+2]=rgb[2];D[j+3]=255;}}
+  d.putImageData(im,x0,y0);dirty('ltr');ltRender();}
+function ltSet(on){LT.on=!!on;app.classList.toggle('ltmode',LT.on);for(const id of ['#lnTrace','#ltBtn']){const b=$(id);if(b){b.classList.toggle('on',LT.on);b.setAttribute('aria-pressed',String(LT.on));}}
+  if(LT.on){ltMask();toast('Color the lines only: drag along a line or tap it · stays on the lines, even hidden ones');}else toast('Color the lines only: off');}
+
 /* ---------- deep zoom (to 8x): pinch + two-finger pan, wheel toward cursor, space/middle-drag pan, + / − / fit ----------
    Lines switch to a vector overlay (data/scene_NN_line.js, traced from the app's own line art) once zoomed in, so they stay crisp.
    Numbers are redrawn on a screen-resolution overlay; small unnumbered regions get their number once they are big enough on screen. */
@@ -818,7 +863,7 @@ function stageSize(){return [stage.clientWidth||1,stage.clientHeight||1];}
 function zoomSizeDiv(){return settings.sizeZoom===false?1:Z.z;}
 function applyZoom(){const [sw,sh]=stageSize();Z.z=Math.min(MAXZ,Math.max(1,Z.z));
   Z.x=Math.min(0,Math.max(sw-sw*Z.z,Z.x));Z.y=Math.min(0,Math.max(sh-sh*Z.z,Z.y));
-  zoomer.style.transform=`translate(${Z.x}px,${Z.y}px) scale(${Z.z})`;if(GRAB.lastZ!==Z.z){grabAutoZoom(GRAB.lastZ,Z.z);GRAB.lastZ=Z.z;}
+  zoomer.style.transform=`translate(${Z.x}px,${Z.y}px) scale(${Z.z})`;{const lv=$('#ltrV');if(lv)lv.style.transform=zoomer.style.transform;}if(GRAB.lastZ!==Z.z){grabAutoZoom(GRAB.lastZ,Z.z);GRAB.lastZ=Z.z;}
   $('#zoomPct').textContent=Math.round(Z.z*100)+'%';$('#zoomOut').disabled=Z.z<=1.001;$('#zoomIn').disabled=Z.z>=MAXZ-.001;
   const k=sw/W*Z.z; vline.setAttribute('viewBox',`${(-Z.x/k).toFixed(2)} ${(-Z.y/k).toFixed(2)} ${(W/Z.z).toFixed(2)} ${(H/Z.z).toFixed(2)}`);
   const vec=Z.z>=VEC_FROM&&vline.dataset.n==(S&&S.n); app.classList.toggle('vec',vec);
@@ -869,6 +914,7 @@ stage.addEventListener('pointerdown',e=>{
   if(ptrs.size>2)return;
   if(handOn()){e.preventDefault();down={x:e.clientX,y:e.clientY,id:e.pointerId,pan:true,zx:Z.x,zy:Z.y};stage.classList.add('panning');return;}   /* v16 Smart Grab: hand = pan, the tool stays as it is */
   const [x,y]=toCanvas(e); down={x:e.clientX,y:e.clientY,cx:x,cy:y,t:performance.now(),id:e.pointerId,zx:Z.x,zy:Z.y};
+  if(LT.on&&S){down.lt=ltDown(x,y)?1:2;return;}   /* v19: Color the lines only */
   // a one-finger / pen stroke with a drawing tool always draws (never pans); other tools pan when dragged while zoomed
   if(mode==='free'&&(tool==='pencil'||tool==='eraser'||tool==='airbrush'||tool==='watercolor'))beginStroke(x,y,e.pressure,e.pointerType);
   else if(tool==='poppencil'){ppBegin(x,y);down.pp=!!pps;if(pps&&mode==='free'&&settings.ppColor!==false)beginStroke(x,y,e.pressure,e.pointerType);}   // Color while popping: raise + paint in one stroke
@@ -878,6 +924,7 @@ stage.addEventListener('pointermove',e=>{
   if(pinch&&ptrs.size===2){const [a,b]=[...ptrs.values()];const r=stage.getBoundingClientRect();
     const d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2-r.left,my=(a.y+b.y)/2-r.top,z=Math.min(MAXZ,Math.max(1,pinch.z*d/pinch.d));
     Z.z=z;Z.x=mx-(pinch.mx-pinch.x)*z/pinch.z;Z.y=my-(pinch.my-pinch.y)*z/pinch.z;applyZoom();return;}
+  if(down&&down.lt===1&&e.pointerId===down.id){const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of (evs.length?evs:[e])){const [x,y]=toCanvas(ev);ltMove(x,y);}return;}
   if(pps&&down&&e.pointerId===down.id){const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of (evs.length?evs:[e])){const [x,y]=toCanvas(ev);ppMove(x,y);if(stroke)moveStroke(x,y,ev.pressure);}return;}
   if(down&&e.pointerId===down.id&&!stroke&&!down.pp&&(down.pan||(Z.z>1.01&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>10))){
     down.pan=true;stage.classList.add('panning');Z.x=down.zx+(e.clientX-down.x);Z.y=down.zy+(e.clientY-down.y);applyZoom();return;}
@@ -890,6 +937,7 @@ function up(e){
   if(!down||e.pointerId!==down.id)return;
   const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);stage.classList.remove('panning');
   if(down.pan){down=null;return;}
+  if(down.lt){if(down.lt===1){if(e.type==='pointerup')ltUp();else{LTS=null;ltRender();}}down=null;return;}
   if(pps){ppEnd();if(stroke){const r=stroke.region||labAt(down.cx,down.cy);endStroke();helperAfterColor(r);}down=null;return;}
   if(stroke){const r=stroke.region||labAt(down.cx,down.cy);endStroke();helperAfterColor(r);}
   else if(e.type==='pointerup'&&moved<14){ if(mode==='cbn'&&tool==='pop')popTap(down.cx,down.cy); else if(mode==='cbn'&&tool==='poperase')popErase(down.cx,down.cy); else if(mode==='cbn'&&tool!=='poppencil')tapCBN(down.cx,down.cy); else if(mode==='cbn'){} else if(tool==='fill')fillFree(down.cx,down.cy); else if(tool==='pop')popTap(down.cx,down.cy); else if(tool==='poperase')popErase(down.cx,down.cy); }
@@ -1785,13 +1833,14 @@ function setLines(p,noUndo){if(!S)return;const prev={...linesOf(S)},L={...prev,.
     if(!(top&&top.slide&&p.f!=null&&Object.keys(p).length===1&&Date.now()-top.t<900))S.linesHist.push({l:prev,t:Date.now(),slide:p.f!=null&&Object.keys(p).length===1});else top.t=Date.now();}
   S.lines=L;linesDefault(L)?LS.del('lines.'+S.n):LS.set('lines.'+S.n,L);dirty('lines');linesApply();linesUI();}
 function undoLines(){const e=S.linesHist.pop();S.lines=e.l;linesDefault(e.l)?LS.del('lines.'+S.n):LS.set('lines.'+S.n,e.l);dirty('lines');linesApply();linesUI();}
-const lastPaintT=()=>{const f=S.free.undo[S.free.undo.length-1],c=S.cbn.hist[S.cbn.hist.length-1];return mode==='free'?(f&&f.t||0):(c&&c.t||0);};
+const lastPaintT=()=>{const f=S.free.undo[S.free.undo.length-1],c=S.cbn.hist[S.cbn.hist.length-1],l=S.ltrUndo&&S.ltrUndo[S.ltrUndo.length-1];return Math.max(mode==='free'?(f&&f.t||0):(c&&c.t||0),l?l.t:0);};
 const LINE_SW=['#141414','#5a3a22','#2f3f6b','#7a1f2b','#2f5a3a','#8a8a8a'];
 function linesUI(){const p=$('#linesPop');if(!p||p.hidden||!S)return;const L=linesOf(S);
   $('#lnFade').value=Math.round((L.f||0)*100);$('#lnFadeV').textContent=L.h?'hidden':(L.f?Math.round(L.f*100)+'%':'black');
   $$('#linesPop .lnc').forEach(b=>b.classList.toggle('on',b.dataset.c===L.c||(b.dataset.c==='cur'&&L.c!=='ink'&&L.c!=='auto'&&!LINE_SW.includes(L.c))||(b.dataset.c!=='cur'&&b.dataset.c===L.c)));
   const cur=$('#linesPop .lnc[data-c=cur]');cur.style.background=color;cur.title='Your color ('+colorName(color)+')';
-  $('#lnHide').setAttribute('aria-pressed',L.h?'true':'false');$('#lnHide').classList.toggle('on',!!L.h);}
+  $('#lnHide').setAttribute('aria-pressed',L.h?'true':'false');$('#lnHide').classList.toggle('on',!!L.h);
+  {const st=L.h?'none':(L.f>0?'see':'solid');$$('#linesPop .lns').forEach(b=>{b.classList.toggle('on',b.dataset.s===st);b.setAttribute('aria-pressed',String(b.dataset.s===st));});}}
 function linesDoneGlow(){const b=$('#linesBtn');if(!b||!S)return;b.classList.toggle('hot',!!(S.cbn.complete||(S.cbn.done&&S.cbn.done===S.total)));}
 (function(){const b=$('#linesBtn'),p=$('#linesPop');if(!b||!p)return;
   const place=()=>{const r=b.getBoundingClientRect(),pw=p.offsetWidth||280,ph=p.offsetHeight||200;p.style.left=Math.max(8,Math.min(innerWidth-pw-8,r.left+r.width/2-pw/2))+'px';p.style.top=Math.max(8,r.top-ph-10)+'px';};
@@ -1801,6 +1850,8 @@ function linesDoneGlow(){const b=$('#linesBtn');if(!b||!S)return;b.classList.tog
   {const tf=$('#tbFade');if(tf)tf.oninput=e=>setLines({f:+e.target.value/100});}
   $$('#linesPop .lnc').forEach(c=>c.onclick=()=>setLines({c:c.dataset.c==='cur'?color:c.dataset.c}));
   $('#lnHide').onclick=()=>setLines({h:linesOf(S).h?0:1});
+  $$('#linesPop .lns').forEach(b=>b.onclick=()=>setLines(b.dataset.s==='none'?{h:1}:b.dataset.s==='see'?{h:0,f:.55}:{h:0,f:0}));   /* v19: three line styles */
+  {const t=$('#lnTrace');if(t)t.onclick=()=>ltSet(!LT.on);const b=$('#ltBtn');if(b)b.onclick=()=>ltSet(!LT.on);}
   $('#lnReset').onclick=()=>setLines({...LINES0});
   $('#lnX').onclick=()=>{p.hidden=true;};})();
 
@@ -2019,6 +2070,7 @@ setTimeout(()=>renderShowcase(),1200);
 /* ---------- actions ---------- */
 function undo(){
   if(S.linesHist&&S.linesHist.length&&S.linesHist[S.linesHist.length-1].t>=lastPaintT())return undoLines();
+  {const l=S.ltrUndo&&S.ltrUndo[S.ltrUndo.length-1];if(l){const f=S.free.undo[S.free.undo.length-1],c=S.cbn.hist[S.cbn.hist.length-1],pt=mode==='free'?(f&&f.t||0):(c&&c.t||0);if(l.t>=pt)return ltUndo();}}
   if(mode==='cbn'){const c=S.cbn,b=c.hist.pop();if(!b)return;
     for(const r of b){c.filled[r]=0;paintRegion(r,[0,0,0],0);if(S.tgt[r]){c.doneT[S.num[r]]--;c.done--;}}
     c.complete=false;highlight();drawNums();progress();dirty('cbn');fxClip();}
@@ -2033,7 +2085,8 @@ function clearAll(){const b=$('#clear');
   b.classList.remove('arm');b.querySelector('span').textContent='Clear';
   if(mode==='cbn'){const c=S.cbn;c.filled.fill(0);c.doneT.fill(0);c.done=0;c.hist=[];c.complete=false;c.img.data.fill(0);c.ctx.clearRect(0,0,W,H);
     selNum=1;markColor();highlight();drawNums();progress();dirty('cbn');S.fx.length=0;if(S.fxC)S.fxC.getContext('2d').clearRect(0,0,W,H);dirty('fx');}
-  else{snap();S.free.ctx.clearRect(0,0,W,H);S.rc={};if(S.pulse){S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}S.fx.length=0;if(S.fxC)S.fxC.getContext('2d').clearRect(0,0,W,H);dirty('fx');dirty('free');}
+  if(S.ltr){ltSnap();S.ltr.getContext('2d').clearRect(0,0,W,H);dirty('ltr');ltRender();}
+  if(mode==='free'){snap();S.free.ctx.clearRect(0,0,W,H);S.rc={};if(S.pulse){S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}S.fx.length=0;if(S.fxC)S.fxC.getContext('2d').clearRect(0,0,W,H);dirty('fx');dirty('free');}
 }
 /* flattened picture: paper + colour (+ pulse frame + 3D pops) + line art. phase = pulse animation phase 0..1 */
 function composite(phase=.5,m=mode){
@@ -2045,7 +2098,7 @@ function composite(phase=.5,m=mode){
   if(!D3.on&&S.pops&&S.pops.length&&S.popSh){x.drawImage(S.popSh,0,0);x.drawImage(S.popLi,0,0);}
   if(S.pp&&S.pp.any){x.drawImage(S.pp.sh,0,0);x.drawImage(S.pp.li,0,0);}
   if(m===mode&&S.fx&&S.fx.length){fxDraw(performance.now());x.drawImage(S.fxC,0,0);}
-  drawLinesTo(x);return c;}
+  drawLinesTo(x);if(S.ltr)x.drawImage(S.ltr,0,0);return c;}
 async function saveLoop(){ // short looping WebM of the breathing pulse colours (where MediaRecorder is supported)
   if(!(window.MediaRecorder&&HTMLCanvasElement.prototype.captureStream))return toast('Loop export isn\u2019t supported in this browser');
   const c=mk(),x=c.getContext('2d'),type=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));if(!type)return toast('Loop export isn\u2019t supported here');
@@ -2138,6 +2191,7 @@ function saveNow(){clearTimeout(saveT);
     if(p.pulse&&st.pulse){let any=false;const d=st.pulse.ctx.getImageData(0,0,W,H).data;for(let i=3;i<d.length;i+=64)if(d[i]){any=true;break;}
       if(any){const url=st.pulse.c.toDataURL('image/png');LS.set('pulse.'+k,url);}else LS.del('pulse.'+k);}
     if(p.pop)savePops(st);
+    if(p.ltr&&st.ltr){let any=false;const d=st.ltr.getContext('2d').getImageData(0,0,W,H).data;for(let i=3;i<d.length;i+=16)if(d[i]){any=true;break;}any?LS.set('ltr.'+k,st.ltr.toDataURL('image/png')):LS.del('ltr.'+k);}
     if(p.fx)saveFx(st); if(p.pp)savePP(st);
     const t=document.createElement('canvas');t.width=320;t.height=180;const x=t.getContext('2d');x.fillStyle='#fffdf8';x.fillRect(0,0,320,180);
     const cur=S&&S.n==k, src=cur?(mode==='free'?st.free.c:st.cbn.c):(p.free&&!p.cbn?st.free.c:st.cbn.c);
@@ -2154,6 +2208,7 @@ async function restoreScene(st){
     st.cbn.ctx.putImageData(st.cbn.img,0,0);st.cbn.complete=st.cbn.done===st.total;}
   const f=LS.get('free.'+st.n,null);
   if(f){try{const im=await loadImg(f);st.free.ctx.drawImage(im,0,0);}catch(e){}}
+  const lt=LS.get('ltr.'+st.n,null);if(lt){try{const im=await loadImg(lt);ltrOf(st).getContext('2d').drawImage(im,0,0);}catch(e){}}
   const pu=LS.get('pulse.'+st.n,null);
   if(pu){try{const im=await loadImg(pu);const c=mk();c.className='pulse-layer';st.pulse={c,ctx:c.getContext('2d',{willReadFrequently:true})};st.pulse.ctx.drawImage(im,0,0);st.pulseUsed=true;}catch(e){}}
   st.pops=LS.get('pop.'+st.n,[]);st.rc=LS.get('rc.'+st.n,{});st.flat3d=LS.get('flat3d.'+st.n,[]);st.lines=LS.get('lines.'+st.n,null);
@@ -2162,7 +2217,7 @@ async function restoreScene(st){
 /* ---------- autosave: each scene's work (colours, effect layers, pop / inset heights, Pop Pencil, line settings) is also kept
    in IndexedDB with a versioned format and the last 3 snapshots per scene, so an app update or a full localStorage never
    loses work. localStorage stays the fast path; IndexedDB restores anything missing on start. ---------- */
-const SAVE_FORMAT=2,SCENE_KEYS=['cbn','free','pulse','pop','rc','flat3d','fx','cfx','pp','thumb','lines'];
+const SAVE_FORMAT=2,SCENE_KEYS=['cbn','free','pulse','pop','rc','flat3d','fx','cfx','pp','thumb','lines','ltr'];
 const IDB={db:null,ready:null,
   open(){if(this.ready)return this.ready;this.ready=new Promise(res=>{try{const q=indexedDB.open('emberpost-save',1);
     q.onupgradeneeded=()=>{const db=q.result;if(!db.objectStoreNames.contains('scenes'))db.createObjectStore('scenes',{keyPath:'n'});};
@@ -2336,6 +2391,8 @@ clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   fxLum:(pts)=>{const x=S.fxC.getContext('2d');return pts.map(([a,b])=>{const d=x.getImageData(a|0,b|0,1,1).data;return d[3]?(d[0]+d[1]+d[2])/3*d[3]/255:0;});},
   selHeight:()=>selHeight(),popSel:()=>S&&S.popSel,
   isInk:(x,y)=>isInk(x,y),
+  ltr:()=>{const mm=ltMask(),d=S.ltr?S.ltr.getContext('2d').getImageData(0,0,W,H).data:null;let n=0,out=0;if(d)for(let i=0;i<W*H;i++)if(d[i*4+3]){n++;if(!mm.M[i])out++;}return {on:LT.on,painted:n,outside:out,undo:(S.ltrUndo||[]).length,saved:!!LS.get('ltr.'+S.n,null)};},
+  ltrAt:(x,y)=>{if(!S.ltr)return null;const d=S.ltr.getContext('2d').getImageData(x|0,y|0,1,1).data;return [...d];},inkAt:(x,y)=>{const mm=ltMask();return mm?mm.M[(y|0)*W+(x|0)]:null;},
   lineLock:()=>({on:clip,saved:settings.lineLock,...LINE_LOCK,tipShown:!!settings.llTip}),
   lastStroke:()=>lastStroke,
   state:()=>({scene:S&&S.n,mode,tool,selNum,done:S&&S.cbn.done,total:S&&S.total,complete:S&&S.cbn.complete}),
