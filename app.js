@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=16;
+const EP_BUILD=17;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -478,7 +478,7 @@ function wheelPicker(show=true){let d=$('#anyPop');if(d)d.remove();if(!show)retu
   d.addEventListener('pointerover',e=>{const b=e.target.closest('.asw');if(b)b.title=colorName(b.dataset.c)+(b.dataset.lk?' · locked':'');});
   document.body.appendChild(d);const r=$('#wheelBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
   setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected){document.removeEventListener('pointerdown',f,true);return;}if(d.contains(e.target))return;document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#wheelBtn'))d.remove();},true),0);}
-function flipSet(d){anyPicker(null,false);setIdx=(setIdx+d+SETS.length)%SETS.length;settings.pset=SETS[setIdx].id;LS.set('settings',settings);buildPalette();$('#colors').scrollLeft=mode==='free'?0:$('#numrow').offsetWidth;}   /* v16: in Free Color the guide row is gone (wheel sits at the end), so show the set from its start */
+function flipSet(d){anyPicker(null,false);setIdx=(setIdx+d+SETS.length)%SETS.length;for(let k=0;k<SETS.length&&!setOK(setIdx);k++)setIdx=(setIdx+(d||1)+SETS.length)%SETS.length;settings.pset=SETS[setIdx].id;LS.set('settings',settings);buildPalette();$('#colors').scrollLeft=mode==='free'?0:$('#numrow').offsetWidth;}   /* v16: in Free Color the guide row is gone (wheel sits at the end), so show the set from its start */
 function usePlain(set,h){
   if(!owned(set)){const ps=Trials.palScene();
     if(ps!=null&&S&&ps!==S.n){openUpgrade(null,'palettes');return;}
@@ -505,7 +505,7 @@ function refreshPremiumUI(){buildPalette();
   markColor();}
 function pickPremium(p){if(mode==='cbn'&&p.kind!=='brush')setTimeout(()=>toast(`${PNAME[p.name]||tcase(p.name)} finish · tap a numbered area`),30);if(MIX.on){MIX.on=false;$('#mixer').hidden=true;$('#mixBtn').classList.remove('on');}
   if(p.kind==='chrome')enableTilt();
-  if(p.kind==='brush'){setTool(p.id);} else {ink={kind:p.kind,hex:p.hex,id:p.id,ramp:p.ramp};color=p.hex;if(tool==='eraser')setTool('pencil');}
+  if(p.kind==='brush'){setTool(p.id);} else {ink={kind:p.kind,hex:p.hex,id:p.id,ramp:p.ramp};color=p.hex;if(tool==='eraser')setTool(drawTool());}
   setInkPattern();$$('#pgroup .brush').forEach(b=>{b.innerHTML=premiumIcon(PREM[b.dataset.p]);});markColor();}
 function buildColors(){
   const nr=$('#numrow');nr.innerHTML='';
@@ -524,11 +524,11 @@ function markColor(){const sl=$('#saveLoop');if(sl)sl.hidden=!(S&&S.pulseUsed&&m
     ab.classList.toggle('on',ink.id===anyId(k));ab.classList.toggle('cur',mine);if(sw)sw.style.background=mine?ink.hex:'conic-gradient(#f44,#fa3,#ee4,#4c6,#3cd,#46f,#a5f,#f4a,#f44)';ab.dataset.c=mine?ink.hex:'';}}
 }
 function pickNum(k){ if(mode==='free'){pickColor(S.d.palette[k-1]);return;} selNum=k;markColor();highlight();drawNums();}
-function pickColor(h){color=h;ink=settings.chromeFinish&&!MIX.on?{kind:'chrome',hex:h,id:'c-any'}:{kind:'plain',hex:h,id:null};if(ink.id==='c-any')enableTilt();if(tool==='eraser')setTool('pencil');if(MIX.on)mixInk();setInkPattern();markColor();
+function pickColor(h){color=h;ink=settings.chromeFinish&&!MIX.on?{kind:'chrome',hex:h,id:'c-any'}:{kind:'plain',hex:h,id:null};if(ink.id==='c-any')enableTilt();if(tool==='eraser')setTool(drawTool());if(MIX.on)mixInk();setInkPattern();markColor();
   $$('#pgroup .brush').forEach(b=>{b.innerHTML=premiumIcon(PREM[b.dataset.p]);});}
 /* v16: the bottom bar follows the tool. Pencil shows the drawing pencils, Fill the fill colors, Pop Pencil its options plus pencils,
    Pop Fill (pencils too, for Color while popping) / Eraser / Pop Erase their options. Each of Pencil (incl. brushes), Fill and Pop Pencil remembers its last pencil or color. */
-const TMEM={},CTX={pencil:['Pencil','Drawing pencils · flip sets with ‹ ›, hover a pencil for its name, or pick any color with the wheel'],fill:['Fill','Fill colors · pick a color here, then tap an area to fill it'],
+let TMEM={};const TMEMS={'2d':TMEM,'3d':{}},LASTT={},CTX={pencil:['Pencil','Drawing pencils · flip sets with ‹ ›, hover a pencil for its name, or pick any color with the wheel'],fill:['Fill','Fill colors · pick a color here, then tap an area to fill it'],
   poppencil:['Pop Pencil','Paint over an area to lift it or press it in · with Color while popping on, it also paints with the pencil you pick'],pop:['Pop Fill','Tap an area to raise it (or press it in with Inset) · stays inside the lines like Fill · the slider sets the area you last tapped · Color while popping fills it too'],
   eraser:['Eraser','Rub out color · pick Fine, Medium or Broad above'],poperase:['Pop Erase','Tap a raised or inset part to flatten it']};
 const toolGroup=t=>PREM[t]?'pencil':(t==='pencil'||t==='fill'||t==='poppencil'||t==='pop')?t:null;
@@ -536,7 +536,22 @@ const sameInk=(a,b)=>a&&b&&a.kind===b.kind&&a.hex===b.hex&&(a.id||null)===(b.id|
 function ctxBar(t,anim){const g=toolGroup(t)||t,c=CTX[g]||CTX.pencil,prev=app.dataset.ctx;app.dataset.ctx=g;const tg=$('#ctxtag'),hn=$('#ctxhint');
   if(tg){tg.textContent=PREM[t]?PREM[t].name:c[0];hn.textContent=c[1];const cd=$('#ctxcard');if(cd)cd.innerHTML=`<b>${esc(c[0])}</b><span>${esc(c[1])}</span>`;}
   if(anim&&prev!==g){const b=$('#bottom');b.classList.remove('ctxswap');void b.offsetWidth;b.classList.add('ctxswap');clearTimeout(ctxBar.t);ctxBar.t=setTimeout(()=>b.classList.remove('ctxswap'),420);}}
-function setTool(t){const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool),g1=memG(t);let rebuild=false;   /* v16: Pop Fill shares Fill's color */
+/* v17: 2D and 3D have separate tool sets. 2D: Pencil, Fill, Eraser (+ brushes). 3D: Fill, Pop Fill, Pop Pencil, Pop Erase, Eraser.
+   The 2D / 3D switch at the left of the pencil bar swaps the toolbar and pencils; each set remembers its own tool and colors. */
+let toolSet='2d';
+const SET_TOOLS={'2d':['pencil','fill','eraser'],'3d':['fill','pop','poppencil','poperase','eraser']};
+const inToolSet=(t,s=toolSet)=>PREM[t]?s==='2d':SET_TOOLS[s].includes(t);
+const setOK=i=>!(toolSet==='3d'&&SETS[i].id==='brush');   // brushes are 2D only (they can't color through Pop Fill)
+const drawTool=()=>toolSet==='3d'?'fill':'pencil';
+function syncToolSet(){const s=D3.on?'3d':'2d';app.classList.toggle('set3d',s==='3d');if(s===toolSet)return;
+  const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool);if(g0)TMEM[g0]={ink:{...ink},color,setIdx,tool};LASTT[toolSet]=tool;
+  toolSet=s;TMEM=TMEMS[s];
+  let t=LASTT[s]&&inToolSet(LASTT[s],s)?LASTT[s]:(s==='3d'?({pencil:'fill',eraser:'eraser',fill:'fill'}[tool]||'fill'):({pop:'fill',poppencil:'pencil',poperase:'eraser',fill:'fill',eraser:'eraser'}[tool]||'pencil'));
+  const g1=memG(t),m=g1&&TMEM[g1];if(m){ink={...m.ink};color=m.color;if(m.setIdx!==setIdx){setIdx=m.setIdx;settings.pset=SETS[setIdx].id;LS.set('settings',settings);}}
+  if(!setOK(setIdx)){setIdx=0;settings.pset=SETS[0].id;LS.set('settings',settings);}
+  if(MIX.on&&s==='3d'&&t!=='fill'&&t!=='poppencil')t='fill';
+  tool=t;setTool(t);buildPalette();if(S)markColor();}
+function setTool(t){if(!inToolSet(t))t=t==='pop'||t==='poppencil'||t==='poperase'?'fill':drawTool();const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool),g1=memG(t);let rebuild=false;   /* v16: Pop Fill shares Fill's color */
   if(g0)TMEM[g0]={ink:{...ink},color,setIdx,tool};
   if(g1&&g1!==g0&&TMEM[g1]){const m=TMEM[g1];if(g1==='pencil'&&t==='pencil'&&PREM[m.tool])t=m.tool;
     if(!sameInk(m.ink,ink)){ink={...m.ink};color=m.color;if(m.setIdx!==setIdx){setIdx=m.setIdx;settings.pset=SETS[setIdx].id;LS.set('settings',settings);}rebuild=true;}}
@@ -1043,10 +1058,10 @@ function apply3D(quiet){if(!S)return;scheduleLineTint();const want=D3.want&&!!de
     if(S.popSh){S.popSh.style.display='';S.popLi.style.display='';}}   /* v16: Pop Fill / Pop Pencil / Pop Erase all work in the 3D view too */
   else if(S.popSh){S.popSh.style.display='';S.popLi.style.display='';}
   if(!D3.on&&D3.band)bandView(false);
-  modeLabels();popParallax();sway();}
+  syncToolSet();modeLabels();popParallax();sway();}
 function set3D(v){D3.want=v;settings.view3d=v;LS.set('settings',settings);if(v)enableTilt();
   if(v&&S&&!allowed3D(S.n)){D3.want=false;settings.view3d=false;LS.set('settings',settings);openUpgrade(null,'effects3d');modeLabels();return;}
-  if(!S)return;needDepth(S.n).then(()=>{apply3D(false);toast(D3.on?(mode==='cbn'?'3D by Number':'3D Free Color')+' · color right onto the relief':(mode==='cbn'?'Color by Number':'Free Color'));});}
+  if(!S)return;needDepth(S.n).then(()=>{apply3D(false);if(v&&!D3.on&&!depthOf(S)){D3.want=false;settings.view3d=false;LS.set('settings',settings);modeLabels();toast('3D isn\'t available on this page yet · staying in 2D');return;}toast(D3.on?(mode==='cbn'?'3D by Number':'3D Free Color')+' · color right onto the relief':(mode==='cbn'?'Color by Number':'Free Color'));});}
 function relParallax(){if(!S||!S.relief||!D3.on)return;const k=Math.min(4,1+Z.z*.3);
   S.relief.sh.style.transform=`translate(${(-tilt.x*k*1.2).toFixed(2)}px,${(-tilt.y*k*1.2).toFixed(2)}px)`;
   S.relief.li.style.transform=`translate(${(tilt.x*.4).toFixed(2)}px,${(tilt.y*.4).toFixed(2)}px)`;
@@ -1591,7 +1606,7 @@ function buildMixer(){const el=$('#mixer');if(!el)return;
     MIX[slot]=o;LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part});if(MIX.on)mixInk();buildMixer();
     if(set&&!owned(set))toast(`${set.name}: ${Trials.left(set.id)} free ${Trials.left(set.id)===1?'try':'tries'} left in the mix`);});
   const cv=el.querySelector('canvas.mxpv');if(cv&&!cv._pv)cv._pv=pvAdd(cv,t=>drawFxPreview(cv,specOfMix([color,MIX.finish==='plain'?'#ff7b2e':'#d4af37','#3a6ad6']),t));}
-function setMix(on){MIX.on=on;$('#mixBtn')&&$('#mixBtn').classList.toggle('on',on);$('#mixer').hidden=!on;if(on){if(tool!=='pencil'&&tool!=='fill')setTool('pencil');mixInk();buildMixer();}
+function setMix(on){MIX.on=on;$('#mixBtn')&&$('#mixBtn').classList.toggle('on',on);$('#mixer').hidden=!on;if(on){if(tool!=='pencil'&&tool!=='fill'&&!(toolSet==='3d'&&tool==='poppencil'))setTool(drawTool());mixInk();buildMixer();}
   else if(ink.kind==='mix'){ink={kind:'plain',hex:color,id:null};setInkPattern();}buildPalette();}
 
 /* ---------- owner test controls: only with ?owner=primewest, or after the owner code was used on this device ---------- */
@@ -1982,7 +1997,7 @@ async function openShowcase(){const el=$('#showcase');el.hidden=false;const cv=$
   const c=await renderShowcase();if(c){cv.width=W;cv.height=H;cv.getContext('2d').drawImage(c,0,0);}}
 $('#showClose').onclick=()=>$('#showcase').hidden=true;
 $('#showcase').onclick=e=>{if(e.target.id==='showcase')$('#showcase').hidden=true;};
-$('#showPop').onclick=()=>{$('#showcase').hidden=true;setMode('free');setTool('pop');toast(Effects3D.unlocked()?'Tap an area to pop it':`Tap an area to pop it · ${Trials.popsLeft()} free tries`);};
+$('#showPop').onclick=()=>{$('#showcase').hidden=true;setMode('free');if(toolSet==='3d')setTool('pop');else{set3D(true);if(S)needDepth(S.n).then(()=>{if(toolSet==='3d')setTool('pop');});}toast(Effects3D.unlocked()?'Tap an area to pop it':`Tap an area to pop it · ${Trials.popsLeft()} free tries`);};
 $('#showSets').onclick=()=>{$('#showcase').hidden=true;setMode('free');setIdx=SETI.chrome-1;flipSet(1);};
 setTimeout(()=>renderShowcase(),1200);
 

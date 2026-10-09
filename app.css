@@ -601,7 +601,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 #app[data-ctx=eraser] .ctxhint,#app[data-ctx=poperase] .ctxhint{max-width:none}
 .ctxcard{display:none;flex-direction:column;justify-content:center;gap:6px;min-height:96px;flex:1 0 100%;padding:10px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);box-sizing:border-box}
 .ctxcard b{font:600 15px Poppins;color:#ffe2bd}.ctxcard span{font:500 13px Poppins;color:var(--mute)}
-#app[data-ctx=eraser] #setbar>:not(#toolopts),#app[data-ctx=poperase] #setbar>:not(#toolopts),#app[data-ctx=eraser] #mixer,#app[data-ctx=poperase] #mixer,
+#app[data-ctx=eraser] #setbar>:not(#toolopts):not(#d3sw),#app[data-ctx=poperase] #setbar>:not(#toolopts):not(#d3sw),#app[data-ctx=eraser] #mixer,#app[data-ctx=poperase] #mixer,
 #app[data-ctx=eraser] #numrow,#app[data-ctx=poperase] #numrow,#app[data-ctx=eraser] #freerow,#app[data-ctx=poperase] #freerow{display:none}
 #app[data-ctx=eraser] #toolopts,#app[data-ctx=poperase] #toolopts{flex:1 1 auto}
 #app[data-ctx=eraser] .ctxcard,#app[data-ctx=poperase] .ctxcard{display:flex}
@@ -633,3 +633,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .anypop h4.lk{color:#8f7d6a}.anypop h4 .alock svg{position:static;transform:none;filter:none;display:inline-block;width:11px;height:11px;vertical-align:-1px;margin-right:4px;fill:none;stroke:#ffb35c;stroke-width:2.2}.anypop h4 small{font-weight:500;color:#7d6b58}
 .anypop .asw.lk{opacity:.32;filter:saturate(.55);position:relative;cursor:pointer}
 .anypop .agrid.lk{position:relative}
+
+/* v17: separate 2D and 3D tool sets; the 2D / 3D switch sits at the left end of the pencil bar */
+#app:not(.set3d) .tool[data-tool=pop],#app:not(.set3d) .tool[data-tool=poppencil],#app:not(.set3d) .tool[data-tool=poperase],#app.set3d .tool[data-tool=pencil]{display:none}
+#setbar #d3sw{min-height:34px;padding:3px;order:-1}#setbar #d3sw span{padding:5px 11px;font-size:13px}
