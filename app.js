@@ -44,7 +44,7 @@ const mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;retu
 [strokeC,dimC,glowC,numC].forEach(c=>{c.width=W;c.height=H});
 const sctx=strokeC.getContext('2d'), dctx=dimC.getContext('2d'), gctx=glowC.getContext('2d'), nctx=numC.getContext('2d');
 const covC=mk(), cov=covC.getContext('2d'), maskC=mk(), mctx=maskC.getContext('2d');
-let mode='cbn', tool='pencil', sizeIdx=1, clip=settings.lineLock!==false, color=EXTRA[10], S=null, selNum=1;
+let mode='free', tool='pencil', sizeIdx=1, clip=settings.lineLock!==false, color=EXTRA[10], S=null, selNum=1;
 const cache={};
 const hex2rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 
@@ -449,11 +449,11 @@ function buildPalette(){
       b.onclick=()=>usePlain(set,h);host.appendChild(b);});
   else set.items.forEach(p=>{const b=document.createElement('button');b.className='pencil premium '+p.kind+(GEMS.has(p.id)?' gem':'')+(p.kind==='neon'||p.kind==='glow'?' n-'+p.id.slice(2):'')+(own?'':' dim');
       b.dataset.p=p.id;b.title=p.name;b.innerHTML=premiumIcon(p);b.onclick=()=>usePremium(set,p);host.appendChild(b);});
-  if(set.type==='ink'&&ANY_KINDS[set.id]){const b=document.createElement('button');b.className='anycol'+(own?'':' dim')+(ink.id===anyId(set.id)?' on':'');b.id='anyBtn';b.title=`Any color as ${set.name}: pick from every color in the book's guide plus the full color range`;
-    b.innerHTML=`<i style="background:${ink.id===anyId(set.id)?ink.hex:'conic-gradient(#f44,#fa3,#ee4,#4c6,#3cd,#46f,#a5f,#f4a,#f44)'}"></i><span>Any<br>color</span>`;b.onclick=e=>{e.stopPropagation();anyPicker(set);};host.appendChild(b);}
+  /* v18: no separate 'Any color' button; the one color wheel at the end of the row does it for effect sets */
+  {const om=$('#colors>.moresets');if(om)om.remove();}   /* v18: More sets is its own box next to the pencil box, never inside it */
   if(set.id==='book'){const t=document.createElement('button');t.className='moresets';t.innerHTML='<b>✦ More sets</b><span>Palettes, metallic, chrome, glow…</span>';
-    t.onclick=()=>flipSet(1);fr.appendChild(t);}
-  markColor();}
+    t.onclick=()=>flipSet(1);const cs=$('#colors'),wb=$('#wheelBtn');if(wb&&wb.parentNode===cs)cs.insertBefore(t,wb);else cs.appendChild(t);}
+  markColor();fitSoon();}
 function anyColors(set){ // this page's colour guide first, then the book palette and the full colour range (deduped)
   /* v16: groups from a palette pack you don't own come back locked (padlock, dimmed, tap = upgrade). Free groups go first, so a color that is also free stays free */
   const out=[],seen=new Set(),add=(name,cs,lk)=>{const g=[];for(const h of cs){const k=h.toLowerCase();if(seen.has(k))continue;seen.add(k);g.push(h);}if(g.length)out.push([name,g,!!lk]);};
@@ -468,11 +468,11 @@ function anyPicker(set,show=true){let d=$('#anyPop');if(d)d.remove();if(!show)re
   const g=anyColors(set);d.innerHTML=`<header><b>${esc(set.name)} · any color</b><button class="x" aria-label="Close">×</button></header>`+anyGroupsHTML(g,false);
   d.querySelector('.x').onclick=()=>anyPicker(set,false);
   d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;if(b.dataset.lk){anyPicker(set,false);openUpgrade(null,'palettes');return;}const base=PREM[anyId(set.id)],p={...base,hex:b.dataset.c,name:base.name};anyPicker(set,false);usePremium(set,p);buildPalette();};
-  document.body.appendChild(d);const r=$('#anyBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
-  setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected||d.contains(e.target)){if(!d.isConnected)document.removeEventListener('pointerdown',f,true);return;}document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#anyBtn'))d.remove();},true),0);}
+  document.body.appendChild(d);const r=$('#wheelBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
+  setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected||d.contains(e.target)){if(!d.isConnected)document.removeEventListener('pointerdown',f,true);return;}document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#wheelBtn'))d.remove();},true),0);}
 function wheelPicker(show=true){let d=$('#anyPop');if(d)d.remove();if(!show)return;
   d=document.createElement('div');d.id='anyPop';d.className='anypop';d.setAttribute('role','dialog');d.setAttribute('aria-label','Color wheel');
-  d.innerHTML=`<header><b>Color wheel · every color</b><button class="x" aria-label="Close">×</button></header>`+anyGroupsHTML(anyColors(),true);
+  d.innerHTML=`<header><b>Any color · every color</b><button class="x" aria-label="Close">×</button></header>`+anyGroupsHTML(anyColors(),true);
   d.querySelector('.x').onclick=()=>wheelPicker(false);
   d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;wheelPicker(false);if(b.dataset.lk){openUpgrade(null,'palettes');return;}pickColor(b.dataset.c);toast(mode==='cbn'?`${tcase(colorName(b.dataset.c))} · ready for Free Color (in Color by Number the numbers choose the colors)`:tcase(colorName(b.dataset.c)));};
   d.addEventListener('pointerover',e=>{const b=e.target.closest('.asw');if(b)b.title=colorName(b.dataset.c)+(b.dataset.lk?' · locked':'');});
@@ -512,15 +512,18 @@ function buildColors(){
   // v13: the color guide is a row of colored pencils (number on the pencil in Color by Number), then the color wheel at the end
   S.d.palette.forEach((h,i)=>{const k=i+1,b=document.createElement('button');b.className='sw swp';b.dataset.k=k;b.style.setProperty('--c',h);
     b.innerHTML=pencilSVG(h)+`<span class="n">${k}</span><span class="left"></span>`;b.onclick=()=>pickNum(k);nr.appendChild(b);});
-  const wb=document.createElement('button');wb.id='wheelBtn';wb.className='wheelbtn';wb.setAttribute('aria-label','Color wheel: every color');wb.innerHTML='<i></i><span>More<br>colors</span>';
-  wb.onclick=e=>{e.stopPropagation();wheelPicker();};nr.appendChild(wb);
+  /* v18: ONE color wheel, in its own box at the right end of the pencil row. On an effect set (Chrome, Glitter, Wood...) it gives
+     that effect in any color (was the separate 'Any color' button); on a plain set it picks any plain color. */
+  const old=$('#wheelBtn');if(old)old.remove();
+  const wb=document.createElement('button');wb.id='wheelBtn';wb.className='wheelbtn';wb.setAttribute('aria-label','Any color: every color');wb.innerHTML='<i></i><span>Any<br>color</span>';
+  wb.onclick=e=>{e.stopPropagation();const st=SETS[setIdx];if(st&&st.type==='ink'&&ANY_KINDS[st.id]){if($('#anyPop'))anyPicker(st,false);else anyPicker(st);}else{if($('#anyPop'))wheelPicker(false);else wheelPicker();}};$('#colors').insertBefore(wb,$('#toolbox'));
   buildPalette();
 }
 function markColor(){const sl=$('#saveLoop');if(sl)sl.hidden=!(S&&S.pulseUsed&&mode==='free');
   $$('#numrow .sw').forEach(b=>b.classList.toggle('on',mode==='cbn'?+b.dataset.k===selNum:S.d.palette[b.dataset.k-1]===color));
   $$('#freerow .pencil:not(.premium)').forEach(b=>b.classList.toggle('on',(ink.kind==='plain'||ink.id==='c-any')&&b.dataset.c===color));const cb=$('#chromeBtn');if(cb){cb.classList.toggle('on',!!settings.chromeFinish);cb.setAttribute('aria-pressed',String(!!settings.chromeFinish));}
   $$('#freerow .premium').forEach(b=>b.classList.toggle('on',b.dataset.p===tool||b.dataset.p===ink.id));
-  {const ab=$('#anyBtn'),st=SETS[setIdx];if(ab&&st){const k=st.id,mine=ink.kind===k&&!PREM[tool],sw=ab.querySelector('i');   /* v13: the last pick wins; the Any color swatch shows the active color of this effect, from the grid or a pencil */
+  {const ab=$('#wheelBtn'),st=SETS[setIdx];if(ab&&st){const fx=st.type==='ink'&&!!ANY_KINDS[st.id];ab.title=fx?`Any color as ${st.name}: every color in the book's guide plus the full color range`:'Any color: pick any plain color from the guide and the full color range';ab.classList.toggle('fx',fx);const k=st.id,mine=ink.kind===k&&!PREM[tool],sw=ab.querySelector('i');   /* v13: the last pick wins; the Any color swatch shows the active color of this effect, from the grid or a pencil */
     ab.classList.toggle('on',ink.id===anyId(k));ab.classList.toggle('cur',mine);if(sw)sw.style.background=mine?ink.hex:'conic-gradient(#f44,#fa3,#ee4,#4c6,#3cd,#46f,#a5f,#f4a,#f44)';ab.dataset.c=mine?ink.hex:'';}}
 }
 function pickNum(k){ if(mode==='free'){pickColor(S.d.palette[k-1]);return;} selNum=k;markColor();highlight();drawNums();}
@@ -543,14 +546,20 @@ const SET_TOOLS={'2d':['pencil','fill','eraser'],'3d':['fill','pop','poppencil',
 const inToolSet=(t,s=toolSet)=>PREM[t]?s==='2d':SET_TOOLS[s].includes(t);
 const setOK=i=>!(toolSet==='3d'&&SETS[i].id==='brush');   // brushes are 2D only (they can't color through Pop Fill)
 const drawTool=()=>toolSet==='3d'?'fill':'pencil';
-function syncToolSet(){const s=D3.on?'3d':'2d';app.classList.toggle('set3d',s==='3d');if(s===toolSet)return;
+/* v18: the 2D / 3D buttons ONLY swap which tools are shown. They never touch the picture: the 3D relief, pops, colors, line
+   shading and settings stay exactly as they are (the relief view simply stays on wherever the page has 3D). */
+function setToolSet(s){app.classList.toggle('set3d',s==='3d');if(s===toolSet){modeLabels();return;}
   const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool);if(g0)TMEM[g0]={ink:{...ink},color,setIdx,tool};LASTT[toolSet]=tool;
   toolSet=s;TMEM=TMEMS[s];
   let t=LASTT[s]&&inToolSet(LASTT[s],s)?LASTT[s]:(s==='3d'?({pencil:'fill',eraser:'eraser',fill:'fill'}[tool]||'fill'):({pop:'fill',poppencil:'pencil',poperase:'eraser',fill:'fill',eraser:'eraser'}[tool]||'pencil'));
   const g1=memG(t),m=g1&&TMEM[g1];if(m){ink={...m.ink};color=m.color;if(m.setIdx!==setIdx){setIdx=m.setIdx;settings.pset=SETS[setIdx].id;LS.set('settings',settings);}}
   if(!setOK(setIdx)){setIdx=0;settings.pset=SETS[0].id;LS.set('settings',settings);}
   if(MIX.on&&s==='3d'&&t!=='fill'&&t!=='poppencil')t='fill';
-  tool=t;setTool(t);buildPalette();if(S)markColor();}
+  tool=t;setTool(t);buildPalette();if(S)markColor();modeLabels();}
+/* v18: if the set bar can't fit on one line, stack it so the set selector gets its own row right above the pencils */
+function setbarFit(){const bar=$('#setbar');if(!bar)return;bar.classList.remove('stack');const k=[...bar.children].filter(e=>e.offsetParent&&e.offsetWidth);
+  const tops=new Set(k.map(e=>Math.round(e.offsetTop/6)));if(tops.size>1)bar.classList.add('stack');}
+let fitRaf=0;const fitSoon=()=>{cancelAnimationFrame(fitRaf);fitRaf=requestAnimationFrame(setbarFit);};
 function setTool(t){if(!inToolSet(t))t=t==='pop'||t==='poppencil'||t==='poperase'?'fill':drawTool();const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool),g1=memG(t);let rebuild=false;   /* v16: Pop Fill shares Fill's color */
   if(g0)TMEM[g0]={ink:{...ink},color,setIdx,tool};
   if(g1&&g1!==g0&&TMEM[g1]){const m=TMEM[g1];if(g1==='pencil'&&t==='pencil'&&PREM[m.tool])t=m.tool;
@@ -558,12 +567,13 @@ function setTool(t){if(!inToolSet(t))t=t==='pop'||t==='poppencil'||t==='poperase
   ctxBar(t,true);
   tool=t;$$('.tool').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));app.classList.toggle('tool-pop',t==='pop'||t==='poppencil');app.classList.toggle('tool-pp',t==='poppencil');
   if(t!=='pop'&&t!=='poppencil'&&$('#idea3d').classList.contains('on'))idea3d(false);
-  if(t==='pop'||t==='poppencil'){enableTilt();refreshPremiumUI();}else if(rebuild)buildPalette();setInkPattern();if(S)markColor();}
+  if(t==='pop'||t==='poppencil'){enableTilt();refreshPremiumUI();}else if(rebuild)buildPalette();setInkPattern();if(S)markColor();fitSoon();}
 
 async function showScene(n){
   if(!isUnlocked(n)){const i=IDS.indexOf(n),prev=IDS[i-1];toast(`Locked · finish Chapter ${prev} to unlock`);
     const b=$(`.scene[data-n="${n}"]`);if(b){b.classList.remove('nope');void b.offsetWidth;b.classList.add('nope');}return;}
   if(S&&S.n!==n)saveNow();
+  if(!S||S.n!==n){mode='free';D3.want=true;D3.fresh=true;}   /* v18: a page opens in 3D Free Color (2D only where the page has no 3D) */
   S=await loadScene(n); resetZoom(); prog.current=n; saveProg();
   $$('.scene').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
   storyStrip();
@@ -844,7 +854,8 @@ function drawNumsO(){const [sw,sh]=stageSize(),dpr=Math.min(3,window.devicePixel
     if(!S.fs[r]){nox.fillStyle='rgba(255,253,248,.8)';nox.beginPath();nox.arc(X,Y,fsz*.62,0,6.283);nox.fill();}
     nox.fillStyle=on?'#a8500c':'rgba(110,104,98,.95)';nox.fillText(S.num[r],X,Y+fsz*.04);shown++;}
   numO.dataset.shown=shown;numO.dataset.extra=extra;}
-window.addEventListener('resize',()=>applyZoom());
+window.addEventListener('resize',()=>{applyZoom();fitSoon();});
+try{new ResizeObserver(fitSoon).observe(document.querySelector('#bottom'));}catch(e){}
 
 /* ---------- pointer input ---------- */
 const ptrs=new Map(); let pinch=null, down=null;
@@ -1006,10 +1017,10 @@ const depthOf=st=>st&&(window.EP_DEPTH||{})[st.n]||null;
 function objectOf(st,r){const T=depthOf(st),o=T.ob[r],l=T.lv[r],out=[];for(let q=1;q<st.N;q++)if(T.ob[q]===o&&T.lv[q]===l)out.push(q);return out;}
 function cleanPops(st){const T=depthOf(st);if(!T||!st.pops||!st.pops.length)return;const n0=st.pops.length;
   st.pops=st.pops.filter(p=>(p.rs||[p.r]).length);/* v13: every area can stay popped, the open background too */if(st.pops.length!==n0){renderPops(st);savePops(st);}}
-const D3={on:false,want:!!settings.view3d,band:false,lastMove:0};
+const D3={on:false,want:true,band:false,lastMove:0,fresh:true};
 const allowed3D=n=>n===FREE_3D_SCENE||Effects3D.unlocked();
 const FREE_3D_SCENE=4;
-function modeLabels(){const a=D3.on;$$('.mode').forEach(b=>b.textContent=b.dataset.mode==='cbn'?(a?'3D by Number':'Color by Number'):(a?'3D Free Color':'Free Color'));
+function modeLabels(){const a=toolSet==='3d';$$('.mode').forEach(b=>b.textContent=b.dataset.mode==='cbn'?(a?'3D by Number':'Color by Number'):(a?'3D Free Color':'Free Color'));
   for(const [id,on] of [['#btn2d',!a],['#btn3d',a]]){const b=$(id);if(b){b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);}}}   /* v18: two separate 2D / 3D buttons, first in the bottom bar */
 function buildRelief(st){ // height field -> bevel light + shadow for every raised (mid/foreground) region; background stays flat
   const T=depthOf(st);if(!T)return null;const L=st.lab,N=W*H,lv=T.lv.slice(),ob=T.ob;
@@ -1050,7 +1061,7 @@ function buildRelief(st){ // height field -> bevel light + shadow for every rais
   const mI=maskOf(l=>l<0);
   li.className='rel-li';sh.className='rel-sh';return {li,sh,mF,mA,mI,hf};}
 function apply3D(quiet){if(!S)return;scheduleLineTint();const want=D3.want&&!!depthOf(S);
-  if(want&&!allowed3D(S.n)){D3.on=false;if(!quiet)openUpgrade(null,'effects3d');else if(D3.want)toast('3D for this chapter is part of 3D Effects · Chapter 4 is free in 3D');}
+  if(want&&!allowed3D(S.n)){D3.on=false;if(!quiet)openUpgrade(null,'effects3d');}
   else D3.on=want;
   $$('.rel-sh,.rel-li').forEach(c=>c.remove());
   app.classList.toggle('d3',D3.on);
@@ -1058,7 +1069,8 @@ function apply3D(quiet){if(!S)return;scheduleLineTint();const want=D3.want&&!!de
     if(S.popSh){S.popSh.style.display='';S.popLi.style.display='';}}   /* v16: Pop Fill / Pop Pencil / Pop Erase all work in the 3D view too */
   else if(S.popSh){S.popSh.style.display='';S.popLi.style.display='';}
   if(!D3.on&&D3.band)bandView(false);
-  syncToolSet();modeLabels();popParallax();sway();}
+  if(D3.fresh){D3.fresh=false;setToolSet(D3.on?'3d':'2d');}else if(!D3.on&&toolSet==='3d')setToolSet('2d');
+  modeLabels();popParallax();sway();}
 function set3D(v){D3.want=v;settings.view3d=v;LS.set('settings',settings);if(v)enableTilt();
   if(v&&S&&!allowed3D(S.n)){D3.want=false;settings.view3d=false;LS.set('settings',settings);openUpgrade(null,'effects3d');modeLabels();return;}
   if(!S)return;needDepth(S.n).then(()=>{apply3D(false);if(v&&!D3.on&&!depthOf(S)){D3.want=false;settings.view3d=false;LS.set('settings',settings);modeLabels();toast('3D isn\'t available on this page yet · staying in 2D');return;}toast(D3.on?(mode==='cbn'?'3D by Number':'3D Free Color')+' · color right onto the relief':(mode==='cbn'?'Color by Number':'Free Color'));});}
@@ -1681,7 +1693,7 @@ function idea3d(on){const btn=$('#idea3d'),ap=$('#idea3dApply');on=on??!btn.clas
   const sh=mk(),li=mk();sh.className='idea3d-sh';li.className='idea3d-li';for(const p of plan)popRender(S,p,sh.getContext('2d'),li.getContext('2d'));
   layers.appendChild(sh);layers.appendChild(li);toast('3D idea preview · Apply to keep it');}
 function idea3dApply(){if(!S||!S.idea3d)return;if(!Effects3D.unlocked()&&S.n!==FREE_3D_SCENE){openUpgrade(null,'effects3d');return;}
-  const plan=S.idea3d;idea3d(false);if(D3.on)set3D(false);S.pops=(S.pops||[]).concat(plan.map(p=>({...p})));renderPops();dirty('pop');toast('3D idea applied · Pop Erase removes any part');}
+  const plan=S.idea3d;idea3d(false);S.pops=(S.pops||[]).concat(plan.map(p=>({...p})));renderPops();dirty('pop');toast('3D idea applied · Pop Erase removes any part');}
 
 /* ---------- 3D outlines: lines around a popped / inset area take the fill's light and shadow ----------
    A height per region (manual pops, Pop Pencil, or the 3D template when 3D is on) is blurred into a smooth field; its
@@ -1739,7 +1751,9 @@ function lineAdj(){ // colour of the nearest fill for every line pixel (breadth-
   while(qh<qt){const i=q[qh++],y=(i/W)|0,x=i-y*W,j=i*4;for(const k of [x>0?i-1:-1,x<W-1?i+1:-1,y>0?i-W:-1,y<H-1?i+W:-1]){if(k<0||seen[k])continue;seen[k]=1;const o=k*4;col[o]=col[j];col[o+1]=col[j+1];col[o+2]=col[j+2];col[o+3]=255;q[qt++]=k;}}
   return col;}
 function autoShade(c){const g=(c[0]+c[1]+c[2])/3,k=.42;return c.map(v=>Math.max(0,Math.min(255,(g+(v-g)*1.25)*k)));}   // darker, slightly richer shade
-function linesApply(){if(!S)return;const L=linesOf(S),def=linesDefault(L),op=L.h?0:1-(L.f||0),under=$('#lineUnder'),lc=$('#lineCol');
+/* v18: Lines fader also lives in the tool box (same setting as the Lines panel's Fade slider) */
+function tbFadeSync(){const i=$('#tbFade');if(!i||!S)return;const L=linesOf(S);if(document.activeElement!==i)i.value=Math.round((L.f||0)*100);$('#tbFadeV').textContent=L.h?'hidden':(L.f?Math.round(L.f*100)+'%':'black');}
+function linesApply(){try{tbFadeSync();}catch(e){}if(!S)return;const L=linesOf(S),def=linesDefault(L),op=L.h?0:1-(L.f||0),under=$('#lineUnder'),lc=$('#lineCol');
   app.classList.toggle('lcol',!def&&L.c!=='ink');[lineImg,lc,$('#lineTint'),vline].forEach(e=>{if(e)e.style.opacity=def?'':op;});
   const va=vline.querySelector('#vauto');if(va)va.remove();const vp=vline.querySelector('path');
   $('#linesBtn')&&$('#linesBtn').classList.toggle('set',!def);
@@ -1784,6 +1798,7 @@ function linesDoneGlow(){const b=$('#linesBtn');if(!b||!S)return;b.classList.tog
   b.onclick=e=>{e.stopPropagation();p.hidden=!p.hidden;b.setAttribute('aria-expanded',!p.hidden);if(!p.hidden){linesUI();place();}};
   document.addEventListener('pointerdown',e=>{if(!p.hidden&&!p.contains(e.target)&&!b.contains(e.target)){p.hidden=true;b.setAttribute('aria-expanded','false');}});
   $('#lnFade').oninput=e=>setLines({f:+e.target.value/100});
+  {const tf=$('#tbFade');if(tf)tf.oninput=e=>setLines({f:+e.target.value/100});}
   $$('#linesPop .lnc').forEach(c=>c.onclick=()=>setLines({c:c.dataset.c==='cur'?color:c.dataset.c}));
   $('#lnHide').onclick=()=>setLines({h:linesOf(S).h?0:1});
   $('#lnReset').onclick=()=>setLines({...LINES0});
@@ -1997,7 +2012,7 @@ async function openShowcase(){const el=$('#showcase');el.hidden=false;const cv=$
   const c=await renderShowcase();if(c){cv.width=W;cv.height=H;cv.getContext('2d').drawImage(c,0,0);}}
 $('#showClose').onclick=()=>$('#showcase').hidden=true;
 $('#showcase').onclick=e=>{if(e.target.id==='showcase')$('#showcase').hidden=true;};
-$('#showPop').onclick=()=>{$('#showcase').hidden=true;setMode('free');if(toolSet==='3d')setTool('pop');else{set3D(true);if(S)needDepth(S.n).then(()=>{if(toolSet==='3d')setTool('pop');});}toast(Effects3D.unlocked()?'Tap an area to pop it':`Tap an area to pop it · ${Trials.popsLeft()} free tries`);};
+$('#showPop').onclick=()=>{$('#showcase').hidden=true;setMode('free');if(toolSet==='3d')setTool('pop');else want3DTools(()=>setTool('pop'));toast(Effects3D.unlocked()?'Tap an area to pop it':`Tap an area to pop it · ${Trials.popsLeft()} free tries`);};
 $('#showSets').onclick=()=>{$('#showcase').hidden=true;setMode('free');setIdx=SETI.chrome-1;flipSet(1);};
 setTimeout(()=>renderShowcase(),1200);
 
@@ -2060,7 +2075,9 @@ $('#lltip').onclick=hideLLTip;
 popUI();
 if(0)$('#popDepth').oninput=e=>{const v=+e.target.value;POP.flat=v===0;POP.pressed=v<0;if(v)POP.depth=Math.abs(v);settings.popDepth=POP.depth;settings.popMode=POP.flat?'flat':POP.pressed?'inset':'raised';popUI();LS.set('settings',settings);clearTimeout(popRestyle.t);popRestyle.t=setTimeout(popRestyle,120);};
 if(0)$('#popWhole').onclick=()=>{POP.whole=!POP.whole;settings.popWhole=POP.whole;LS.set('settings',settings);$('#popWhole').classList.toggle('on',POP.whole);toast(POP.whole?'Pop whole object: one tap raises the whole object':'Pop one area at a time');};
-$('#btn2d').onclick=()=>{if(D3.on||D3.want)set3D(false);};$('#btn3d').onclick=()=>{if(!D3.on)set3D(true);};
+function want3DTools(after){if(!S)return;needDepth(S.n).then(()=>{if(!depthOf(S)){toast('3D isn\'t available on this page yet · staying in 2D');return;}
+  if(!allowed3D(S.n)){openUpgrade(null,'effects3d');return;}enableTilt();if(!D3.on){D3.want=true;D3.fresh=false;apply3D(true);}setToolSet('3d');if(after)after();});}
+$('#btn2d').onclick=()=>setToolSet('2d');$('#btn3d').onclick=()=>{if(toolSet!=='3d')want3DTools();};
 $('#bandBtn').onclick=()=>{if(!D3.on)return;enableTilt();bandView(!D3.band);};$('#bandv').onclick=()=>bandView(false);
 $('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));
 $('#ppColor').onclick=()=>{settings.ppColor=settings.ppColor===false;LS.set('settings',settings);$('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));toast(settings.ppColor!==false?'Color while popping: on (uses your current pencil)':'Color while popping: off (only raises / insets)');};
