@@ -1017,3 +1017,31 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 @media (max-width:600px){.fxb{height:44px;padding:0 12px}.fxb span{font-size:11px}.fxb b{font-size:13px}.fxpop .fxs input[type=range]{width:min(62vw,240px);height:40px}
   #app[data-ph=fx] .setfx .fxw{margin:0}}
 #palbox.hasfx .scount{display:none!important}
+.pulse-layer{animation:none!important}   /* v23: the page-wide CSS breath reset every pulse stroke at once; pulse strokes now breathe per patch on the effect layer */
+/* ===== v23 ===== */
+/* Mix: size / intensity column at the far right; option rows scroll sideways so the slider always has room */
+.mixer .mxamt{flex:0 0 190px;display:flex;flex-direction:column;justify-content:center;gap:6px;padding-left:12px;border-left:1px solid rgba(255,179,92,.25);min-width:0}
+.mixer .mxamt>b{font:600 11px Poppins;color:#ffd9a6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mixer .mxamt input{width:100%;accent-color:#ffb35c;height:24px}.mixer .mxamt em{font:700 12px Poppins;color:#ffd08a;font-style:normal}
+.mxat{display:flex;gap:3px}.mxas{flex:1 1 0;height:24px;padding:0 4px;border-radius:7px;border:1px solid rgba(255,217,166,.25);background:rgba(0,0,0,.25);color:#e9d2b2;font:600 10px Poppins;cursor:pointer}
+.mxas.on{background:#ffb35c;color:#2a1606;border-color:transparent}
+.mixer .mxrow{-webkit-mask-image:linear-gradient(90deg,#000 94%,transparent);mask-image:linear-gradient(90deg,#000 94%,transparent)}
+.mixer .mxrow:last-child .mxo{padding:0 8px}
+@media (max-width:1180px){.mixer .mxamt{flex-basis:160px}}
+@media (max-width:600px){.mixer .mxamt{flex:none;border-left:0;padding:6px 0;border-top:1px solid rgba(255,179,92,.25)}.mixer .mxamt input{height:40px}.mxas{height:40px;font-size:12px}
+  .mixer .mxrow{-webkit-mask-image:none;mask-image:none}}
+/* Adjust: same overlay pattern as Mix */
+#colors>.adjust .adjrows{flex:1 1 auto;min-width:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:4px 16px;align-content:center;overflow-y:auto}
+.adjr{display:flex;align-items:center;gap:8px;height:30px}.adjr span{flex:0 0 78px;font:600 11px Poppins;letter-spacing:.06em;text-transform:uppercase;color:#ffd9a6}
+.adjr input{flex:1 1 auto;min-width:0;accent-color:#ffb35c;height:24px}.adjr em{flex:0 0 44px;text-align:right;font:700 12px Poppins;color:#ffd08a;font-style:normal}
+.adjsw{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-height:0}.adjsw i{width:34px;height:34px;border-radius:50%;box-shadow:inset 0 0 0 2px rgba(255,255,255,.7),0 0 0 1px rgba(0,0,0,.3)}.adjsw span{color:#ffd9a6}
+.adjsw small{font:500 11px Poppins;color:#e9d2b2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#adjBtn.on{background:var(--glow);color:#2a1608}
+@media (max-width:600px){#colors>.adjust{display:block;overflow-y:auto}#colors>.adjust[hidden]{display:none}#colors>.adjust .adjrows{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+  .adjr{height:44px}.adjr input{height:40px}#app[data-ph=tools] #colors:has(#adjust:not([hidden]))>.bx{display:none}}
+/* Lines: full color wheel */
+.lnwheel{align-items:flex-start}.lnwbox{display:flex;align-items:center;gap:10px}.lnwdisc{position:relative;width:132px;height:132px;flex:none;touch-action:none;cursor:crosshair}
+.lnwdisc canvas{width:132px;height:132px;border-radius:50%;display:block}.lnwdark{position:absolute;inset:0;border-radius:50%;background:#000;opacity:0;pointer-events:none}
+.lnwdot{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none;left:50%;top:50%}
+.lnwv{display:flex;flex-direction:column;gap:6px;font-size:11px}.lnwv input{width:96px}.lnwv em{font-style:normal;font-weight:600}
+.lnc.wheelc{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)}
