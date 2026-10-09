@@ -970,3 +970,35 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 @media (max-width:400px){#tools .szbar .bxt{display:none}#tools{gap:6px;padding:8px 6px}}
 @media (max-width:600px){#tools #undo,#tools #menuBtn{width:44px!important;flex:0 0 44px!important}#tools .szbar{flex:1 1 auto!important}
   #app.ph-menu #tools #clear,#app.ph-menu #tools #startOver,#app.ph-menu #tools #save{width:auto!important}}
+/* ================= v21 phone ================= */
+@media (max-width:600px){
+  /* Fill: the 16:9 page fills the height between the bars; the screen is a window onto it */
+  #app.phfill #stagewrap{padding:0;align-items:center;justify-content:center;overflow:hidden}
+  #app.phfill #stage{height:100%;width:auto;max-width:none;max-height:none;flex:none;aspect-ratio:16/9;border-radius:0}
+  /* stage controls are pinned to the screen (the stage can be wider than the screen) */
+  .zoomui{position:fixed;right:8px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:38;padding:3px;gap:2px}
+  .zoomui button{min-width:44px;height:44px}
+  .grabui{position:fixed;right:8px;bottom:calc(132px + env(safe-area-inset-bottom));z-index:38}
+  .grabui .grabsw button{min-width:44px;height:40px}
+  .ideasbar{position:fixed;left:8px;top:68px;bottom:auto;z-index:38}
+  .nudge{position:fixed;bottom:calc(76px + env(safe-area-inset-bottom));z-index:38}
+  #zoomFit.on{background:rgba(255,179,92,.3)}
+  .sidetip{position:fixed;left:8px;right:8px;top:68px;z-index:70;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 14px;border-radius:14px;
+    background:rgba(29,22,17,.96);border:1px solid rgba(255,179,92,.6);box-shadow:0 10px 30px rgba(0,0,0,.5);color:#ffe2bd}
+  .sidetip div{display:flex;flex-direction:column;gap:3px;flex:1 1 auto;min-width:0}.sidetip b{font:600 14px Poppins}.sidetip span{font:500 12px Poppins;color:#c8b296}
+  .sidetip button{flex:none;height:44px;padding:0 14px;border-radius:12px;border:0;background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;font:700 13px Poppins}
+  /* dark Lines panel */
+  #linesPop{background:rgba(24,18,13,.97);color:#ffe2bd;border:1px solid rgba(255,200,120,.35);border-bottom:0;box-shadow:0 -10px 30px rgba(0,0,0,.45);padding:12px}
+  #linesPop .lnhead b,#linesPop .lnrow>span{color:#ffd9a6}
+  #linesPop .lnx{color:#ffe2bd;min-width:44px}
+  #linesPop .lnrow em{color:#c8b296}
+  #linesPop .lnrow input[type=range]{accent-color:#ffb35c;height:32px}
+  #linesPop .chip{background:var(--panel);color:#ffe2bd;border:1px solid var(--line)}
+  #linesPop .chip.on,#linesPop .lns.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;border-color:transparent}
+  #linesPop .lnc{width:36px;height:36px;border-color:#2a2019;box-shadow:0 0 0 1px rgba(255,217,166,.25)}
+  #linesPop .lnc.auto{height:36px}
+  #linesPop .lnc.on{box-shadow:0 0 0 2px #ffb35c}
+  #linesPop #lnTrace.on{background:rgba(255,179,92,.25);color:#ffe2bd;border-color:rgba(255,179,92,.7)}
+}
+/* v21: short landscape (phone sideways): the owner test bar sits in the side panel instead of over the picture */
+@media (orientation:landscape) and (max-height:520px){#top .ownerbar:not([hidden]){position:static;order:9;flex:1 1 100%;justify-content:center;box-shadow:none;padding:4px 6px}#top .ownerbar button{height:36px}}

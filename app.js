@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=20;
+const EP_BUILD=21;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -863,8 +863,10 @@ function setGrab(m){settings.grab=m;LS.set('settings',settings);grabUI();toast(m
 const vline=$('#vline'), numO=$('#numsO'), nox=numO.getContext('2d');
 function stageSize(){return [stage.clientWidth||1,stage.clientHeight||1];}
 function zoomSizeDiv(){return settings.sizeZoom===false?1:Z.z;}
-function applyZoom(){const [sw,sh]=stageSize();Z.z=Math.min(MAXZ,Math.max(1,Z.z));
-  Z.x=Math.min(0,Math.max(sw-sw*Z.z,Z.x));Z.y=Math.min(0,Math.max(sh-sh*Z.z,Z.y));
+function visWin(sw,sh){if(!app.classList.contains('phfill'))return [0,sw,0,sh];const w=$('#stagewrap').getBoundingClientRect(),r=stage.getBoundingClientRect();   /* v21: the part of the stage you can see (phone fill: the page is wider than the screen) */
+  return [Math.max(0,w.left-r.left),Math.min(sw,w.right-r.left),Math.max(0,w.top-r.top),Math.min(sh,w.bottom-r.top)];}
+function applyZoom(){const [sw,sh]=stageSize();Z.z=Math.min(MAXZ,Math.max(1,Z.z));const [vl,vr,vt,vb]=visWin(sw,sh);
+  Z.x=Math.min(vl,Math.max(vr-sw*Z.z,Z.x));Z.y=Math.min(vt,Math.max(vb-sh*Z.z,Z.y));
   zoomer.style.transform=`translate(${Z.x}px,${Z.y}px) scale(${Z.z})`;{const lv=$('#ltrV');if(lv)lv.style.transform=zoomer.style.transform;}if(GRAB.lastZ!==Z.z){grabAutoZoom(GRAB.lastZ,Z.z);GRAB.lastZ=Z.z;}
   $('#zoomPct').textContent=Math.round(Z.z*100)+'%';$('#zoomOut').disabled=Z.z<=1.001;$('#zoomIn').disabled=Z.z>=MAXZ-.001;
   const k=sw/W*Z.z; vline.setAttribute('viewBox',`${(-Z.x/k).toFixed(2)} ${(-Z.y/k).toFixed(2)} ${(W/Z.z).toFixed(2)} ${(H/Z.z).toFixed(2)}`);
@@ -876,7 +878,19 @@ function zoomAt(z1,mx,my){const [sw,sh]=stageSize();if(mx==null){mx=sw/2;my=sh/2
 stage.addEventListener('wheel',e=>{e.preventDefault();const r=stage.getBoundingClientRect();
   if(e.ctrlKey||Math.abs(e.deltaY)>=Math.abs(e.deltaX))zoomAt(Z.z*Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015)),e.clientX-r.left,e.clientY-r.top);
   else{Z.x-=e.deltaX;applyZoom();}},{passive:false});
-$('#zoomIn').onclick=()=>zoomAt(Z.z*1.6);$('#zoomOut').onclick=()=>zoomAt(Z.z/1.6);$('#zoomFit').onclick=resetZoom;
+$('#zoomIn').onclick=()=>zoomAt(Z.z*1.6);$('#zoomOut').onclick=()=>zoomAt(Z.z/1.6);$('#zoomFit').onclick=()=>{if(phPortrait()){phFill(!app.classList.contains('phfill'));settings.phFit=!app.classList.contains('phfill');LS.set('settings',settings);}else resetZoom();};
+/* v21: phone portrait opens with the page filling the height (pan with two fingers, pinch to zoom); ⤢ toggles Fit (whole page) / Fill */
+const phPortrait=()=>matchMedia('(max-width:600px) and (orientation:portrait)').matches;
+function phFill(on){app.classList.toggle('phfill',!!on);const f=$('#zoomFit');if(f){f.title=on?'Fit: show the whole page':'Fill: page fills the screen height';f.classList.toggle('on',!on);}
+  requestAnimationFrame(()=>{resetZoom();if(on){const [sw]=stageSize(),[vl,vr]=visWin(sw,1);Z.x=0;applyZoom();}});}
+function phFillAuto(){phFill(phPortrait()&&!settings.phFit);}
+matchMedia('(max-width:600px) and (orientation:portrait)').addEventListener('change',phFillAuto);
+setTimeout(phFillAuto,0);
+/* v21: one-time tip on phones held upright */
+function sideTip(){if(settings.sideTip||!phPortrait())return;const t=document.createElement('div');t.id='sideTip';t.className='sidetip';t.setAttribute('role','status');
+  t.innerHTML='<div><b>Turn your phone sideways to see the whole page</b><span>Or pinch and drag with two fingers · ⤢ shows the whole page</span></div><button aria-label="Got it">Got it</button>';
+  t.querySelector('button').onclick=()=>{settings.sideTip=1;LS.set('settings',settings);t.remove();};document.body.appendChild(t);}
+setTimeout(sideTip,1200);
 let spaceDown=false;
 $$('#grabSw button').forEach(b=>b.onclick=()=>setGrab(b.dataset.g));grabUI();
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){spaceDown=true;stage.classList.add('panready');grabUI();e.preventDefault();}
