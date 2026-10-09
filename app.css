@@ -641,3 +641,5 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .dbtn{justify-content:center;min-width:60px;font:800 17px Poppins;letter-spacing:.04em;color:var(--mute)}
 .dbtn.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;border-color:transparent;box-shadow:0 0 18px rgba(255,150,60,.45);text-shadow:0 1px 0 rgba(255,235,200,.5)}
 .dbtn:not(.on):hover{color:#ffe2bd;border-color:rgba(255,179,92,.5)}
+/* v18: Line Lock only steers Pencil strokes (a 2D tool), so it is hidden in 3D */
+#app.set3d .llwrap{display:none}
