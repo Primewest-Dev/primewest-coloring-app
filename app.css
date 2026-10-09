@@ -601,7 +601,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 #app[data-ctx=eraser] .ctxhint,#app[data-ctx=poperase] .ctxhint{max-width:none}
 .ctxcard{display:none;flex-direction:column;justify-content:center;gap:6px;min-height:96px;flex:1 0 100%;padding:10px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);box-sizing:border-box}
 .ctxcard b{font:600 15px Poppins;color:#ffe2bd}.ctxcard span{font:500 13px Poppins;color:var(--mute)}
-#app[data-ctx=eraser] #setbar>:not(#toolopts):not(#d3sw),#app[data-ctx=poperase] #setbar>:not(#toolopts):not(#d3sw),#app[data-ctx=eraser] #mixer,#app[data-ctx=poperase] #mixer,
+#app[data-ctx=eraser] #setbar>:not(#toolopts),#app[data-ctx=poperase] #setbar>:not(#toolopts),#app[data-ctx=eraser] #mixer,#app[data-ctx=poperase] #mixer,
 #app[data-ctx=eraser] #numrow,#app[data-ctx=poperase] #numrow,#app[data-ctx=eraser] #freerow,#app[data-ctx=poperase] #freerow{display:none}
 #app[data-ctx=eraser] #toolopts,#app[data-ctx=poperase] #toolopts{flex:1 1 auto}
 #app[data-ctx=eraser] .ctxcard,#app[data-ctx=poperase] .ctxcard{display:flex}
@@ -636,4 +636,8 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 
 /* v17: separate 2D and 3D tool sets; the 2D / 3D switch sits at the left end of the pencil bar */
 #app:not(.set3d) .tool[data-tool=pop],#app:not(.set3d) .tool[data-tool=poppencil],#app:not(.set3d) .tool[data-tool=poperase],#app.set3d .tool[data-tool=pencil]{display:none}
-#setbar #d3sw{min-height:34px;padding:3px;order:-1}#setbar #d3sw span{padding:5px 11px;font-size:13px}
+/* v18: 2D and 3D are two separate buttons, first in the bottom bar; the active one is lit */
+.dgrp{padding-right:12px;margin-right:2px;border-right:1px solid var(--line);flex:none}
+.dbtn{justify-content:center;min-width:60px;font:800 17px Poppins;letter-spacing:.04em;color:var(--mute)}
+.dbtn.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;border-color:transparent;box-shadow:0 0 18px rgba(255,150,60,.45);text-shadow:0 1px 0 rgba(255,235,200,.5)}
+.dbtn:not(.on):hover{color:#ffe2bd;border-color:rgba(255,179,92,.5)}

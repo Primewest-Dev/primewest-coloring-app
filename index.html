@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="fonts.css">
-<link rel="stylesheet" href="app.css?v=17">
+<link rel="stylesheet" href="app.css?v=18">
 </head>
 <body>
 <div id="app">
@@ -146,6 +146,7 @@
   <div id="ownerbar" class="ownerbar" hidden><b>Owner</b><button id="ownUnlock">Unlock all (owner test)</button><button id="ownRelock">Re-lock (test as buyer)</button></div>
   <footer id="bottom">
     <div id="tools">
+      <div class="grp dgrp" role="group" aria-label="2D or 3D"><button class="big dbtn on" id="btn2d" data-d="2" aria-pressed="true" title="2D: Pencil, Fill, Eraser and all pencils and brushes">2D</button><button class="big dbtn" id="btn3d" data-d="3" aria-pressed="false" title="3D: color onto a sculpted relief with Fill, Pop Fill, Pop Pencil and Pop Erase (Chapter 4 is free in 3D)">3D</button></div>
       <div class="grp">
         <button class="tool big on" data-tool="pencil" title="Colored pencil"><svg viewBox="0 0 24 24"><path d="M3 21l3.5-1 11-11-2.5-2.5-11 11L3 21z"/><path d="M14 5l2.5 2.5M17 2.5l4.5 4.5-2 2L15 4.5z"/></svg><span>Pencil</span></button>
         <button class="tool big" data-tool="fill" title="Tap to fill"><svg viewBox="0 0 24 24"><path d="M5 11l7-7 7 7-7 7z"/><path d="M19 15c0 0 2 2.5 2 4a2 2 0 01-4 0c0-1.5 2-4 2-4z"/></svg><span>Fill</span></button>
@@ -176,7 +177,7 @@
         <button class="act big" id="save" title="Save PNG"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></svg><span>Save</span></button>
       </div>
     </div>
-    <div id="setbar"><button id="d3sw" class="d3sw" aria-pressed="false" title="2D / 3D: switch between the 2D tools and pencils and the 3D set (Fill, Pop Fill, Pop Pencil, Pop Erase) on a sculpted relief · Chapter 4 is free in 3D"><span class="d2">2D</span><span class="d3">3D</span></button><div id="toolopts" class="toolopts"><b id="ctxtag" class="ctxtag">Pencil</b><span id="ctxhint" class="ctxhint"></span></div><button class="sarrow" id="setPrev" title="Previous set" aria-label="Previous pencil set">‹</button>
+    <div id="setbar"><div id="toolopts" class="toolopts"><b id="ctxtag" class="ctxtag">Pencil</b><span id="ctxhint" class="ctxhint"></span></div><button class="sarrow" id="setPrev" title="Previous set" aria-label="Previous pencil set">‹</button>
       <div class="slabel"><span class="slock" hidden><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></span><b class="sname">Book palette</b><span class="scount"></span><span class="sstate"></span></div>
       <button class="sarrow" id="setNext" title="Next set" aria-label="Next pencil set">›</button><div class="sdots"></div><button class="chip mixbtn" id="mixBtn" title="Mix: combine a finish, an animation and particles">✦ Mix</button><button class="chip chromebtn" id="chromeBtn" aria-pressed="false" title="Chrome finish: any color you pick becomes chrome (live mirror shimmer)">◈ Chrome</button></div>
     <div id="mixer" class="mixer" hidden><div class="mxhead"><b>Mix effects</b><canvas class="mxpv" width="480" height="96"></canvas><button class="mxx" title="Close mix">✕</button></div><div class="mxrows"></div></div>
@@ -185,9 +186,9 @@
 </div>
 <!-- Chapter list (data-driven). Scene art files (data/scene_XX.js) are loaded on demand as plain <script> tags:
      works from file:// and USB sticks; images are data: URIs so canvases never taint. -->
-<script>window.EP_BUILD_HTML=17;</script>
-<script src="data/story.js?v=17"></script>
-<script src="premium-config.js?v=17"></script>
-<script src="app.js?v=17"></script>
+<script>window.EP_BUILD_HTML=18;</script>
+<script src="data/story.js?v=18"></script>
+<script src="premium-config.js?v=18"></script>
+<script src="app.js?v=18"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=17;
+const EP_BUILD=18;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -1010,7 +1010,7 @@ const D3={on:false,want:!!settings.view3d,band:false,lastMove:0};
 const allowed3D=n=>n===FREE_3D_SCENE||Effects3D.unlocked();
 const FREE_3D_SCENE=4;
 function modeLabels(){const a=D3.on;$$('.mode').forEach(b=>b.textContent=b.dataset.mode==='cbn'?(a?'3D by Number':'Color by Number'):(a?'3D Free Color':'Free Color'));
-  const sw=$('#d3sw');if(sw){sw.classList.toggle('on',a);sw.setAttribute('aria-pressed',a);}}
+  for(const [id,on] of [['#btn2d',!a],['#btn3d',a]]){const b=$(id);if(b){b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);}}}   /* v18: two separate 2D / 3D buttons, first in the bottom bar */
 function buildRelief(st){ // height field -> bevel light + shadow for every raised (mid/foreground) region; background stays flat
   const T=depthOf(st);if(!T)return null;const L=st.lab,N=W*H,lv=T.lv.slice(),ob=T.ob;
   for(const r of st.flat3d||[])lv[r]=0;   // areas flattened with Pop Erase
@@ -2060,7 +2060,7 @@ $('#lltip').onclick=hideLLTip;
 popUI();
 if(0)$('#popDepth').oninput=e=>{const v=+e.target.value;POP.flat=v===0;POP.pressed=v<0;if(v)POP.depth=Math.abs(v);settings.popDepth=POP.depth;settings.popMode=POP.flat?'flat':POP.pressed?'inset':'raised';popUI();LS.set('settings',settings);clearTimeout(popRestyle.t);popRestyle.t=setTimeout(popRestyle,120);};
 if(0)$('#popWhole').onclick=()=>{POP.whole=!POP.whole;settings.popWhole=POP.whole;LS.set('settings',settings);$('#popWhole').classList.toggle('on',POP.whole);toast(POP.whole?'Pop whole object: one tap raises the whole object':'Pop one area at a time');};
-$('#d3sw').onclick=()=>set3D(!D3.want||!D3.on);
+$('#btn2d').onclick=()=>{if(D3.on||D3.want)set3D(false);};$('#btn3d').onclick=()=>{if(!D3.on)set3D(true);};
 $('#bandBtn').onclick=()=>{if(!D3.on)return;enableTilt();bandView(!D3.band);};$('#bandv').onclick=()=>bandView(false);
 $('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));
 $('#ppColor').onclick=()=>{settings.ppColor=settings.ppColor===false;LS.set('settings',settings);$('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));toast(settings.ppColor!==false?'Color while popping: on (uses your current pencil)':'Color while popping: off (only raises / insets)');};
