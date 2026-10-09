@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=19;
+const EP_BUILD=20;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -37,6 +37,8 @@ const W=1600,H=900;
 const EXTRA=['#1f1d22','#2b2320','#5a3a2a','#8b5a3c','#c47f4a','#e3b36b','#f2d38a','#f6e7c1','#ffcf9f','#e98a6a','#c9473d','#8e1f2c',
              '#6b2a4f','#a0579a','#6c5ba7','#3b3f8f','#2f6db5','#5aa7d6','#9fd3e0','#2f8a7e','#4c9a5b','#9cc36b','#3e5b34','#7d8c96'];
 const PENCIL_R=[3,6.5,12], ERASER_R=[8,16,30];
+/* v20: one smooth pen-tip size (1 = hair-thin ... 60 = very thick), shared by Pencil, brushes, Eraser, Pop Pencil and the Line pencil */
+const penR=()=>Math.max(.5,penSize/2), eraR=()=>Math.max(2,penSize*1.25), ppR=()=>Math.max(3,penSize*1.25);
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const app=$('#app'), stage=$('#stage'), zoomer=$('#zoomer'), layers=$('#layers'), lineImg=$('#line');
 const strokeC=$('#stroke'), dimC=$('#dim'), glowC=$('#glow'), numC=$('#nums');
@@ -44,7 +46,7 @@ const mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;retu
 [strokeC,dimC,glowC,numC].forEach(c=>{c.width=W;c.height=H});
 const sctx=strokeC.getContext('2d'), dctx=dimC.getContext('2d'), gctx=glowC.getContext('2d'), nctx=numC.getContext('2d');
 const covC=mk(), cov=covC.getContext('2d'), maskC=mk(), mctx=maskC.getContext('2d');
-let mode='free', tool='pencil', sizeIdx=1, clip=settings.lineLock!==false, color=EXTRA[10], S=null, selNum=1;
+let mode='free', tool='pencil', penSize=Math.max(1,Math.min(60,+settings.penSize||13)), clip=settings.lineLock!==false, color=EXTRA[10], S=null, selNum=1;
 const cache={};
 const hex2rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 
@@ -430,14 +432,14 @@ function setOfInk(){if(ink.kind==='plain')return null;const p=PREM[ink.id];retur
 function setOfTool(){return PREM[tool]?SETS[SETI.brush]:null;}
 function buildPalette(){
   const set=SETS[setIdx],own=owned(set),fr=$('#freerow');if(!fr)return;fr.innerHTML='';
-  const bar=$('#setbar');
+  const bar=$('#palbox');
   {const sn=bar.querySelector('.sname');sn.textContent=set.name;sn.title=set.name;sn.style.fontSize='';for(let f=13;f>=11&&sn.scrollWidth>sn.clientWidth+1;f--)sn.style.fontSize=f+'px';}   // shrink long names a little; ellipsis after that
   bar.querySelector('.scount').textContent=`${set.type==='plain'?set.colors.length:set.items.length} ${set.id==='brush'?'brushes':'pencils'}`;
   let state='';if(!own){if(set.product==='palettes'){const ps=Trials.palScene();state=(ps==null||(S&&ps===S.n))?'Preview on this page':'Locked';}
     else{const l=Trials.left(set.id);state=l?`Free try: ${l} left`:'Locked';}}
   bar.querySelector('.sstate').textContent=own?(set.product?'Owned':''):state;
   bar.classList.toggle('locked',!own);bar.querySelector('.slock').hidden=own;
-  bar.querySelector('.sdots').innerHTML=SETS.map((t,i)=>`<i class="${i===setIdx?'on':''} ${owned(t)?'':'lk'}"></i>`).join('');
+  if(bar.querySelector('.sdots'))bar.querySelector('.sdots').innerHTML=SETS.map((t,i)=>`<i class="${i===setIdx?'on':''} ${owned(t)?'':'lk'}"></i>`).join('');
   let host=fr;
   if(set.product){const g=document.createElement('div');g.id='pgroup';g.className='pgroup'+(own?'':' locked');
     g.innerHTML=`<div class="plabel"><span class="plock">${LOCK}</span><span class="ptxt">${esc(set.name)}${own?' ✓':''}</span></div><div class="pitems"></div>`;fr.appendChild(g);host=g.querySelector('.pitems');}
@@ -450,9 +452,8 @@ function buildPalette(){
   else set.items.forEach(p=>{const b=document.createElement('button');b.className='pencil premium '+p.kind+(GEMS.has(p.id)?' gem':'')+(p.kind==='neon'||p.kind==='glow'?' n-'+p.id.slice(2):'')+(own?'':' dim');
       b.dataset.p=p.id;b.title=p.name;b.innerHTML=premiumIcon(p);b.onclick=()=>usePremium(set,p);host.appendChild(b);});
   /* v18: no separate 'Any color' button; the one color wheel at the end of the row does it for effect sets */
-  {const om=$('#colors>.moresets');if(om)om.remove();}   /* v18: More sets is its own box next to the pencil box, never inside it */
-  if(set.id==='book'){const t=document.createElement('button');t.className='moresets';t.innerHTML='<b>✦ More sets</b><span>Palettes, metallic, chrome, glow…</span>';
-    t.onclick=()=>flipSet(1);const cs=$('#colors'),wb=$('#wheelBtn');if(wb&&wb.parentNode===cs)cs.insertBefore(t,wb);else cs.appendChild(t);}
+  {const m=$('#moreSets');if(m){m.hidden=set.id!=='book';m.onclick=()=>flipSet(1);}}
+  {const sf=$('#setfx');if(sf){sf.innerHTML='';const lab=fr.querySelector('.plabel');if(lab)sf.appendChild(lab);}}   /* v20: the set's effect preview + sliders (Shimmer, Speed, Glow…) sit in the pencil box header beside ‹ set ›   /* v20: More sets is a small link in the pencil box header */
   markColor();fitSoon();}
 function anyColors(set){ // this page's colour guide first, then the book palette and the full colour range (deduped)
   /* v16: groups from a palette pack you don't own come back locked (padlock, dimmed, tap = upgrade). Free groups go first, so a color that is also free stays free */
@@ -516,10 +517,10 @@ function buildColors(){
      that effect in any color (was the separate 'Any color' button); on a plain set it picks any plain color. */
   const old=$('#wheelBtn');if(old)old.remove();
   const wb=document.createElement('button');wb.id='wheelBtn';wb.className='wheelbtn';wb.setAttribute('aria-label','Any color: every color');wb.innerHTML='<i></i><span>Any<br>color</span>';
-  wb.onclick=e=>{e.stopPropagation();const st=SETS[setIdx];if(st&&st.type==='ink'&&ANY_KINDS[st.id]){if($('#anyPop'))anyPicker(st,false);else anyPicker(st);}else{if($('#anyPop'))wheelPicker(false);else wheelPicker();}};$('#colors').insertBefore(wb,$('#toolbox'));
+  wb.onclick=e=>{e.stopPropagation();const st=SETS[setIdx];if(st&&st.type==='ink'&&ANY_KINDS[st.id]){if($('#anyPop'))anyPicker(st,false);else anyPicker(st);}else{if($('#anyPop'))wheelPicker(false);else wheelPicker();}};$('#palbody').appendChild(wb);
   buildPalette();
 }
-function markColor(){const sl=$('#saveLoop');if(sl)sl.hidden=!(S&&S.pulseUsed&&mode==='free');
+function markColor(){setTimeout(sizeUI,0);const sl=$('#saveLoop');if(sl)sl.hidden=!(S&&S.pulseUsed&&mode==='free');
   $$('#numrow .sw').forEach(b=>b.classList.toggle('on',mode==='cbn'?+b.dataset.k===selNum:S.d.palette[b.dataset.k-1]===color));
   $$('#freerow .pencil:not(.premium)').forEach(b=>b.classList.toggle('on',(ink.kind==='plain'||ink.id==='c-any')&&b.dataset.c===color));const cb=$('#chromeBtn');if(cb){cb.classList.toggle('on',!!settings.chromeFinish);cb.setAttribute('aria-pressed',String(!!settings.chromeFinish));}
   $$('#freerow .premium').forEach(b=>b.classList.toggle('on',b.dataset.p===tool||b.dataset.p===ink.id));
@@ -527,13 +528,14 @@ function markColor(){const sl=$('#saveLoop');if(sl)sl.hidden=!(S&&S.pulseUsed&&m
     ab.classList.toggle('on',ink.id===anyId(k));ab.classList.toggle('cur',mine);if(sw)sw.style.background=mine?ink.hex:'conic-gradient(#f44,#fa3,#ee4,#4c6,#3cd,#46f,#a5f,#f4a,#f44)';ab.dataset.c=mine?ink.hex:'';}}
 }
 function pickNum(k){ if(mode==='free'){pickColor(S.d.palette[k-1]);return;} selNum=k;markColor();highlight();drawNums();}
-function pickColor(h){color=h;ink=settings.chromeFinish&&!MIX.on?{kind:'chrome',hex:h,id:'c-any'}:{kind:'plain',hex:h,id:null};if(ink.id==='c-any')enableTilt();if(tool==='eraser')setTool(drawTool());if(MIX.on)mixInk();setInkPattern();markColor();
+function pickColor(h){color=h;ink=settings.chromeFinish&&!MIX.on?{kind:'chrome',hex:h,id:'c-any'}:{kind:'plain',hex:h,id:null};if(ink.id==='c-any')enableTilt();if(tool==='eraser'||tool==='poperase')setTool(backTool());if(MIX.on)mixInk();setInkPattern();markColor();
   $$('#pgroup .brush').forEach(b=>{b.innerHTML=premiumIcon(PREM[b.dataset.p]);});}
 /* v16: the bottom bar follows the tool. Pencil shows the drawing pencils, Fill the fill colors, Pop Pencil its options plus pencils,
    Pop Fill (pencils too, for Color while popping) / Eraser / Pop Erase their options. Each of Pencil (incl. brushes), Fill and Pop Pencil remembers its last pencil or color. */
 let TMEM={};const TMEMS={'2d':TMEM,'3d':{}},LASTT={},CTX={pencil:['Pencil','Drawing pencils · flip sets with ‹ ›, hover a pencil for its name, or pick any color with the wheel'],fill:['Fill','Fill colors · pick a color here, then tap an area to fill it'],
   poppencil:['Pop Pencil','Paint over an area to lift it or press it in · with Color while popping on, it also paints with the pencil you pick'],pop:['Pop Fill','Tap an area to raise it (or press it in with Inset) · stays inside the lines like Fill · the slider sets the area you last tapped · Color while popping fills it too'],
-  eraser:['Eraser','Rub out color · pick Fine, Medium or Broad above'],poperase:['Pop Erase','Tap a raised or inset part to flatten it']};
+  eraser:['Eraser','Rub out color · set the size with the Size slider · tap Eraser again, any pencil or any tool to go back'],poperase:['Pop Erase','Tap a raised or inset part to flatten it · tap Pop Erase again, any pencil or any tool to go back']};
+const LASTD={};const isEr=t=>t==='eraser'||t==='poperase';const backTool=()=>LASTD[toolSet]&&inToolSet(LASTD[toolSet])?LASTD[toolSet]:drawTool();
 const toolGroup=t=>PREM[t]?'pencil':(t==='pencil'||t==='fill'||t==='poppencil'||t==='pop')?t:null;
 const sameInk=(a,b)=>a&&b&&a.kind===b.kind&&a.hex===b.hex&&(a.id||null)===(b.id||null)&&JSON.stringify(a.mix||null)===JSON.stringify(b.mix||null)&&(a.ramp||null)===(b.ramp||null);
 function ctxBar(t,anim){const g=toolGroup(t)||t,c=CTX[g]||CTX.pencil,prev=app.dataset.ctx;app.dataset.ctx=g;const tg=$('#ctxtag'),hn=$('#ctxhint');
@@ -564,10 +566,10 @@ function setTool(t){if(!inToolSet(t))t=t==='pop'||t==='poppencil'||t==='poperase
   if(g0)TMEM[g0]={ink:{...ink},color,setIdx,tool};
   if(g1&&g1!==g0&&TMEM[g1]){const m=TMEM[g1];if(g1==='pencil'&&t==='pencil'&&PREM[m.tool])t=m.tool;
     if(!sameInk(m.ink,ink)){ink={...m.ink};color=m.color;if(m.setIdx!==setIdx){setIdx=m.setIdx;settings.pset=SETS[setIdx].id;LS.set('settings',settings);}rebuild=true;}}
-  ctxBar(t,true);
+  ctxBar(t,true);if(!isEr(t))LASTD[toolSet]=t;
   tool=t;$$('.tool').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));app.classList.toggle('tool-pop',t==='pop'||t==='poppencil');app.classList.toggle('tool-pp',t==='poppencil');
   if(t!=='pop'&&t!=='poppencil'&&$('#idea3d').classList.contains('on'))idea3d(false);
-  if(t==='pop'||t==='poppencil'){enableTilt();refreshPremiumUI();}else if(rebuild)buildPalette();setInkPattern();if(S)markColor();fitSoon();}
+  if(t==='pop'||t==='poppencil'){enableTilt();refreshPremiumUI();}else if(rebuild)buildPalette();setInkPattern();if(S)markColor();fitSoon();{const bk=$('#ctxBack');if(bk)bk.hidden=!isEr(t);}sizeUI();}
 
 async function showScene(n){
   if(!isUnlocked(n)){const i=IDS.indexOf(n),prev=IDS[i-1];toast(`Locked · finish Chapter ${prev} to unlock`);
@@ -719,8 +721,8 @@ function beginStroke(x,y,pr,ptype){
 }
 function stamp(x,y,pr){
   const p=(pr>0&&pr!==.5)?pr:.5;
-  if(stroke.er){const R=ERASER_R[sizeIdx]/zoomSizeDiv();for(const c of S.pulse?[S.free.ctx,S.pulse.ctx]:[S.free.ctx]){c.save();c.globalCompositeOperation='destination-out';c.globalAlpha=.85;c.drawImage(tip,x-R,y-R,2*R,2*R);c.restore();}if(S.pulse)dirty('pulse');return;}
-  let R=PENCIL_R[sizeIdx]*(.65+.7*p)/zoomSizeDiv();
+  if(stroke.er){const R=eraR()/zoomSizeDiv();for(const c of S.pulse?[S.free.ctx,S.pulse.ctx]:[S.free.ctx]){c.save();c.globalCompositeOperation='destination-out';c.globalAlpha=.85;c.drawImage(tip,x-R,y-R,2*R,2*R);c.restore();}if(S.pulse)dirty('pulse');return;}
+  let R=penR()*(.65+.7*p)/zoomSizeDiv();
   if(stroke.st==='air'){R*=2.4;cov.globalAlpha=.16;for(let k=0;k<16;k++){const a=Math.random()*6.283,d=R*Math.sqrt(-2*Math.log(Math.random()+1e-6))*.42,rr=1+Math.random()*1.8;
       cov.drawImage(tip,x+Math.cos(a)*d-rr,y+Math.sin(a)*d-rr,2*rr,2*rr);}}
   else if(stroke.st==='water'){R*=2.3;cov.globalAlpha=.09;cov.drawImage(tip,x-R,y-R,2*R,2*R);}
@@ -749,7 +751,7 @@ function furStamp(x,y,R){const f=stroke.fur,c=furC.getContext('2d'),rgb=hex2rgb(
 function moveStroke(x,y,pr){
   const [lx,ly]=stroke.last,dx=x-lx,dy=y-ly,dist=Math.hypot(dx,dy);
   if(stroke.fur&&dist>.5){const f=stroke.fur,ux=dx/dist,uy=dy/dist;if(!f.has){f.dx=ux;f.dy=uy;f.has=true;}else{f.dx=f.dx*.65+ux*.35;f.dy=f.dy*.65+uy*.35;const m=Math.hypot(f.dx,f.dy)||1;f.dx/=m;f.dy/=m;}}
-  const step=Math.max(.5,(stroke.er?ERASER_R:PENCIL_R)[sizeIdx]*(stroke.st?.45:.3)/zoomSizeDiv()), n=Math.floor(dist/step);
+  const step=Math.max(.5,(stroke.er?eraR():penR())*(stroke.st?.45:.3)/zoomSizeDiv()), n=Math.floor(dist/step);
   for(let i=1;i<=n;i++){const px=lx+dx*i/n,py=ly+dy*i/n; stroke.region?lockedStamp(px,py,pr):stamp(px,py,pr);}
   if(n){stroke.last=[x,y];const pl=stroke.path,q=pl&&pl[pl.length-1];if(q&&pl.length<800&&Math.hypot(x-q[0],y-q[1])>=3)pl.push([x,y]);} flush();
 }
@@ -815,7 +817,7 @@ function ltRender(){const v=$('#ltrV');if(!v)return;const x=v.getContext('2d');v
   if(LTS&&LTS.moved){const mm=ltMask();if(!mm)return;if(LTS.er){x.save();x.globalCompositeOperation='destination-out';x.drawImage(ltSC,0,0);x.restore();return;}
     ltTmp=ltTmp||mk();const t=ltTmp.getContext('2d');t.clearRect(0,0,W,H);t.drawImage(ltSC,0,0);t.globalCompositeOperation='destination-in';t.drawImage(mm.c,0,0);t.globalCompositeOperation='source-over';x.drawImage(ltTmp,0,0);}}
 function ltColor(){return (ink&&ink.kind!=='mix'&&ink.hex)||color;}
-function ltWidth(){return Math.max(8,PENCIL_R[sizeIdx]*3)/zoomSizeDiv();}
+function ltWidth(){return Math.max(2,penSize*1.5)/zoomSizeDiv();}
 function ltSnap(){S.ltrUndo=S.ltrUndo||[];const c=mk();if(S.ltr)c.getContext('2d').drawImage(S.ltr,0,0);S.ltrUndo.push({t:Date.now(),c});if(S.ltrUndo.length>15)S.ltrUndo.shift();}
 function ltUndo(){const u=S.ltrUndo.pop();if(!u)return;const x=ltrOf(S).getContext('2d');x.clearRect(0,0,W,H);x.drawImage(u.c,0,0);dirty('ltr');ltRender();}
 function ltDown(x,y){if(!ltMask()){toast('Lines are still loading');return false;}ltSC=ltSC||mk();const c=ltSC.getContext('2d');c.clearRect(0,0,W,H);
@@ -1666,7 +1668,7 @@ function buildMixer(){const el=$('#mixer');if(!el)return;
     MIX[slot]=o;LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part});if(MIX.on)mixInk();buildMixer();
     if(set&&!owned(set))toast(`${set.name}: ${Trials.left(set.id)} free ${Trials.left(set.id)===1?'try':'tries'} left in the mix`);});
   const cv=el.querySelector('canvas.mxpv');if(cv&&!cv._pv)cv._pv=pvAdd(cv,t=>drawFxPreview(cv,specOfMix([color,MIX.finish==='plain'?'#ff7b2e':'#d4af37','#3a6ad6']),t));}
-function setMix(on){MIX.on=on;$('#mixBtn')&&$('#mixBtn').classList.toggle('on',on);$('#mixer').hidden=!on;if(on){if(tool!=='pencil'&&tool!=='fill'&&!(toolSet==='3d'&&tool==='poppencil'))setTool(drawTool());mixInk();buildMixer();}
+function setMix(on){MIX.on=on;$('#mixBtn')&&$('#mixBtn').classList.toggle('on',on);$('#mixer').hidden=!on||!mixPrev;if(on){if(tool!=='pencil'&&tool!=='fill'&&!(toolSet==='3d'&&tool==='poppencil'))setTool(drawTool());mixInk();buildMixer();}
   else if(ink.kind==='mix'){ink={kind:'plain',hex:color,id:null};setInkPattern();}buildPalette();}
 
 /* ---------- owner test controls: only with ?owner=primewest, or after the owner code was used on this device ---------- */
@@ -1693,8 +1695,8 @@ function ppBegin(x,y){
     const l=Trials.popsLeft();toast(l?`Pop Pencil · free tries: ${l} left`:'That was your last free 3D try ✦');}
   let r=labAt(x,y);if(!r)return;if(isInk(x,y)){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q)r=labAt(q[0],q[1]);}
   ppCanvases(S);const tmp=mk(),rs=ppRegions(r,x,y);pps={r,rs,mask:ppMaskFor(rs),tmp,tx:tmp.getContext('2d'),last:[x,y],inset:POP.pressed,v:POP.flat?0:(POP.pressed?-1:1)};ppStamp(x,y);ppFlush();}
-function ppStamp(x,y){const R=PP_R[sizeIdx]/zoomSizeDiv();pps.tx.globalAlpha=.16;pps.tx.drawImage(sprite,x-R,y-R,2*R,2*R);}
-function ppMove(x,y){const [lx,ly]=pps.last,d=Math.hypot(x-lx,y-ly),step=Math.max(1,PP_R[sizeIdx]*.3/zoomSizeDiv()),n=Math.floor(d/step);
+function ppStamp(x,y){const R=ppR()/zoomSizeDiv();pps.tx.globalAlpha=.16;pps.tx.drawImage(sprite,x-R,y-R,2*R,2*R);}
+function ppMove(x,y){const [lx,ly]=pps.last,d=Math.hypot(x-lx,y-ly),step=Math.max(1,ppR()*.3/zoomSizeDiv()),n=Math.floor(d/step);
   for(let i=1;i<=n;i++)ppStamp(lx+(x-lx)*i/n,ly+(y-ly)*i/n);if(n)pps.last=[x,y];if(!ppFlush.t)ppFlush.t=setTimeout(()=>{ppFlush.t=0;ppFlush();},90);}
 function ppFlush(){if(!pps)return;const st=S.pp,t=pps.tx,r=pps.r,b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;if(bw<=0||bh<=0)return;
   // the stroke sets the height toward the slider value (+ raise, - inset, 0 flattens), only on pixels of the starting area
@@ -1845,7 +1847,7 @@ function linesDoneGlow(){const b=$('#linesBtn');if(!b||!S)return;b.classList.tog
 (function(){const b=$('#linesBtn'),p=$('#linesPop');if(!b||!p)return;
   const place=()=>{const r=b.getBoundingClientRect(),pw=p.offsetWidth||280,ph=p.offsetHeight||200;p.style.left=Math.max(8,Math.min(innerWidth-pw-8,r.left+r.width/2-pw/2))+'px';p.style.top=Math.max(8,r.top-ph-10)+'px';};
   b.onclick=e=>{e.stopPropagation();p.hidden=!p.hidden;b.setAttribute('aria-expanded',!p.hidden);if(!p.hidden){linesUI();place();}};
-  document.addEventListener('pointerdown',e=>{if(!p.hidden&&!p.contains(e.target)&&!b.contains(e.target)){p.hidden=true;b.setAttribute('aria-expanded','false');}});
+  document.addEventListener('pointerdown',e=>{if(phP==='lines')return;if(!p.hidden&&!p.contains(e.target)&&!b.contains(e.target)){p.hidden=true;b.setAttribute('aria-expanded','false');}});
   $('#lnFade').oninput=e=>setLines({f:+e.target.value/100});
   {const tf=$('#tbFade');if(tf)tf.oninput=e=>setLines({f:+e.target.value/100});}
   $$('#linesPop .lnc').forEach(c=>c.onclick=()=>setLines({c:c.dataset.c==='cur'?color:c.dataset.c}));
@@ -2115,9 +2117,18 @@ function save(){
     setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Saved '+name);},'image/png');
 }
 $$('.mode').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
-$$('.tool').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
+$$('.tool').forEach(b=>b.onclick=()=>{const t=b.dataset.tool;setTool(isEr(t)&&tool===t?backTool():t);});   /* v20: Eraser is a toggle: tap it again to go back */
+{const bk=$('#ctxBack');if(bk)bk.onclick=()=>setTool(backTool());
+ const pb=$('#palbody');if(pb)pb.addEventListener('click',e=>{if(isEr(tool)&&e.target.closest('button'))setTool(backTool());},true);}   /* tapping any pencil or color leaves the eraser */
 {const to=$('#toolopts');if(to){const a=$('#tools .popswwrap'),b=$('#tools .popctl');if(a)to.appendChild(a);if(b)to.appendChild(b);}ctxBar(tool,false);}   /* v16: pop options live in the tool bar row */
-$$('.size').forEach(b=>b.onclick=()=>{sizeIdx=+b.dataset.size;$$('.size').forEach(s=>s.classList.toggle('on',s===b));});
+/* v20: size slider with a live preview dot, the number, and quick preset dots */
+function sizeUI(){try{sizeUI0();}catch(e){}try{phSync();}catch(e){}}
+function sizeUI0(){const r=$('#szRange');if(!r)return;if(document.activeElement!==r)r.value=penSize;$('#szNum').textContent=penSize;
+  const er=tool==='eraser',d=$('#szDot'),px=Math.max(2,Math.min(40,(er?eraR()*2:penSize)*.62+1));d.style.width=d.style.height=px+'px';
+  d.style.background=er?'transparent':(ink&&ink.hex)||color;d.style.boxShadow=er?'inset 0 0 0 1.5px #ffe2bd':'';$('#sizebox')&&$('#sizebox').classList.toggle('er',er);
+  r.style.setProperty('--p',((penSize-1)/59*100)+'%');$$('.szp').forEach(b=>b.classList.toggle('on',+b.dataset.v===penSize));}
+function setPenSize(v){penSize=Math.max(1,Math.min(60,Math.round(+v)||13));settings.penSize=penSize;clearTimeout(setPenSize.t);setPenSize.t=setTimeout(()=>LS.set('settings',settings),300);sizeUI();}
+{const r=$('#szRange');if(r)r.oninput=e=>setPenSize(e.target.value);$$('.szp').forEach(b=>{b.querySelector('i').style.width=b.querySelector('i').style.height=Math.max(3,Math.min(18,+b.dataset.v*.4+2))+'px';b.onclick=()=>setPenSize(b.dataset.v);});sizeUI();}
 function syncClip(){const b=$('#clip');b.classList.toggle('on',clip);b.setAttribute('aria-pressed',clip);b.querySelector('.llstate').textContent=clip?'On':'Off';}
 $('#clip').onclick=()=>{clip=!clip;settings.lineLock=clip;LS.set('settings',settings);syncClip();hideLLTip();toast(clip?'Line Lock on':'Line Lock off');};
 syncClip();
@@ -2140,7 +2151,41 @@ $('#ppH').onchange=()=>{const v=popH();toast(v>0?'Pop height: raise':v<0?'Pop he
 $('#popMode').onclick=e=>{const v=e.target&&e.target.dataset&&e.target.dataset.v;POP.pressed=v?v==='inset':!POP.pressed;POP.flat=false;if(!POP.hv)POP.hv=.6;settings.popH=popH();if(tool!=='pop'&&tool!=='poppencil'&&mode==='free')setTool('poppencil');   // simple switch: Raise <-> Inset (Pop Erase flattens)
   settings.popMode=POP.pressed?'inset':'raised';LS.set('settings',settings);popUI();popRestyle();toast(POP.pressed?'Inset: press areas into the page':'Raise: lift areas off the page');};
 $('#idea3d').onclick=()=>idea3d();$('#idea3dApply').onclick=idea3dApply;
-$('#mixBtn').onclick=()=>{setMix(!MIX.on);};
+/* v20: Mix opens as an overlay on the bottom section only (same footprint as the pencil and tool boxes; the picture never moves).
+   Accept keeps the mix and returns to the bar; Cancel puts everything back as it was */
+let mixPrev=null;
+function openMix(){mixPrev={on:MIX.on,finish:MIX.finish,anim:MIX.anim,part:MIX.part};$('#mxOff').hidden=!MIX.on;if(MIX.on){buildMixer();$('#mixer').hidden=false;}else setMix(true);}
+function closeMix(){$('#mixer').hidden=true;mixPrev=null;if(phP==='mix'){phP=null;app.dataset.ph='';phSync();}}
+function mixAccept(){closeMix();toast('Mix on · color with your pencils');}
+function mixCancel(){const p=mixPrev;closeMix();if(!p)return;MIX.finish=p.finish;MIX.anim=p.anim;MIX.part=p.part;LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part});
+  if(!p.on)setMix(false);else{mixInk();setInkPattern();markColor();}}
+$('#mixBtn').onclick=openMix;
+/* v20 phone (<=600px): slim top bar (Menu, Undo, Pen size) and a slim bottom strip of tabs. Each tab opens ONE small panel
+   (Colors, Tools, Effects, Lines, Mix) over the lower part of the picture; it stays open while you test strokes, and the same tab
+   or ✕ Close collapses it. The picture never resizes. */
+var phP=null;
+function phSync(){const sw=$('#pbSw');if(!sw)return;sw.style.background=(ink&&ink.kind==='plain'?ink.hex:(ink&&ink.hex))||color;
+  const t=$('#toolbox .tool.on');$('#pbTool').innerHTML=t?t.querySelector('svg').outerHTML:'';
+  $$('#pbar .pbt').forEach(b=>{const on=b.dataset.p===phP;b.classList.toggle('on',on);b.setAttribute('aria-expanded',String(on));});
+  $$('#pbar .pbdb').forEach(b=>b.classList.toggle('on',b.dataset.d===toolSet));}
+function phSet(p){if(p===phP)p=null;const prev=phP;phP=p;
+  if(prev==='mix'&&p!=='mix'&&!$('#mixer').hidden)mixAccept();
+  if(prev==='lines'&&p!=='lines'){$('#linesPop').hidden=true;$('#linesBtn').setAttribute('aria-expanded','false');}
+  app.dataset.ph=p||'';
+  if(p==='lines'){$('#linesPop').hidden=false;$('#linesBtn').setAttribute('aria-expanded','true');linesUI();}
+  if(p==='mix'&&$('#mixer').hidden)openMix();
+  phSync();}
+$$('#pbar .pbt').forEach(b=>b.onclick=()=>phSet(b.dataset.p));
+$$('#pbar .pbdb').forEach(b=>b.onclick=()=>{$(b.dataset.d==='2d'?'#btn2d':'#btn3d').click();setTimeout(phSync,0);});
+$('#phClose').onclick=()=>phSet(null);
+{const mb=$('#menuBtn'),setMenu=on=>{app.classList.toggle('ph-menu',on);mb.setAttribute('aria-expanded',String(on));if(on){phSet(null);app.style.setProperty('--tmh',$('#tools').offsetHeight+'px');}};
+  mb.onclick=()=>setMenu(!app.classList.contains('ph-menu'));
+  $('#stagewrap').addEventListener('pointerdown',()=>{if(app.classList.contains('ph-menu'))setMenu(false);},true);
+  $$('#tools .grp:not(.right) .big, #clear, #startOver, #save, #saveLoop, #scenes, #modes, #mapBtn, #setBtn').forEach(el=>el.addEventListener('click',()=>setTimeout(()=>setMenu(false),60)));
+  matchMedia('(max-width:600px)').addEventListener('change',e=>{if(!e.matches){setMenu(false);phSet(null);}});}
+phSync();$('#mxOk').onclick=mixAccept;$('#mxCancel').onclick=mixCancel;$('#mixer .mxx').onclick=mixCancel;
+$('#mxOff').onclick=()=>{closeMix();setMix(false);};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#mixer').hidden)mixCancel();});
 $('#chromeBtn').onclick=()=>{settings.chromeFinish=!settings.chromeFinish;LS.set('settings',settings);if(MIX.on)setMix(false);if(ink.kind==='plain'||ink.id==='c-any')pickColor(color);else markColor();toast(settings.chromeFinish?'Chrome finish on · every color you pick is chrome':'Chrome finish off');};$('#mixer .mxx').onclick=()=>setMix(false);
 $('#ownUnlock').onclick=()=>{Object.values(ENT).forEach(e=>e.grant('owner-test'));ownerBar();toast('Owner test: everything unlocked on this device');};
 $('#ownRelock').onclick=()=>{Object.values(ENT).forEach(e=>e.revoke());try{localStorage.removeItem('ep.trials.v1');}catch(e){}ownerBar();buildPalette();toast('Re-locked: testing as a buyer (free tries reset)');};

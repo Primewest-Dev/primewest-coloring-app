@@ -601,10 +601,6 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 #app[data-ctx=eraser] .ctxhint,#app[data-ctx=poperase] .ctxhint{max-width:none}
 .ctxcard{display:none;flex-direction:column;justify-content:center;gap:6px;min-height:96px;flex:1 1 0;min-width:0;padding:10px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);box-sizing:border-box}
 .ctxcard b{font:600 15px Poppins;color:#ffe2bd}.ctxcard span{font:500 13px Poppins;color:var(--mute)}
-#app[data-ctx=eraser] #setbar>:not(#toolopts),#app[data-ctx=poperase] #setbar>:not(#toolopts),#app[data-ctx=eraser] #mixer,#app[data-ctx=poperase] #mixer,
-#app[data-ctx=eraser] #numrow,#app[data-ctx=poperase] #numrow,#app[data-ctx=eraser] #freerow,#app[data-ctx=poperase] #freerow{display:none}
-#app[data-ctx=eraser] #toolopts,#app[data-ctx=poperase] #toolopts{flex:1 1 auto}
-#app[data-ctx=eraser] .ctxcard,#app[data-ctx=poperase] .ctxcard{display:flex}
 @keyframes ctxIn{from{opacity:.1;transform:translateX(34px)}to{opacity:1;transform:none}}
 .ctxswap #setbar,.ctxswap #colors>*{animation:ctxIn .3s cubic-bezier(.2,.8,.3,1)}
 @media (prefers-reduced-motion:reduce){@keyframes ctxIn{from{opacity:.2}to{opacity:1}}}
@@ -664,42 +660,11 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 #freerow>.pgroup .pitems{flex:1 1 auto;gap:4px}
 #freerow:not(:has(.pgroup)){border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.025);padding:0 8px}
 #colors>.moresets{flex:none;align-self:stretch;justify-content:center;width:150px;margin:0;border-radius:14px;box-sizing:border-box}
-#app[data-ctx=eraser] #colors>.moresets,#app[data-ctx=poperase] #colors>.moresets{display:none}
 @media (max-width:900px){#colors>.moresets{width:96px}#colors>.moresets span{display:none}}
 #colors>.wheelbtn{flex:none;align-self:stretch;justify-content:center;width:84px;margin:0;padding:6px 4px;border-radius:14px;
   background:linear-gradient(180deg,rgba(255,215,140,.10),rgba(255,160,70,.04));border:1px solid rgba(255,200,120,.45)}
 #colors>.wheelbtn.cur i{box-shadow:inset 0 0 0 3px rgba(0,0,0,.2),0 0 0 2px #ffb35c}
-#app[data-ctx=eraser] #colors>.wheelbtn,#app[data-ctx=poperase] #colors>.wheelbtn{display:none}
 @media (max-width:760px){#colors>.wheelbtn{width:60px}}
-/* v18: tool box. Tools (2D / 3D, Pencil, Fill, Pop tools, Eraser), sizes, Line Lock, Mix, Chrome, Show ideas and Lines are square
-   buttons in a grid, in their own box right of the pencils, same height and style as the pencil box. Undo / Clear / Start over / Save stay up top. */
-#toolbox{flex:none;align-self:stretch;display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,50px);grid-auto-columns:56px;gap:6px;align-content:center;
-  padding:6px 8px;border-radius:14px;box-sizing:border-box;background:linear-gradient(180deg,rgba(255,215,140,.10),rgba(255,160,70,.04));border:1px solid rgba(255,200,120,.45)}
-#toolbox>*,#toolbox .llwrap>.chip{width:56px;height:50px;min-width:0;min-height:0;margin:0;padding:2px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  border-radius:12px;background:var(--panel);border:1px solid var(--line);font:600 9.5px/1.05 Poppins;text-align:center;white-space:normal;color:inherit}
-#toolbox .llwrap{padding:0;border:0;background:none}
-#toolbox svg{width:20px;height:20px;flex:none}
-#toolbox .big span,#toolbox .tool span{display:block!important;font-size:9.5px;line-height:1.05}
-#toolbox .tool.on{background:linear-gradient(180deg,#3b2c1f,#2a2019);color:#ffe2bd;border-color:rgba(255,179,92,.6);box-shadow:0 0 12px rgba(255,150,60,.25)}
-#toolbox .size i{display:block;border-radius:50%;background:currentColor}
-#toolbox .size.on{border-color:rgba(255,179,92,.6);color:#ffb35c}
-#toolbox .chip.ll .lltxt{display:block!important;font-size:9px}#toolbox .chip.ll .llstate{font-size:8px;padding:1px 5px}#toolbox .chip.ll .llicon{width:15px;height:15px}
-#toolbox .dbtn{font:800 16px Poppins;letter-spacing:.04em;color:var(--mute)}
-#toolbox .dbtn.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;border-color:transparent;box-shadow:0 0 14px rgba(255,150,60,.45)}
-#toolbox #mixBtn.on,#toolbox #chromeBtn.on,#toolbox #ideasTog[aria-pressed=true]{background:rgba(255,179,92,.22);color:#ffe2bd;border-color:rgba(255,179,92,.6)}
-.ideasbar:not(.on){display:none}
-.tool-pop #toolbox .size{display:none}.tool-pp #toolbox .size{display:flex}
-#app[data-ctx=eraser] #toolbox #mixBtn,#app[data-ctx=eraser] #toolbox #chromeBtn,#app[data-ctx=poperase] #toolbox #mixBtn,#app[data-ctx=poperase] #toolbox #chromeBtn,#app[data-ctx=poppencil] #toolbox #chromeBtn,#app[data-ctx=pop] #toolbox #chromeBtn{display:none}
-#toolbox .lltip{bottom:calc(100% + 10px)}
-@media (max-width:900px),(orientation:landscape) and (max-height:520px){
-  #colors{flex-wrap:wrap;row-gap:8px}
-  #toolbox{flex:1 1 100%;order:5;grid-auto-flow:row;grid-template-rows:none;grid-template-columns:repeat(auto-fill,52px);grid-auto-rows:48px;justify-content:start}
-  #toolbox>*,#toolbox .llwrap>.chip{width:52px;height:48px}}
-#toolbox>.tbslider{grid-column:span 2;width:auto;flex-direction:column;align-items:stretch;justify-content:center;gap:3px;padding:4px 8px;cursor:default;background:rgba(0,0,0,.28);border:1px solid rgba(255,217,166,.2);border-radius:12px}
-#toolbox>.tbslider span{font:600 9.5px Poppins;letter-spacing:.06em;text-transform:uppercase;color:#ffd9a6;text-align:left}
-#toolbox>.tbslider input{width:100%;height:14px;margin:0;accent-color:#ffb35c;touch-action:none;cursor:pointer}
-#toolbox>.tbslider em{font:600 9px Poppins;font-style:normal;color:#ffe2bd;text-align:right}
-@media (max-width:900px),(orientation:landscape) and (max-height:520px){#toolbox>.tbslider{width:auto}}
 #setbar.stack .setsel .slabel{flex:1 1 0;width:auto;min-width:0}
 @media (orientation:landscape) and (max-height:520px),(max-width:600px){#colors>.moresets{width:64px;padding:6px}#colors>.moresets span{display:none}#colors>.moresets b{font-size:11px}#colors>.wheelbtn{width:60px}}
 #app:not(.set3d) .zoomui .d3only{display:none!important}
@@ -709,3 +674,299 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 #toolbox #ltBtn.on,#lnTrace.on{background:rgba(255,179,92,.25);color:#ffe2bd;border-color:rgba(255,179,92,.7);box-shadow:0 0 12px rgba(255,150,60,.3)}
 .lnstyles{display:flex;gap:6px;flex-wrap:wrap}.lnstyles .lns{height:32px;padding:0 10px;font-size:12px}.lnstyles .lns.on{background:var(--glow);color:#2a1608;border-color:transparent}
 .lntrace{height:36px;padding:0 12px;width:100%}
+
+/* ================= v20: a simple bottom bar, like familiar drawing apps =================
+   [Tools (2D | 3D)] [Colors: ‹ set › + pencils + Any color] [Size slider] [Options: Lines, Line Lock, Mix, Chrome, Show ideas]
+   Every box has the same height, the same header strip and the same square buttons. Nothing is ever hidden by a tool (the eraser included). */
+#colors{display:flex;flex-wrap:nowrap;gap:10px;align-items:stretch;overflow:visible;padding:8px 8px 4px;min-height:0}
+#colors>.ctxcard{display:none!important}
+.bx{--sq:58px;flex:none;display:flex;flex-direction:column;gap:6px;height:124px;min-width:0;padding:6px 10px 8px;box-sizing:border-box;border-radius:14px;
+  background:linear-gradient(180deg,rgba(255,215,140,.07),rgba(255,160,70,.02));border:1px solid rgba(255,200,120,.32)}
+.bxh{flex:none;height:28px;display:flex;align-items:center;gap:8px;min-width:0}
+.bxt{font:600 10.5px Poppins;letter-spacing:.12em;text-transform:uppercase;color:#ffd9a6;white-space:nowrap}
+.bxb{flex:1 1 auto;min-height:0;display:flex;align-items:center;gap:6px;min-width:0}
+/* square buttons (tools and options) */
+#toolbox .bxb>button,#optbox .bxb>button,#optbox .llwrap>.chip{width:var(--sq);height:var(--sq);min-width:0;min-height:0;margin:0;padding:3px 2px;box-sizing:border-box;flex:none;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:12px;background:var(--panel);border:1px solid var(--line);
+  font:600 10px/1.1 Poppins;text-align:center;white-space:normal;color:inherit;transform:none}
+#optbox .llwrap{display:flex;flex:none;padding:0;border:0;background:none;position:relative}
+.bx svg{width:22px;height:22px;flex:none}
+#toolbox .bxb span,#optbox .bxb span{display:block!important;font-size:10px;line-height:1.1}
+#toolbox .tool.on{background:linear-gradient(180deg,#4a3420,#2c2018);color:#ffe2bd;border-color:rgba(255,179,92,.75);box-shadow:0 0 12px rgba(255,150,60,.3)}
+#toolbox #ltBtn{border-style:dashed}#toolbox #ltBtn.on{border-style:solid}
+#optbox .chip.ll .llicon{width:18px;height:18px}#optbox .chip.ll .llstate{font-size:8.5px;padding:1px 6px}
+#optbox #mixBtn.on,#optbox #chromeBtn.on,#optbox #ideasTog[aria-pressed=true],#optbox #linesBtn[aria-expanded=true]{background:rgba(255,179,92,.22);color:#ffe2bd;border-color:rgba(255,179,92,.7)}
+#app[data-ctx=eraser] #optbox #mixBtn,#app[data-ctx=eraser] #optbox #chromeBtn,#app[data-ctx=poperase] #optbox #mixBtn,#app[data-ctx=poperase] #optbox #chromeBtn{opacity:.35;pointer-events:none}
+#app.set3d #optbox .llwrap{display:none}
+/* 2D | 3D: a segmented switch in the Tools header; the lit one is the active tool set */
+.dseg{display:flex;margin-left:auto;padding:2px;gap:2px;border-radius:10px;background:rgba(0,0,0,.3);border:1px solid var(--line)}
+.dseg .dbtn{height:24px;min-width:46px;min-height:0;padding:0 10px;border-radius:8px;border:0;background:none;font:800 13px/1 Poppins;letter-spacing:.04em;color:var(--mute);justify-content:center}
+.dseg .dbtn.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;box-shadow:0 0 12px rgba(255,150,60,.45)}
+/* colors: the set name with compact ‹ › sits in the box's top edge, always visible */
+#palbox{flex:1 1 0;min-width:280px}
+#palbox .setsel{display:flex;gap:6px}
+#palbox .sarrow{flex:none;width:30px;height:26px;padding:0;border-radius:8px;font:600 19px/1 Poppins;display:grid;place-items:center}
+#palbox .slabel{flex:0 1 auto;display:flex;align-items:center;gap:8px;min-width:0;overflow:hidden;white-space:nowrap}
+#palbox .slabel .sname{font-size:13px;overflow:hidden;text-overflow:ellipsis}
+#palbox .moresets{flex:none;height:24px;padding:0 10px;margin:0;border-radius:999px;font:600 11px Poppins;color:#ffe2bd;background:rgba(255,179,92,.14);border:1px solid rgba(255,179,92,.45);display:inline-flex;align-items:center;width:auto}
+#palbox .sdots{margin-left:auto;flex:0 1 auto;min-width:0;overflow:hidden}
+#palbody{align-items:stretch;gap:8px;overflow:hidden}
+#palbody #numrow,#palbody #freerow{flex:1 1 0;min-width:0;border:0;background:none;padding:0 4px;align-items:flex-end;overflow-y:hidden}
+#palbody #freerow>.pgroup{padding-top:20px}
+#palbody .pencil{height:66px}
+#palbody>.wheelbtn{flex:none;align-self:stretch;width:64px;margin:0;padding:4px;border-radius:12px;justify-content:center;
+  background:linear-gradient(180deg,rgba(255,215,140,.10),rgba(255,160,70,.04));border:1px solid rgba(255,200,120,.45)}
+#palbody>.wheelbtn.cur i{box-shadow:inset 0 0 0 3px rgba(0,0,0,.2),0 0 0 2px #ffb35c}
+/* size: live dot + number + smooth slider + quick presets */
+.sznum{margin-left:auto;min-width:34px;text-align:right;font:700 15px Poppins;color:#ffe2bd}
+.szprev{flex:none;width:46px;height:46px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+.szprev i{display:block;border-radius:50%;max-width:42px;max-height:42px}
+#sizebox.er .szprev{background:rgba(255,255,255,.12)}
+.szctl{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px}
+#szRange{width:100%;margin:0;height:18px;accent-color:#ffb35c;touch-action:none;cursor:pointer}
+.szpre{display:flex;justify-content:space-between;gap:4px}
+.szp{flex:1 1 0;height:24px;min-width:0;padding:0;border-radius:8px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center}
+.szp i{display:block;border-radius:50%;background:#ffe2bd}.szp.on{border-color:rgba(255,179,92,.75);background:rgba(255,179,92,.18)}
+/* eraser: a clear way back */
+.ctxback{height:30px;padding:0 12px;flex:none;background:rgba(255,179,92,.18);border-color:rgba(255,179,92,.6);color:#ffe2bd;font-weight:600}
+/* narrower windows: the colors box takes its own full row, the other three share the row below, still equal heights */
+@media (max-width:1400px){#colors{flex-wrap:wrap;row-gap:8px}#palbox{flex:1 1 100%;order:-1}}
+@media (max-width:760px){.bx{--sq:50px;height:auto;min-height:112px;padding:5px 8px 7px}#toolbox,#optbox{flex:1 1 100%}#toolbox .bxb,#optbox .bxb{flex-wrap:wrap}
+  .bx svg{width:19px;height:19px}#toolbox .bxb span,#optbox .bxb span{font-size:9px}}
+@media (orientation:landscape) and (max-height:520px){.bx{--sq:48px;height:auto;min-height:0;gap:3px;padding:4px 8px 6px}.bxh{height:24px}#palbody .pencil{height:58px}}
+.ideasbar:not(.on){display:none}
+#app[data-ctx=pop] #optbox #chromeBtn,#app[data-ctx=poppencil] #optbox #chromeBtn{opacity:.35;pointer-events:none}
+/* v20: Any color is simply the last item of the pencil row (no box of its own) */
+#palbody>.wheelbtn{width:58px;padding:0 0 2px;background:none;border:0;border-radius:0;justify-content:flex-end;gap:4px}
+#palbody>.wheelbtn i{width:38px;height:38px}
+/* v20: no hint row. The tool tag, the hint text and the set dots are gone; the strip above the boxes only appears for the 3D pop
+   options (Raise / Inset, pop height, Color while popping, 3D idea) while a pop tool is in use */
+#ctxtag,#ctxhint{display:none!important}
+#setbar{display:none}.tool-pop #setbar{display:flex;min-height:0;padding-top:4px;padding-bottom:0}
+/* the active Eraser says how to leave it */
+#toolbox .tool[data-tool=eraser].on span::after,#toolbox .tool[data-tool=poperase].on span::after{content:'tap to stop';display:block;font-size:8px;font-weight:500;color:#ffb35c;margin-top:1px}
+@media (max-width:1400px){#optbox{flex:1 1 auto}}
+/* v20: pen Size lives in the top row right next to Undo: label, live preview dot, smooth slider (1-60) and the number */
+#tools .szbar{display:flex;align-items:center;gap:8px;height:44px;padding:0 12px;margin-right:6px;border-radius:12px;box-sizing:border-box;
+  background:linear-gradient(180deg,rgba(255,215,140,.07),rgba(255,160,70,.02));border:1px solid rgba(255,200,120,.32);flex:none}
+#tools .szbar .szprev{width:34px;height:34px}#tools .szbar .szprev i{max-width:30px;max-height:30px}
+#tools .szbar #szRange{width:150px;flex:none}
+#tools .szbar .sznum{min-width:24px;margin:0}
+@media (max-width:900px){#tools .szbar #szRange{width:100px}#tools .szbar .bxt{display:none}}
+@media (max-width:600px){#tools .szbar{padding:0 8px;gap:6px}#tools .szbar #szRange{width:80px}#tools .szbar .szprev{width:28px;height:28px}}
+/* v20: 2D and 3D are full-height buttons at the start of the Tools row: every button in Tools and Options has the same height */
+#toolbox .bxb>.dbtn{width:48px;font:800 15px/1 Poppins;letter-spacing:.03em;color:var(--mute)}
+#toolbox .bxb>.dbtn.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;border-color:transparent;box-shadow:0 0 14px rgba(255,150,60,.45)}
+#toolbox .bsep{flex:none;width:1px;align-self:stretch;margin:6px 2px;background:rgba(255,200,120,.3)}
+#optbox .bxb>button,#optbox .llwrap>.chip{height:var(--sq)!important;min-height:var(--sq)!important;max-height:none;line-height:1.1}
+/* ================= v20 design system (final) =================
+   Zones: TOP = page actions + history + Size (one row, 48px controls). BOTTOM = [Colors: ‹ set › + pencils + Any color] [Tool palette].
+   8px spacing grid, one control height (48px), both boxes 122px tall with aligned tops and bottoms. */
+#bottom{--u:8px;--bh:48px;--col:56px}
+#tools{gap:var(--u)}#tools .grp{gap:var(--u)}
+#tools .big{height:var(--bh);min-height:0;box-sizing:border-box}
+#tools .szbar{height:var(--bh);margin-right:0;padding:0 var(--u) 0 12px;gap:var(--u)}
+#colors{gap:var(--u);padding:var(--u) 0 0}
+.bx{height:122px;padding:var(--u);gap:var(--u)}
+/* colors box */
+#palbox .bxh{height:32px;gap:var(--u)}
+#palbox .sarrow{width:32px;height:32px;border-radius:10px;font-size:20px}
+#palbody{gap:var(--u)}
+/* tool palette: row 1 = what you draw with (2D | 3D, tools, Trace lines); row 2 = how it looks (Lines, Line Lock, Mix, Chrome, Hints) */
+#toolbox{flex:none;display:flex;flex-direction:column;gap:var(--u)}
+.tgrid{display:grid;grid-template-columns:repeat(8,var(--col));grid-auto-rows:var(--bh);gap:var(--u)}
+.tgrid>button,.tgrid .llwrap>.chip{width:100%;height:var(--bh)!important;min-height:0!important;margin:0;padding:3px 2px;box-sizing:border-box;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:12px;background:var(--panel);border:1px solid var(--line);
+  font:600 10px/1.1 Poppins;text-align:center;white-space:normal;color:inherit;transform:none}
+.tgrid .llwrap{display:block;position:relative;padding:0;border:0;background:none}
+.tgrid svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tgrid button span{display:block!important;font-size:10px;line-height:1.1}
+.tgrid .chip.ll .llicon{width:16px;height:16px}.tgrid .chip.ll .lltxt{font-size:10px}.tgrid .chip.ll .llstate{font-size:8px;padding:0 5px;line-height:12px}
+.tgrid>.dbtn{font:800 15px/1 Poppins;letter-spacing:.03em;color:var(--mute)}
+.tgrid>.dbtn.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;border-color:transparent;box-shadow:0 0 14px rgba(255,150,60,.45)}
+.tgrid>.tool.on{background:linear-gradient(180deg,#4a3420,#2c2018);color:#ffe2bd;border-color:rgba(255,179,92,.75);box-shadow:0 0 12px rgba(255,150,60,.3)}
+.tgrid #mixBtn.on,.tgrid #chromeBtn.on,.tgrid #ideasTog[aria-pressed=true],.tgrid #linesBtn[aria-expanded=true],.tgrid #ltBtn.on{background:rgba(255,179,92,.22);color:#ffe2bd;border-color:rgba(255,179,92,.7)}
+#app.set3d .tgrid .llwrap{display:none}
+#app[data-ctx=eraser] .tgrid #mixBtn,#app[data-ctx=eraser] .tgrid #chromeBtn,#app[data-ctx=poperase] .tgrid #mixBtn,#app[data-ctx=poperase] .tgrid #chromeBtn,
+#app[data-ctx=pop] .tgrid #chromeBtn,#app[data-ctx=poppencil] .tgrid #chromeBtn{opacity:.35;pointer-events:none}
+.tgrid #ltBtn{border-style:dashed}.tgrid #ltBtn.on{border-style:solid}
+#toolbox .lltip{bottom:calc(100% + 8px)}
+/* medium widths: colors take the full row; the tool palette becomes one tidy row underneath */
+@media (max-width:1180px){#colors{flex-wrap:wrap}#palbox{flex:1 1 100%;order:-1}
+  #toolbox{flex:1 1 100%;height:auto;flex-direction:row;align-items:center}.tg-opts{padding-left:var(--u);border-left:1px solid rgba(255,200,120,.3)}
+  .tg-tools{grid-template-columns:repeat(auto-fill,var(--col));grid-auto-flow:column;grid-auto-columns:var(--col)}.tg-opts{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:var(--col)}}
+@media (max-width:860px),(orientation:landscape) and (max-height:520px){#bottom{--col:50px;--bh:46px}
+  #toolbox{flex-direction:column;align-items:stretch}.tg-opts{padding-left:0;border-left:0}
+  .tgrid,.tg-tools,.tg-opts{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,var(--col));grid-auto-columns:auto}}
+@media (orientation:landscape) and (max-height:520px){.bx{height:auto;padding:6px}#palbox .bxh{height:28px}#palbox .sarrow{width:28px;height:28px}}
+/* colors first (left), tool palette on the right */
+#palbox{order:1}#toolbox{order:2}
+@media (max-width:1180px){#palbox{order:-1}}
+/* whole pencils stand in the box (not just their tips); the picked one lifts */
+#palbody #numrow,#palbody #freerow{height:100%;align-items:flex-end;padding-bottom:0}
+#palbody .pencil{height:64px;width:26px;transform:translateY(6px)}
+#palbody .pencil.on{transform:translateY(-2px)}
+#palbody .pencil:hover{transform:translateY(0)}
+@media (orientation:landscape) and (max-height:520px){#palbody .pencil{height:56px;width:23px}}
+@media (min-width:1181px){#colors{flex-wrap:nowrap}#palbox{flex:1 1 0;order:1}}
+#palbody .pencil svg{width:100%;height:100%}
+/* v20: per-set effect controls in the pencil box header, right after ‹ set name › */
+.setfx{display:flex;align-items:center;min-width:0;flex:0 1 auto;overflow:hidden}
+.setfx .plabel{position:static;display:flex;align-items:center;gap:4px;letter-spacing:.1em}
+.setfx .plabel .plock,.setfx .plabel .ptxt{display:none}
+.setfx .plabel .pstrip{margin-left:0}
+#palbody .pgroup{min-width:0!important;padding-top:2px}
+#palbody #freerow>.pgroup{padding-top:2px}
+#palbox .moresets[hidden]{display:none}
+/* v20: labels stay readable everywhere. When the top row gets tight, each action shows its icon with a short label underneath */
+@media (max-width:1100px){#tools .big{flex-direction:column;justify-content:center;gap:2px;padding:4px 8px;min-width:56px;height:var(--bh)}
+  #tools .big span{display:block!important;font:600 10px/1.1 Poppins;white-space:nowrap}#tools .big svg{width:20px;height:20px}}
+/* v20: phone (about 390px wide): 6 labelled actions in one row, Pen size on its own row, pencils scroll sideways, a compact tool grid.
+   Every tap target is at least 44px. */
+@media (max-width:600px){
+  #bottom{--bh:52px;--col:52px;--u:6px}
+  #tools{flex-wrap:wrap;gap:6px;justify-content:space-between}#tools .grp{gap:6px}#tools .grp.right{display:contents}
+  #tools .big{min-width:0;flex:1 1 0;padding:4px 2px;height:52px}#tools .grp.free-only,#tools .grp.cbn-only{flex:1 1 0}#tools .grp>.big{width:100%}
+  #tools .big span{font-size:10px}
+  #tools .szbar{order:20;flex:1 1 100%;height:48px;padding:0 12px}#tools .szbar .bxt{display:block}#tools .szbar #szRange{flex:1 1 auto;width:auto;height:28px}
+  #tools .szbar .szprev{width:36px;height:36px}
+  .bx{height:auto;padding:8px}
+  #palbox .bxh{height:44px}#palbox .sarrow{width:44px;height:44px;font-size:24px;border-radius:12px}
+  #palbox .slabel .scount{display:none}
+  .setfx{display:none}#palbox .setsel{flex-wrap:nowrap}
+  #palbody{height:76px}#palbody #freerow,#palbody #numrow{overflow-x:auto;scroll-snap-type:x proximity;gap:2px}
+  #palbody .pencil{width:44px;height:72px;transform:translateY(4px);scroll-snap-align:start}#palbody .pencil svg{width:28px;margin:0 auto}
+  #palbody>.wheelbtn{width:56px}
+  .tgrid,.tg-tools,.tg-opts{grid-template-columns:repeat(auto-fill,minmax(52px,1fr))!important;grid-auto-rows:52px}
+  .tgrid button span{font-size:10px}
+}
+@media (max-width:600px){
+  .tg-tools{grid-template-columns:repeat(4,1fr)!important}
+  .tg-opts{grid-template-columns:none!important;grid-auto-flow:column!important;grid-auto-columns:1fr!important}
+  #palbox .moresets{height:44px;padding:0 12px}
+  #tools .szbar #szRange{height:44px}
+  #palbody #freerow{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+}
+#palbox .moresets{align-items:center;justify-content:center;line-height:1}
+/* v20: Mix overlay sits exactly on top of the bottom boxes (pencils + tools); nothing else moves */
+#colors{position:relative}
+#colors>.mixer{position:absolute;left:0;right:0;top:var(--u);bottom:0;z-index:20;margin:0;padding:var(--u);box-sizing:border-box;display:flex;gap:12px;align-items:stretch;
+  border-radius:14px;background:linear-gradient(180deg,#2e231a,#1d1611);border:1px solid rgba(255,179,92,.55);box-shadow:0 -8px 30px rgba(0,0,0,.45)}
+#colors>.mixer[hidden]{display:none}
+.mxside{flex:0 0 250px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.mixer .mxhead{margin:0;gap:8px;height:24px}.mixer .mxhead b{font-size:12px}
+.mixer .mxx{width:28px;height:28px;margin-left:auto;display:grid;place-items:center;padding:0}
+.mixer .mxpv{width:100%;height:auto;flex:1 1 auto;min-height:0;max-height:60px;object-fit:cover}
+.mxfoot{display:flex;gap:8px}.mxfoot .chip{flex:1 1 0;height:36px;justify-content:center;font-size:13px}
+.mxfoot .mxok{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;border-color:transparent}
+.mxoff{position:absolute;right:10px;bottom:6px;font:600 11px Poppins;color:var(--mute);background:none;border:0;text-decoration:underline;cursor:pointer}
+.mixer .mxrows{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:4px;overflow:hidden}
+.mixer .mxrow{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;flex:1 1 0;min-height:0}
+.mixer .mxrow>b{flex:0 0 78px;font:600 10.5px Poppins;letter-spacing:.08em;text-transform:uppercase;color:#ffd9a6}
+.mixer .mxo{flex:none;height:30px;padding:0 10px;font-size:12px}
+@media (max-width:1180px){.mixer .mxo{height:36px}}
+@media (max-width:600px){#colors>.mixer{flex-direction:column;gap:8px}.mxside{flex:none}.mixer .mxpv{max-height:56px}
+  .mxfoot .chip{height:48px;font-size:15px}.mixer .mxx{width:44px;height:44px}.mixer .mxhead{height:44px}
+  .mixer .mxrows{order:-1;justify-content:flex-start;gap:8px}.mixer .mxrow{flex:none;flex-wrap:wrap}.mixer .mxrow>b{flex:1 1 100%}.mixer .mxo{height:44px}
+  .mxoff{position:static;align-self:center;padding:8px}}
+@media (max-width:600px){#colors>.mixer{display:block;overflow-y:auto;overscroll-behavior:contain;padding-bottom:0}#colors>.mixer[hidden]{display:none}
+  .mixer .mxrows{overflow:visible;display:flex;flex-direction:column;gap:10px;margin-bottom:8px}
+  .mxside{position:sticky;bottom:0;padding:8px 0;background:linear-gradient(180deg,rgba(29,22,17,.92),#1d1611 30%);z-index:2}}
+@media (max-width:600px){.mxside{bottom:auto;top:0;background:#241b14}}
+/* ================= v20 phone (<=600px): picture first ================= */
+.phonly{display:none!important}
+@media (max-width:600px){
+  .phonly{display:revert!important}
+  #app{grid-template-rows:0 0 minmax(0,1fr) 0;padding:60px 0 calc(64px + env(safe-area-inset-bottom));box-sizing:border-box}
+  #top,#story{display:none}
+  #stagewrap{padding:0 4px}
+  /* slim top bar: Menu · Pen size · Undo */
+  #tools{position:fixed;top:0;left:0;right:0;z-index:45;height:60px;box-sizing:border-box;padding:8px;display:flex;flex-wrap:nowrap;gap:8px;align-items:center;
+    background:linear-gradient(180deg,#1b140f,#16110d);border-bottom:1px solid rgba(255,200,120,.18)}
+  #tools .grp{display:none}#tools .grp.right{display:contents}
+  #tools #clear,#tools #startOver,#tools #save,#tools #saveLoop{display:none}
+  #tools .big{flex:none;width:44px;min-width:44px;height:44px;padding:0;gap:0}#tools .big span{display:none!important}
+  #tools #menuBtn{order:-1}#tools #undo{order:3}
+  #tools .szbar{order:2;flex:1 1 auto;height:44px;padding:0 10px;gap:8px}#tools .szbar .bxt{display:block;font-size:10px}
+  #tools .szbar #szRange{flex:1 1 auto;width:auto;min-width:60px;height:44px}#tools .szbar .szprev{width:30px;height:30px}#tools .szbar .szprev i{max-width:26px;max-height:26px}
+  /* menu open: the hidden actions appear as a second row, and the chapter / mode header drops down under it */
+  #app.ph-menu #tools{height:auto;flex-wrap:wrap}
+  #app.ph-menu #tools .grp.free-only,#app.ph-menu #tools .grp.cbn-only:not(.free-only){display:flex;order:10;flex:1 1 0}
+  #app.ph-menu #tools .grp.story-only{display:flex}
+  #app.ph-menu #tools #clear,#app.ph-menu #tools #startOver,#app.ph-menu #tools #save{display:flex;order:11;flex:1 1 0}
+  #app.ph-menu #tools .grp .big,#app.ph-menu #tools #clear,#app.ph-menu #tools #startOver,#app.ph-menu #tools #save{width:auto;min-width:0;height:52px;flex-direction:column;gap:2px;padding:4px 2px}
+  #app.ph-menu #tools .grp .big{flex:1 1 auto}
+  #app.ph-menu #tools .grp .big span,#app.ph-menu #tools #clear span,#app.ph-menu #tools #startOver span,#app.ph-menu #tools #save span{display:block!important;font-size:10px}
+  #app.ph-menu #menuBtn{background:rgba(255,179,92,.22);border-color:rgba(255,179,92,.7)}
+  #app.ph-menu #top{display:flex;position:fixed;left:0;right:0;top:var(--tmh,120px);z-index:44;flex-wrap:wrap;gap:8px;padding:8px;background:#16110d;border-bottom:1px solid rgba(255,200,120,.25);box-shadow:0 12px 30px rgba(0,0,0,.5)}
+  #app.ph-menu #top .brand{display:none}
+  #app.ph-menu #top #scenes{order:3;flex:1 1 100%;overflow-x:auto}
+  #app.ph-menu #top .ownerbar{position:static;order:4;flex:1 1 100%;justify-content:center;box-shadow:none}
+  #app.ph-menu #top .ownerbar button{height:44px}
+  .ownerbar{display:none}
+  /* bottom: panel (one at a time) + the tab strip, all overlaying the picture */
+  #bottom{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:0 0 env(safe-area-inset-bottom);gap:0;background:none;pointer-events:none}
+  #bottom>*{pointer-events:auto}
+  #bottom>#tools{pointer-events:auto}
+  #phClose{order:1}#colors{order:2}#linesPop{order:3}#setbar{order:4}#pbar{order:5}
+  .pbar{display:flex!important;align-items:center;gap:6px;height:64px;box-sizing:border-box;padding:6px 8px;background:linear-gradient(180deg,#1d1611,#15100c);border-top:1px solid rgba(255,200,120,.25)}
+  .pbt{flex:1 1 0;min-width:44px;height:52px;padding:2px;border-radius:12px;background:none;border:1px solid transparent;color:#d9c3a3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:600 10px/1 Poppins}
+  .pbt svg,.pbt .pbtool svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .pbt .pbtool{display:block;height:22px}
+  .pbt.on{background:rgba(255,179,92,.2);border-color:rgba(255,179,92,.6);color:#ffe2bd}
+  .pbsw{display:block;width:22px;height:22px;border-radius:50%;box-shadow:0 0 0 2px #ffe2bd,inset 0 0 0 2px rgba(0,0,0,.25)}
+  .pbd{display:flex;flex:none;padding:2px;border-radius:12px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+  .pbdb{width:44px;height:46px;border-radius:10px;font:800 14px Poppins;color:var(--mute);background:none;border:0}
+  .pbdb.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b}
+  .phclose{align-self:flex-end;margin:0 8px 6px;height:44px;padding:0 16px;border-radius:999px;background:rgba(29,22,17,.94);border:1px solid rgba(255,179,92,.6);color:#ffe2bd;font:600 13px Poppins;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+  #app:not([data-ph]) .phclose,#app[data-ph=""] .phclose{display:none!important}
+  #colors{display:none;margin:0;padding:8px;max-height:33vh;overflow-y:auto;overscroll-behavior:contain;background:rgba(24,18,13,.97);border-top:1px solid rgba(255,200,120,.35);border-radius:16px 16px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.45)}
+  #app[data-ph=colors] #colors,#app[data-ph=tools] #colors,#app[data-ph=fx] #colors,#app[data-ph=mix] #colors{display:flex;flex-direction:column;gap:8px}
+  #colors>.bx{display:none;border:0;background:none;padding:0;height:auto;min-height:0}
+  #app[data-ph=colors] #palbox,#app[data-ph=fx] #palbox{display:flex}
+  #app[data-ph=tools] #toolbox,#app[data-ph=fx] #toolbox{display:flex}
+  #app[data-ph=fx] #palbody{display:none}
+  #app[data-ph=colors] .setfx{display:none}
+  #app[data-ph=fx] #palbox .bxh{height:auto;flex-wrap:wrap}
+  #app[data-ph=fx] .setfx{display:flex;flex:1 1 100%;order:5;overflow:visible}
+  #app[data-ph=fx] .setfx .plabel{flex-wrap:wrap;gap:8px}
+  #app[data-ph=fx] .setfx .fxs{height:40px;padding:0 10px}#app[data-ph=fx] .setfx .fxs input[type=range]{width:120px;height:32px}
+  #app[data-ph=fx] .setfx:empty::after{content:'This set has no effect sliders. Flip to Metallic, Chrome, Glow, Neon… with ‹ ›';font:500 12px Poppins;color:var(--mute)}
+  #app[data-ph=fx] #moreSets{display:none}
+  #app[data-ph=tools] .tg-opts{display:none}
+  #app[data-ph=fx] .tg-tools,#app[data-ph=fx] .tg-opts #linesBtn,#app[data-ph=fx] .tg-opts #mixBtn{display:none!important}
+  .tg-tools .dbtn{display:none!important}
+  .tg-tools{grid-template-columns:repeat(auto-fit,minmax(52px,1fr))!important}
+  #app[data-ph=mix] #colors>.bx{display:none}
+  #colors>.mixer{position:static;display:block;border:0;padding:0;background:none;box-shadow:none}
+  #colors>.mixer[hidden]{display:none}
+  #linesPop{display:none}
+  #app[data-ph=lines] #linesPop{display:block;position:static!important;left:auto!important;top:auto!important;width:auto;max-height:33vh;overflow-y:auto;border-radius:16px 16px 0 0;margin:0;box-shadow:0 -10px 30px rgba(0,0,0,.35)}
+  #linesPop button{min-height:44px}
+  #setbar{margin:0;padding:6px 8px;background:rgba(24,18,13,.95);overflow-x:auto}
+  .tool-pop #setbar{display:flex;flex-wrap:nowrap}
+  #setbar .chip,#setbar .popsw{height:44px!important}
+  .zoomui,.grabui{bottom:8px}
+}
+@media (max-width:600px){#app{grid-template-rows:minmax(0,1fr)}#stagewrap{grid-row:1;grid-column:1}
+  #app.ph-menu #top .ownerbar:not([hidden]){display:flex}}
+/* portrait phone: the 16:9 page sits in the space above the tallest panel, so an open panel never covers it */
+@media (max-width:600px){#stagewrap{align-items:flex-start;padding-top:max(8px,calc((100dvh - 124px - 33vh - 56.25vw) / 2))}}
+@media (max-width:600px){
+  #colors>.bx{flex:none!important}
+  #tools #menuBtn{display:flex!important;align-items:center;justify-content:center}
+  #app:not(.ph-menu) #tools .grp:not(.right){display:none!important}
+  #app.ph-menu #tools .grp.cbn-only{display:none}
+  #app.cbn.ph-menu #tools .grp.cbn-only{display:flex}
+}
+@media (max-width:600px){#app.ph-menu:not(.cbn) #tools .grp.cbn-only{display:none!important}}
+/* phone: color suggestions sit above the tab strip, never on the picture; hidden while a panel is open */
+@media (max-width:600px){
+  #tryrow{position:fixed;left:8px;right:8px;top:auto;bottom:calc(72px + env(safe-area-inset-bottom));z-index:39;justify-content:center;flex-wrap:wrap}
+  #tryrow .tx{width:44px;height:44px}
+  #app[data-ph]:not([data-ph=""]) #tryrow,#app.ph-menu #tryrow{display:none}
+  #tools .szbar{min-width:0}#tools .szbar #szRange{min-width:40px}
+}
+@media (max-width:400px){#tools .szbar .bxt{display:none}#tools{gap:6px;padding:8px 6px}}
+@media (max-width:600px){#tools #undo,#tools #menuBtn{width:44px!important;flex:0 0 44px!important}#tools .szbar{flex:1 1 auto!important}
+  #app.ph-menu #tools #clear,#app.ph-menu #tools #startOver,#app.ph-menu #tools #save{width:auto!important}}
