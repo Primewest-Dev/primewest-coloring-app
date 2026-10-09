@@ -1002,3 +1002,18 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 }
 /* v21: short landscape (phone sideways): the owner test bar sits in the side panel instead of over the picture */
 @media (orientation:landscape) and (max-height:520px){#top .ownerbar:not([hidden]){position:static;order:9;flex:1 1 100%;justify-content:center;box-shadow:none;padding:4px 6px}#top .ownerbar button{height:36px}}
+/* v22: effect settings = compact value buttons + slider popover */
+.fxw{position:static;display:inline-flex;margin-left:4px}
+.fxb{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 7px;border-radius:12px;border:0;background:rgba(0,0,0,.28);box-shadow:inset 0 0 0 1px rgba(255,217,166,.22);color:#ffe9cc;cursor:pointer;white-space:nowrap}
+.fxb span{font:600 10px Poppins;letter-spacing:.06em;text-transform:uppercase;opacity:.85}.fxb b{font:700 11px Poppins;color:#ffd08a;letter-spacing:0}
+.fxb:hover{background:rgba(0,0,0,.4)}.fxb.on{background:#ffb35c;color:#2a1606}.fxb.on b{color:#2a1606}.fxw.off .fxb b{opacity:.6}
+.fxpop{position:fixed;z-index:80;padding:10px 12px;border-radius:12px;background:#2a1d14;box-shadow:0 10px 28px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,217,166,.25)}
+.fxpop[hidden]{display:none!important}
+.fxpop .fxs,.plabel .fxpop .fxs{display:flex!important;align-items:center;gap:10px;margin:0;padding:0;background:none;box-shadow:none;height:auto}
+.fxpop .fxs span{font:600 12px Poppins;color:#ffe9cc;letter-spacing:.04em}
+.fxpop .fxs input[type=range],.plabel .fxpop .fxs input[type=range]{width:200px;height:28px;accent-color:#ffb35c}
+.fxpop .fxs input.fxn,.plabel .fxpop .fxs input.fxn{width:56px;height:28px;font:600 13px Poppins;border-radius:6px}
+.fxpop .fxs em{display:none}
+@media (max-width:600px){.fxb{height:44px;padding:0 12px}.fxb span{font-size:11px}.fxb b{font-size:13px}.fxpop .fxs input[type=range]{width:min(62vw,240px);height:40px}
+  #app[data-ph=fx] .setfx .fxw{margin:0}}
+#palbox.hasfx .scount{display:none!important}
