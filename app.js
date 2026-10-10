@@ -4,6 +4,7 @@
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
 const EP_BUILD=24;
+
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -2791,4 +2792,10 @@ if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   let lastChk=0,ptrDown=false;addEventListener('pointerdown',()=>ptrDown=true,true);addEventListener('pointerup',()=>ptrDown=false,true);addEventListener('pointercancel',()=>ptrDown=false,true);const chk=()=>{if(document.hidden||Date.now()-lastChk<60000)return;lastChk=Date.now();navigator.serviceWorker.getRegistration().then(r=>r&&r.update().catch(()=>0)).catch(()=>0);
     fetch('index.html?bc='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=/EP_BUILD_HTML=(\d+)/.exec(t||'');if(m&&+m[1]>EP_BUILD&&!ptrDown){try{saveNow();}catch(e){}const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));setTimeout(()=>location.replace(u.toString()),300);}}).catch(()=>0);};
   document.addEventListener('visibilitychange',chk);setInterval(chk,20*60000);}
+/* v24: on desktop / tablet every pencil in a set fits the box evenly (big sets shrink slightly instead of scrolling); phone keeps its swipe row */
+function fitPencils(){const r=$('#freerow');if(!r)return;r.style.removeProperty('--pz');r.classList.remove('pfit');
+  if(innerWidth<=600||!r.querySelector('.pencil'))return;let z=1;
+  for(let k=0;k<4&&r.scrollWidth>r.clientWidth+1;k++){z=Math.max(.55,z*Math.min(.99,(r.clientWidth-2)/r.scrollWidth));r.style.setProperty('--pz',z.toFixed(3));r.classList.add('pfit');}}
+{let fpT=0;const fp=()=>{cancelAnimationFrame(fpT);fpT=requestAnimationFrame(fitPencils);};addEventListener('resize',fp);
+  const go=()=>{const r=$('#palbody')||document.body;new MutationObserver(fp).observe(r,{childList:true,subtree:true});fp();};go();}
 })();
