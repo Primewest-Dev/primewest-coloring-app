@@ -1045,3 +1045,15 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .lnwdot{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none;left:50%;top:50%}
 .lnwv{display:flex;flex-direction:column;gap:6px;font-size:11px}.lnwv input{width:96px}.lnwv em{font-style:normal;font-weight:600}
 .lnc.wheelc{background:conic-gradient(red,yellow,lime,cyan,blue,magenta,red)}
+
+/* v24: Adjust last stroke - outline flash on the stroke being adjusted */
+.adj-hl{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0;filter:drop-shadow(0 0 3px #ffb35c)}
+.adj-hl.go{animation:adjhl 1.6s ease-out}
+@keyframes adjhl{0%{opacity:0}15%{opacity:1}60%{opacity:.85}100%{opacity:0}}
+#adjust.empty .adjr{opacity:.45}
+.mixer .mxhint{display:block;font:500 10.5px Poppins;color:#e9c79a;opacity:.85;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* v24: desktop color suggestions in a column left of the picture (placed by placeTry) */
+#tryrow.col{position:fixed;z-index:30;flex-direction:column;align-items:center;width:78px;box-sizing:border-box;padding:8px 6px;gap:8px;pointer-events:none}
+#tryrow.col b{text-align:center;font-size:10.5px;line-height:1.25;white-space:normal;letter-spacing:.03em}
+#tryrow.col .tsw{flex-direction:column;align-items:center;gap:7px}
+#tryrow.col.slim{width:46px;padding:6px 4px}#tryrow.col.slim b{font-size:9px}#tryrow.col.slim .tsw button{width:28px;height:28px}

@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=23;
+const EP_BUILD=24;
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
   const go=()=>{const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));location.replace(u.toString());};
@@ -110,6 +110,8 @@ const PREMIUM=[
   {id:'k-white',kind:'cloud',hex:'#f7f9ff',name:'White cloud'},{id:'k-dawn',kind:'cloud',hex:'#f6c9d4',name:'Dawn cloud'},
   {id:'k-storm',kind:'cloud',hex:'#8f9bb0',name:'Storm cloud'},{id:'k-sky',kind:'cloud',hex:'#a9d4f5',name:'Sky cloud'},
   {id:'k-gold',kind:'cloud',hex:'#f5d68a',name:'Golden cloud'},
+  /* v24: every effect set filled out to ~13 colors across the full range */
+  {id:'m-ruby',kind:'metal',hex:'#b0303a',name:'Ruby metal'},{id:'m-sunset',kind:'metal',hex:'#d9752f',name:'Sunset copper'},{id:'m-brass',kind:'metal',hex:'#c2a83e',name:'Brass'},{id:'m-emerald',kind:'metal',hex:'#2f8a5a',name:'Emerald metal'},{id:'m-teal',kind:'metal',hex:'#2e8b8b',name:'Teal metal'},{id:'m-sapphire',kind:'metal',hex:'#3060b0',name:'Sapphire metal'},{id:'m-violet',kind:'metal',hex:'#7a4ab0',name:'Violet metal'},{id:'m-pink',kind:'metal',hex:'#d47aa0',name:'Pink metal'},{id:'m-black',kind:'metal',hex:'#2b2e33',name:'Gunmetal'},{id:'m-platinum',kind:'metal',hex:'#e5e4e2',name:'Platinum'},{id:'g-ruby',kind:'glitter',hex:'#d42a3c',name:'Ruby glitter'},{id:'g-tangerine',kind:'glitter',hex:'#f2862e',name:'Tangerine glitter'},{id:'g-lemon',kind:'glitter',hex:'#f2dc3a',name:'Lemon glitter'},{id:'g-lime',kind:'glitter',hex:'#9ad83a',name:'Lime glitter'},{id:'g-teal',kind:'glitter',hex:'#2fb8b0',name:'Teal glitter'},{id:'g-pink',kind:'glitter',hex:'#ff7ac8',name:'Pink glitter'},{id:'g-black',kind:'glitter',hex:'#2a2a35',name:'Black glitter'},{id:'n-red',kind:'neon',hex:'#ff3b4e',name:'Neon red'},{id:'n-yellow',kind:'neon',hex:'#fff23a',name:'Neon yellow'},{id:'n-green',kind:'neon',hex:'#39ff6a',name:'Neon green'},{id:'n-teal',kind:'neon',hex:'#2affd5',name:'Neon teal'},{id:'n-blue',kind:'neon',hex:'#3b7bff',name:'Neon blue'},{id:'n-magenta',kind:'neon',hex:'#ff2bd6',name:'Neon magenta'},{id:'n-white',kind:'neon',hex:'#f4fbff',name:'Neon white'},{id:'n-gold',kind:'neon',hex:'#ffcc33',name:'Neon gold'},{id:'w-ember',kind:'glow',hex:'#ff6a5a',name:'Ember glow'},{id:'w-sun',kind:'glow',hex:'#ffe066',name:'Sun glow'},{id:'w-lime',kind:'glow',hex:'#c6ff6b',name:'Lime glow'},{id:'w-teal',kind:'glow',hex:'#5ff0e0',name:'Teal glow'},{id:'w-blue',kind:'glow',hex:'#6f8cff',name:'Blue glow'},{id:'w-pink',kind:'glow',hex:'#ff9de0',name:'Pink glow'},{id:'w-white',kind:'glow',hex:'#fff7ea',name:'Candle white'},{id:'w-gold',kind:'glow',hex:'#ffd27a',name:'Gold glow'},{id:'p-red',kind:'pulse',hex:'#ff3d4a',name:'Red pulse'},{id:'p-lemon',kind:'pulse',hex:'#fff04a',name:'Lemon pulse'},{id:'p-lime',kind:'pulse',hex:'#b6ff3b',name:'Lime pulse'},{id:'p-green',kind:'pulse',hex:'#4dff8a',name:'Green pulse'},{id:'p-blue',kind:'pulse',hex:'#3f7bff',name:'Blue pulse'},{id:'p-purple',kind:'pulse',hex:'#a24bff',name:'Purple pulse'},{id:'p-pink',kind:'pulse',hex:'#ff7ab8',name:'Pink pulse'},{id:'p-white',kind:'pulse',hex:'#f6f8ff',name:'White pulse'},{id:'j-fireopal',kind:'jewel',hex:'#ff6a2a',name:'Fire opal'},{id:'j-citrine',kind:'jewel',hex:'#f5d000',name:'Citrine'},{id:'j-peridot',kind:'jewel',hex:'#9acd32',name:'Peridot'},{id:'j-aqua',kind:'jewel',hex:'#5fd4d0',name:'Aquamarine'},{id:'j-tanzanite',kind:'jewel',hex:'#4b3fb5',name:'Tanzanite'},{id:'j-pinksap',kind:'jewel',hex:'#e8508f',name:'Pink sapphire'},{id:'j-diamond',kind:'jewel',hex:'#e8f4ff',name:'Diamond'},{id:'j-onyx',kind:'jewel',hex:'#23232b',name:'Onyx'},{id:'l-lime',kind:'lightning',hex:'#b6ff3b',name:'Lime lightning'},{id:'l-magenta',kind:'lightning',hex:'#ff3bf0',name:'Magenta lightning'},{id:'l-indigo',kind:'lightning',hex:'#5b5bff',name:'Indigo lightning'},{id:'l-ice',kind:'lightning',hex:'#e6f7ff',name:'Ice lightning'},{id:'s-crimson',kind:'smoke',hex:'#a33a44',name:'Crimson smoke'},{id:'s-amber',kind:'smoke',hex:'#c99a3e',name:'Amber smoke'},{id:'s-gold',kind:'smoke',hex:'#c8a84e',name:'Gold smoke'},{id:'s-moss',kind:'smoke',hex:'#6f8a4a',name:'Moss smoke'},{id:'s-ocean',kind:'smoke',hex:'#4a6fa5',name:'Ocean smoke'},{id:'s-rose',kind:'smoke',hex:'#c48aa0',name:'Rose smoke'},{id:'s-ivory',kind:'smoke',hex:'#e8e2d4',name:'Ivory smoke'},{id:'s-ink',kind:'smoke',hex:'#2d3350',name:'Ink smoke'},{id:'k-sunset',kind:'cloud',hex:'#f4a59a',name:'Sunset cloud'},{id:'k-peach',kind:'cloud',hex:'#ffcfa8',name:'Peach cloud'},{id:'k-lemon',kind:'cloud',hex:'#fff1b0',name:'Lemon cloud'},{id:'k-mint',kind:'cloud',hex:'#c8f2dc',name:'Mint cloud'},{id:'k-teal',kind:'cloud',hex:'#a8e6e0',name:'Teal cloud'},{id:'k-lavender',kind:'cloud',hex:'#d4c8f2',name:'Lavender cloud'},{id:'k-lilac',kind:'cloud',hex:'#f2c8ec',name:'Lilac cloud'},{id:'k-night',kind:'cloud',hex:'#5a6a8f',name:'Midnight cloud'},{id:'c-yellow',kind:'chrome',hex:'#e8d23a',name:'Chrome lemon'},{id:'tw-mahogany',kind:'wood',hex:'#7a3a2a',tex:'cherry',name:'Mahogany'},{id:'tw-teak',kind:'wood',hex:'#a8723c',tex:'oak',name:'Teak'},{id:'tw-ebony',kind:'wood',hex:'#2e2420',tex:'walnut',name:'Ebony'},{id:'tw-birch',kind:'wood',hex:'#ead9b8',tex:'maple',name:'Birch'},{id:'tw-pred',kind:'wood',hex:'#a8463a',tex:'drift',name:'Painted red'},{id:'tw-pblue',kind:'wood',hex:'#4a6fa5',tex:'drift',name:'Painted blue'},{id:'tw-pgreen',kind:'wood',hex:'#5a8a5a',tex:'drift',name:'Painted green'},{id:'tb-brown',kind:'brick',hex:'#7a4a32',tex:'red',name:'Brown brick'},{id:'tb-orange',kind:'brick',hex:'#c8683a',tex:'red',name:'Orange brick'},{id:'tb-burgundy',kind:'brick',hex:'#6e2a2e',tex:'red',name:'Burgundy brick'},{id:'tb-yellow',kind:'brick',hex:'#d9b24a',tex:'tan',name:'Yellow brick'},{id:'tb-sand',kind:'brick',hex:'#d8c09a',tex:'tan',name:'Sand brick'},{id:'tb-grey',kind:'brick',hex:'#8a8a8a',tex:'white',name:'Grey brick'},{id:'tb-charcoal',kind:'brick',hex:'#4a4a50',tex:'white',name:'Charcoal brick'},{id:'tb-pink',kind:'brick',hex:'#d48a8a',tex:'white',name:'Pink brick'},{id:'tb-blue',kind:'brick',hex:'#5a7aa5',tex:'white',name:'Blue painted brick'},{id:'tb-green',kind:'brick',hex:'#5a8a6a',tex:'white',name:'Green painted brick'},{id:'ts-basalt',kind:'stone',hex:'#3a3d42',tex:'slate',name:'Basalt'},{id:'ts-greenslate',kind:'stone',hex:'#4a5f55',tex:'slate',name:'Green slate'},{id:'ts-blueslate',kind:'stone',hex:'#4a5a70',tex:'slate',name:'Blue slate'},{id:'ts-redrock',kind:'stone',hex:'#a8553a',tex:'sand',name:'Red rock'},{id:'ts-goldsand',kind:'stone',hex:'#d9b45a',tex:'sand',name:'Gold sandstone'},{id:'ts-jade',kind:'stone',hex:'#5a9a7a',tex:'marble',name:'Jade stone'},{id:'ts-rosemarble',kind:'stone',hex:'#e8c4c4',tex:'marble',name:'Rose marble'},{id:'ts-lapis',kind:'stone',hex:'#2f4f9a',tex:'granite',name:'Lapis'},{id:'tf-poppy',kind:'flower',hex:'#e0453a',tex:'rose',name:'Poppy'},{id:'tf-sunflower',kind:'flower',hex:'#f29a2e',tex:'daisy',name:'Sunflower'},{id:'tf-gold',kind:'flower',hex:'#e8c24a',tex:'daisy',name:'Buttercup'},{id:'tf-leaf',kind:'flower',hex:'#6fa85a',tex:'mint',name:'Green sprig'},{id:'tf-teal',kind:'flower',hex:'#5ac8c0',tex:'forget',name:'Teal bloom'},{id:'tf-violet',kind:'flower',hex:'#8a5ad8',tex:'lavender',name:'Violet'},{id:'tf-white',kind:'flower',hex:'#f6f4ee',tex:'blossom',name:'White blossom'},{id:'fh-red',kind:'fur',hex:'#a8402a',tex:'wavy',name:'Red fur'},{id:'fh-blonde',kind:'fur',hex:'#f0d48a',tex:'straight',name:'Blonde hair'},{id:'fh-brown',kind:'fur',hex:'#6a4428',tex:'short',name:'Brown fur'},{id:'fh-grey',kind:'fur',hex:'#8a8a8a',tex:'short',name:'Grey fur'},{id:'fh-white',kind:'fur',hex:'#f4f0e8',tex:'long',name:'White fur'},{id:'fh-black',kind:'fur',hex:'#1a1818',tex:'straight',name:'Black hair'},{id:'fh-blue',kind:'fur',hex:'#4a6fb5',tex:'short',name:'Blue fur'},{id:'fh-pink',kind:'fur',hex:'#f29ac0',tex:'long',name:'Pink fur'},
   {id:'airbrush',kind:'brush',name:'Soft airbrush'},{id:'watercolor',kind:'brush',name:'Watercolor wash'}];
 /* gradient ramps (idea from the pop-pencils prototype): colour runs along the stroke, and slowly shifts (ping-pong) */
 const RAMPS={...{},tropical:['#22c55e','#facc15','#fb923c','#ec4899','#a855f7'],ocean:['#e0f7fa','#4dd0e1','#0891b2','#1e40af','#0b1f4d'],
@@ -253,12 +255,12 @@ function strokeStyle(){return tool==='airbrush'?'air':tool==='watercolor'?'water
 const inkKind=()=>ink.kind==='mix'?((ink.mix&&ink.mix.finish)||'plain'):ink.kind;
 /* v23 Adjust: per-pencil Hue, Saturation, Brightness, Contrast, Warmth, Opacity and Glow. Saved per pencil; they change only what you
    draw with THAT pencil (the colour is adjusted at the ink, opacity and the static glow when the stroke / fill is laid down). */
-const ADJDEF=[['h','Hue',-180,180,0,1,'°','Hue: turn this pencil\'s color around the color wheel'],['s','Saturation',0,200,100,1,'%','Saturation: grey to vivid'],['b','Brightness',-50,50,0,1,'','Brightness: darker to lighter'],
+const ADJDEF=[['h','Hue',-180,180,0,1,'°','Hue: turn the stroke\'s color around the color wheel'],['s','Saturation',0,200,100,1,'%','Saturation: grey to vivid'],['b','Brightness',-50,50,0,1,'','Brightness: darker to lighter'],
   ['c','Contrast',50,150,100,1,'%','Contrast: soft to punchy (lights lighter, darks darker)'],['w','Warmth',-50,50,0,1,'','Warmth: cooler (blue) to warmer (amber)'],['o','Opacity',10,100,100,1,'%','Opacity: see-through to solid'],
-  ['g','Glow',0,100,0,1,'%','Glow: a soft, still glow around this pencil\'s strokes (separate from the animated Glowing set)']];
+  ['g','Glow',0,100,0,1,'%','Glow: a soft, still glow around the stroke (separate from the animated Glowing set)']];
 let ADJ=LS.get('adj',{});if(!ADJ||typeof ADJ!=='object')ADJ={};
 const adjKey=()=>ink?ink.kind+':'+(ink.id||ink.base||ink.hex):'';
-function curAdj(){const a=ADJ[adjKey()];return a&&ADJDEF.some(([k,, , ,d])=>a[k]!=null&&a[k]!==d)?a:null;}
+function curAdj(){return null;}   /* v24: Adjust edits the LAST stroke / fill (see lastOp below), never the pencil for future strokes */
 function adjVal(a,k){const d=ADJDEF.find(q=>q[0]===k);return a&&a[k]!=null?a[k]:d[4];}
 function adjHex(hex,a){if(!a)return hex;let [h,s2,l]=rgb2hsl(hex2rgb(hex));h+=adjVal(a,'h');s2*=adjVal(a,'s')/100;let c=hex2rgb(hsl2hex(h,s2,l));
   const b=adjVal(a,'b')/100,ct=adjVal(a,'c')/100,w=adjVal(a,'w')/50;c=b>0?mix(c,WHITE,b*.8):c.map(v=>v*(1+b));c=c.map(v=>(v-128)*ct+128);c=[c[0]+w*38,c[1]+w*6,c[2]-w*38];
@@ -266,6 +268,44 @@ function adjHex(hex,a){if(!a)return hex;let [h,s2,l]=rgb2hsl(hex2rgb(hex));h+=ad
 function adjSync(){if(!ink)return;if(ink.hex!==ink._ao||ink.base==null)ink.base=ink.hex;const a=curAdj();ink.hex=a?adjHex(ink.base,a):ink.base;ink._ao=ink.hex;}
 function adjGlowDraw(c,src,hex){const a=curAdj(),g=a?adjVal(a,'g'):0;if(g<=0)return;c.save();c.globalAlpha=Math.min(1,.35+g/100*.65);c.shadowColor=hex;c.shadowBlur=6+g*.34;c.shadowOffsetX=W*3;c.drawImage(src,-W*3,0);if(g>60){c.shadowBlur=3+g*.12;c.drawImage(src,-W*3,0);}c.restore();}   // shadow only (the shape itself is drawn by the caller)
 const adjOp=()=>{const a=curAdj();return a?adjVal(a,'o')/100:1;};
+/* v24 Adjust last stroke: one press-hold-release stroke (or one fill) owns its own Adjust values. We keep the layer pixels from just
+   before and just after it; moving a slider re-renders only that stroke from those, live. A new stroke starts with fresh defaults and the
+   previous one keeps its look (it is baked into the picture, so autosave keeps it). Undo removes the stroke with its adjustments. */
+function lastOpCapture(ctx,x,y,w,h,kind){if(!S||mode==='cbn')return;const u=S.free.undo[S.free.undo.length-1];if(!u)return;const M=52;
+  const bx=Math.max(0,(x|0)-M),by=Math.max(0,(y|0)-M),bw=Math.min(W-bx,Math.ceil(w)+2*M),bh=Math.min(H-by,Math.ceil(h)+2*M);if(bw<=0||bh<=0)return;
+  const pulse=ctx!==S.free.ctx,src=pulse?u.p:u.f,B=new ImageData(bw,bh);if(src){const sd=src.data,bd=B.data;for(let r=0;r<bh;r++){const o=((by+r)*W+bx)*4;bd.set(sd.subarray(o,o+bw*4),r*bw*4);}}
+  const A=ctx.getImageData(bx,by,bw,bh),ad=A.data,bd=B.data,mk8=new Uint8Array(bw*bh);let any=0;for(let i=0,j=0;i<mk8.length;i++,j+=4)if(ad[j]!==bd[j]||ad[j+1]!==bd[j+1]||ad[j+2]!==bd[j+2]||ad[j+3]!==bd[j+3]){mk8[i]=1;any++;}
+  if(!any)return;const n=undoKey(),recs=[];for(const e of (S.fxUndo||[]))if(e.n===n)for(const q of e.m)if(q[3]==null&&!recs.some(z=>z[0]===q[0]))recs.push([q[0],q[0].hex]);
+  S.lastOp={kind,pulse,bx,by,bw,bh,B,A,M:mk8,n,hex:ink.base||ink.hex,name:ink.id&&PREM[ink.id]?PREM[ink.id].name:ink.kind==='mix'?'Mix · '+colorName(ink.base||ink.hex):colorName(ink.base||ink.hex),recs,a:{...adjCarry}};if(opAdj())lastOpRender();   /* v24: a new stroke starts from the previous stroke's Adjust values */
+  if($('#adjust')&&!$('#adjust').hidden)setTimeout(()=>{adjBuild();adjFlash();},0);}
+let adjCarry=LS.get('adjCarry',{});if(!adjCarry||typeof adjCarry!=='object')adjCarry={};
+function opAdj(){const L=S&&S.lastOp;return L&&ADJDEF.some(([k,, , ,d])=>L.a[k]!=null&&L.a[k]!==d)?L.a:null;}
+function adjMatrix(a){const h=adjVal(a,'h')*Math.PI/180,c=Math.cos(h),s=Math.sin(h),S2=adjVal(a,'s')/100;
+  const Hm=[.213+c*.787-s*.213,.715-c*.715-s*.715,.072-c*.072+s*.928,.213-c*.213+s*.143,.715+c*.285+s*.140,.072-c*.072-s*.283,.213-c*.213-s*.787,.715-c*.715+s*.715,.072+c*.928+s*.072];
+  const Sm=[.213+.787*S2,.715-.715*S2,.072-.072*S2,.213-.213*S2,.715+.285*S2,.072-.072*S2,.213-.213*S2,.715-.715*S2,.072+.928*S2],R=[];
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++)R[i*3+j]=Sm[i*3]*Hm[j]+Sm[i*3+1]*Hm[3+j]+Sm[i*3+2]*Hm[6+j];return R;}
+function adjRGB(a,m,r,g,b){let R=m[0]*r+m[1]*g+m[2]*b,G=m[3]*r+m[4]*g+m[5]*b,B=m[6]*r+m[7]*g+m[8]*b;const br=adjVal(a,'b')/100,ct=adjVal(a,'c')/100,w=adjVal(a,'w')/50;
+  if(br>0){R+=(255-R)*br*.8;G+=(255-G)*br*.8;B+=(255-B)*br*.8;}else if(br<0){R*=1+br;G*=1+br;B*=1+br;}
+  R=(R-128)*ct+128+w*38;G=(G-128)*ct+128+w*6;B=(B-128)*ct+128-w*38;return [R<0?0:R>255?255:R,G<0?0:G>255?255:G,B<0?0:B>255?255:B];}
+function opHex(L,a){if(!a)return L.hex;const c=hex2rgb(L.hex),q=adjRGB(a,adjMatrix(a),c[0],c[1],c[2]);return '#'+q.map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');}
+function lastOpRender(){const L=S&&S.lastOp;if(!L)return;const a=L.a,m=adjMatrix(a),op=adjVal(a,'o')/100,g=adjVal(a,'g'),hex=opHex(L,a),{bw,bh,B,A,M}=L,O=new ImageData(bw,bh),od=O.data,ad=A.data;
+  let base=B.data;
+  if(g>0){const mc=document.createElement('canvas');mc.width=bw;mc.height=bh;const mi=new ImageData(bw,bh);for(let i=0;i<M.length;i++)if(M[i])mi.data[i*4+3]=ad[i*4+3];mc.getContext('2d').putImageData(mi,0,0);
+    const gc=document.createElement('canvas');gc.width=bw;gc.height=bh;const gx=gc.getContext('2d');gx.putImageData(B,0,0);adjGlowDraw2(gx,mc,hex,g,bw);base=gx.getImageData(0,0,bw,bh).data;}
+  const plain=adjVal(a,'h')===0&&adjVal(a,'s')===100&&adjVal(a,'b')===0&&adjVal(a,'c')===100&&adjVal(a,'w')===0;
+  for(let i=0,j=0;i<M.length;i++,j+=4){if(!M[i]){od[j]=base[j];od[j+1]=base[j+1];od[j+2]=base[j+2];od[j+3]=base[j+3];continue;}
+    let r=ad[j],gg=ad[j+1],b=ad[j+2];if(!plain){const q=adjRGB(a,m,r,gg,b);r=q[0];gg=q[1];b=q[2];}
+    if(op>=1){od[j]=r;od[j+1]=gg;od[j+2]=b;od[j+3]=ad[j+3];continue;}
+    const a1=ad[j+3]/255*op,a0=base[j+3]/255*(1-op),ao=a1+a0;if(ao<=0){od[j+3]=0;continue;}od[j]=(r*a1+base[j]*a0)/ao;od[j+1]=(gg*a1+base[j+1]*a0)/ao;od[j+2]=(b*a1+base[j+2]*a0)/ao;od[j+3]=ao*255;}
+  const ctx=L.pulse?(S.pulse&&S.pulse.ctx):S.free.ctx;if(!ctx)return;ctx.putImageData(O,L.bx,L.by);dirty(L.pulse?'pulse':'free');
+  for(const [r,h0] of L.recs){const nh=plain?h0:opHex({hex:h0},a);if(r.hex!==nh){r.hex=nh;r.tint=null;r.shade=null;r.cf=null;r.nm=null;r.texC=null;r.sf=null;r.lc=null;r.bolt=null;}}
+  if(L.recs.length){dirty('fx');}}
+function adjGlowDraw2(c,src,hex,g,bw){c.save();c.globalAlpha=Math.min(1,.35+g/100*.65);c.shadowColor=hex;c.shadowBlur=6+g*.34;c.shadowOffsetX=bw*3;c.drawImage(src,-bw*3,0);if(g>60){c.shadowBlur=3+g*.12;c.drawImage(src,-bw*3,0);}c.restore();}
+let adjRaf=0;function lastOpRenderSoon(){if(adjRaf)return;adjRaf=requestAnimationFrame(()=>{adjRaf=0;lastOpRender();});}
+function adjFlash(){const L=S&&S.lastOp;let c=$('#adjHL');if(!L){if(c)c.remove();return;}if(!c){c=document.createElement('canvas');c.id='adjHL';c.className='adj-hl';c.width=W;c.height=H;}layers.appendChild(c);
+  const x=c.getContext('2d');x.clearRect(0,0,W,H);const mc=document.createElement('canvas');mc.width=L.bw;mc.height=L.bh;const mi=new ImageData(L.bw,L.bh);for(let i=0;i<L.M.length;i++)if(L.M[i]){mi.data[i*4]=255;mi.data[i*4+1]=179;mi.data[i*4+2]=92;mi.data[i*4+3]=255;}mc.getContext('2d').putImageData(mi,0,0);
+  for(const [dx,dy] of [[-3,0],[3,0],[0,-3],[0,3],[-2,-2],[2,2],[-2,2],[2,-2]])x.drawImage(mc,L.bx+dx,L.by+dy);x.globalCompositeOperation='destination-out';x.drawImage(mc,L.bx,L.by);x.globalCompositeOperation='source-over';
+  c.classList.remove('go');void c.offsetWidth;c.classList.add('go');}
 function setInkPattern(){adjSync();const st=strokeStyle();const ftx=ink&&ink.kind==='fur'&&(ink.tex||(PREM[ink.id]&&PREM[ink.id].tex));if(ftx&&ftx!==furStyle){furStyle=ftx;try{localStorage.setItem('ep-furStyle',JSON.stringify(furStyle));}catch(_){}}grainPat=sctx.createPattern(inkTile(st?'plain':inkKind(),ink.hex,st,true),'repeat');const fa=ink.kind==='mix'&&ink.mix&&ink.mix.amt?ink.mix.amt.finish:1;if(fa&&Math.abs(fa-1)>.02&&TEXK.has(inkKind())&&grainPat.setTransform)grainPat.setTransform(new DOMMatrix().scale(fa));}
 /* fill shading for the tap-to-fill tool (premium inks get a metallic gradient + highlight, sparkle, or a neon core) */
 function shader(bx,by,bw,bh){const rgb=hex2rgb(ink.hex),K=inkKind();
@@ -475,7 +515,7 @@ function buildPalette(){
   if(set.type==='plain')set.colors.forEach(h=>{const b=document.createElement('button');b.className='pencil'+(set.id==='jewel'?' jewelc':'')+(own?'':' dim');b.dataset.c=h;b.title=h;b.innerHTML=pencilSVG(h);
       b.onclick=()=>usePlain(set,h);host.appendChild(b);});
   else set.items.forEach(p=>{const b=document.createElement('button');b.className='pencil premium '+p.kind+(GEMS.has(p.id)?' gem':'')+(p.kind==='neon'||p.kind==='glow'?' n-'+p.id.slice(2):'')+(own?'':' dim');
-      b.dataset.p=p.id;b.title=p.name;b.innerHTML=premiumIcon(p);b.onclick=()=>usePremium(set,p);host.appendChild(b);});
+      b.dataset.p=p.id;b.title=p.name;if(p.kind==='neon'||p.kind==='glow')b.style.color=p.hex;b.innerHTML=premiumIcon(p);b.onclick=()=>usePremium(set,p);host.appendChild(b);});
   /* v18: no separate 'Any color' button; the one color wheel at the end of the row does it for effect sets */
   {const m=$('#moreSets');if(m){m.hidden=set.id!=='book';m.onclick=()=>flipSet(1);}}
   {const sf=$('#setfx');if(sf){sf.innerHTML='';let lab=fr.querySelector('.plabel');const ks=fxKeysFor(set);if(!lab&&ks){lab=document.createElement('div');lab.className='plabel';ks.forEach(q=>lab.appendChild(fxSlider(q)));}if(lab)sf.appendChild(lab);const pb=$('#palbox');pb&&pb.classList.toggle('hasfx',!!(lab&&lab.querySelector('.fxw')));}}   /* v22: in Mix the sliders for the mixed effects show on any set */   /* v20: the set's effect preview + sliders (Shimmer, Speed, Glow…) sit in the pencil box header beside ‹ set ›   /* v20: More sets is a small link in the pencil box header */
@@ -493,7 +533,7 @@ function anyPicker(set,show=true){let d=$('#anyPop');if(d)d.remove();if(!show)re
   d=document.createElement('div');d.id='anyPop';d.className='anypop';d.setAttribute('role','dialog');d.setAttribute('aria-label','Any color');
   const g=anyColors(set);d.innerHTML=`<header><b>${esc(set.name)} · any color</b><button class="x" aria-label="Close">×</button></header>`+anyGroupsHTML(g,false);
   d.querySelector('.x').onclick=()=>anyPicker(set,false);
-  d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;if(b.dataset.lk){anyPicker(set,false);openUpgrade(null,'palettes');return;}const base=PREM[anyId(set.id)],p={...base,hex:b.dataset.c,name:base.name};anyPicker(set,false);usePremium(set,p);buildPalette();};
+  d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;if(b.dataset.lk){anyPicker(set,false);openUpgrade(null,'palettes');return;}const base=PREM[anyId(set.id)],p={...base,hex:b.dataset.c,name:base.name};anyPicker(set,false);usePremium(set,p,true);buildPalette();};
   document.body.appendChild(d);const r=$('#wheelBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
   setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected||d.contains(e.target)){if(!d.isConnected)document.removeEventListener('pointerdown',f,true);return;}document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#wheelBtn'))d.remove();},true),0);}
 function wheelPicker(show=true){let d=$('#anyPop');if(d)d.remove();if(!show)return;
@@ -505,15 +545,20 @@ function wheelPicker(show=true){let d=$('#anyPop');if(d)d.remove();if(!show)retu
   document.body.appendChild(d);const r=$('#wheelBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
   setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected){document.removeEventListener('pointerdown',f,true);return;}if(d.contains(e.target))return;document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#wheelBtn'))d.remove();},true),0);}
 function flipSet(d){anyPicker(null,false);setIdx=(setIdx+d+SETS.length)%SETS.length;for(let k=0;k<SETS.length&&!setOK(setIdx);k++)setIdx=(setIdx+(d||1)+SETS.length)%SETS.length;settings.pset=SETS[setIdx].id;LS.set('settings',settings);buildPalette();$('#colors').scrollLeft=mode==='free'?0:$('#numrow').offsetWidth;}   /* v16: in Free Color the guide row is gone (wheel sits at the end), so show the set from its start */
+/* v24: grabbing a pencil means a pencil stroke: 3D -> Pop Pencil, 2D -> Pencil (from Fill, Pop Fill, Eraser or Pop Erase). The picked color
+   is kept; to fill, tap Fill afterwards (tools no longer swap the color back to their own last pick). The Any color wheel and Mix don't switch tools. */
+function autoDraw(){if(mode==='cbn')return;const t=toolSet==='3d'?'poppencil':'pencil';if(tool===t)return;
+  if(t==='poppencil'&&settings.ppColor===false){settings.ppColor=true;LS.set('settings',settings);const b=$('#ppColor');if(b)b.setAttribute('aria-pressed','true');}
+  setTool(t);}
 function usePlain(set,h){
   if(!owned(set)){const ps=Trials.palScene();
     if(ps!=null&&S&&ps!==S.n){openUpgrade(null,'palettes');return;}
     if(ps==null){Trials.setPalScene(S.n);toast(`Preview: themed palettes are free on this page`);buildPalette();}}
-  pickColor(h);if(set.id==='jewel'&&ink.kind==='plain')ink.fx='shimmer';}
-function usePremium(set,p){
+  pickColor(h);if(set.id==='jewel'&&ink.kind==='plain')ink.fx='shimmer';autoDraw();}
+function usePremium(set,p,noSwitch=false){
   if(!owned(set)&&Trials.left(set.id)<=0){openUpgrade(p.id,set.product);return;}
   if(!owned(set))toast(`Free try: ${p.name} · ${Trials.left(set.id)} ${Trials.left(set.id)===1?'stroke':'strokes'} left (a fill uses 3)`);
-  pickPremium(p);}
+  pickPremium(p);if(p.kind!=='brush'&&!noSwitch)autoDraw();}
 /* called when a stroke/fill starts with a premium ink/brush: spend a free try or open the upgrade sheet. returns false to block */
 function allowPremiumUse(cost){
   if(ink.kind==='mix'&&tool!=='eraser'&&!PREM[tool]){const need=mixSetsUsed().filter(t=>!owned(t));
@@ -545,7 +590,7 @@ function buildColors(){
   wb.onclick=e=>{e.stopPropagation();const st=SETS[setIdx];if(st&&st.type==='ink'&&ANY_KINDS[st.id]){if($('#anyPop'))anyPicker(st,false);else anyPicker(st);}else{if($('#anyPop'))wheelPicker(false);else wheelPicker();}};$('#palbody').appendChild(wb);
   buildPalette();
 }
-function markColor(){if(ink&&$('#adjust')&&!$('#adjust').hidden&&document.activeElement&&!document.activeElement.closest('#adjust'))setTimeout(adjBuild,0);setTimeout(sizeUI,0);const sl=$('#saveLoop');if(sl)sl.hidden=!(S&&S.pulseUsed&&mode==='free');
+function markColor(){setTimeout(sizeUI,0);const sl=$('#saveLoop');if(sl)sl.hidden=!(S&&S.pulseUsed&&mode==='free');
   $$('#numrow .sw').forEach(b=>b.classList.toggle('on',mode==='cbn'?+b.dataset.k===selNum:S.d.palette[b.dataset.k-1]===color));
   $$('#freerow .pencil:not(.premium)').forEach(b=>b.classList.toggle('on',(ink.kind==='plain'||ink.id==='c-any')&&b.dataset.c===color));const cb=$('#chromeBtn');if(cb){cb.classList.toggle('on',!!settings.chromeFinish);cb.setAttribute('aria-pressed',String(!!settings.chromeFinish));}
   $$('#freerow .premium').forEach(b=>b.classList.toggle('on',b.dataset.p===tool||b.dataset.p===ink.id));
@@ -570,8 +615,8 @@ function ctxBar(t,anim){const g=toolGroup(t)||t,c=CTX[g]||CTX.pencil,prev=app.da
    The 2D / 3D switch at the left of the pencil bar swaps the toolbar and pencils; each set remembers its own tool and colors. */
 let toolSet='2d';
 const SET_TOOLS={'2d':['pencil','fill','eraser'],'3d':['fill','pop','poppencil','poperase','eraser']};
-const inToolSet=(t,s=toolSet)=>PREM[t]?s==='2d':SET_TOOLS[s].includes(t);
-const setOK=i=>!(toolSet==='3d'&&SETS[i].id==='brush');   // brushes are 2D only (they can't color through Pop Fill)
+const inToolSet=(t,s=toolSet)=>PREM[t]?true:SET_TOOLS[s].includes(t);   /* v24: brushes work over 3D too */
+const setOK=i=>true;   /* v24: every set (brushes too) is usable in 3D */   // brushes are 2D only (they can't color through Pop Fill)
 const drawTool=()=>toolSet==='3d'?'fill':'pencil';
 /* v18: the 2D / 3D buttons ONLY swap which tools are shown. They never touch the picture: the 3D relief, pops, colors, line
    shading and settings stay exactly as they are (the relief view simply stays on wherever the page has 3D). */
@@ -589,7 +634,7 @@ function setbarFit(){const bar=$('#setbar');if(!bar)return;bar.classList.remove(
 let fitRaf=0;const fitSoon=()=>{cancelAnimationFrame(fitRaf);fitRaf=requestAnimationFrame(setbarFit);};
 function setTool(t){if(!inToolSet(t))t=t==='pop'||t==='poppencil'||t==='poperase'?'fill':drawTool();const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool),g1=memG(t);let rebuild=false;   /* v16: Pop Fill shares Fill's color */
   if(g0)TMEM[g0]={ink:{...ink},color,setIdx,tool};
-  if(g1&&g1!==g0&&TMEM[g1]){const m=TMEM[g1];if(g1==='pencil'&&t==='pencil'&&PREM[m.tool])t=m.tool;
+  if(false&&g1&&g1!==g0&&TMEM[g1]){const m=TMEM[g1];if(g1==='pencil'&&t==='pencil'&&PREM[m.tool])t=m.tool;
     if(!sameInk(m.ink,ink)){ink={...m.ink};color=m.color;if(m.setIdx!==setIdx){setIdx=m.setIdx;settings.pset=SETS[setIdx].id;LS.set('settings',settings);}rebuild=true;}}
   ctxBar(t,true);if(!isEr(t))LASTD[toolSet]=t;
   tool=t;$$('.tool').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));app.classList.toggle('tool-pop',t==='pop'||t==='poppencil');app.classList.toggle('tool-pp',t==='poppencil');
@@ -684,8 +729,10 @@ function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.cl
 let toastT=0;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),1600);}
 
 /* ---------- free color ---------- */
-function snap(){const f=S.free;f.undo.push({t:Date.now(),f:f.ctx.getImageData(0,0,W,H),p:S.pulseUsed?S.pulse.ctx.getImageData(0,0,W,H):null});if(f.undo.length>15)f.undo.shift();}
-function unsnap(u){S.free.ctx.putImageData(u.f,0,0);if(S.pulse){if(u.p)S.pulse.ctx.putImageData(u.p,0,0);else S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}}
+function snap(){if(S)S.lastOp=null;const f=S.free,er=tool==='eraser'&&mode==='free';S.useq=(S.useq||0)+1;f.undo.push({id:S.useq,t:Date.now(),f:f.ctx.getImageData(0,0,W,H),p:S.pulseUsed?S.pulse.ctx.getImageData(0,0,W,H):null,
+    x:er?{l:S.ltr?S.ltr.getContext('2d').getImageData(0,0,W,H):null,rx:S.pp&&S.pp.any?S.pp.rx.getImageData(0,0,W,H):null,ix:S.pp&&S.pp.any?S.pp.ix.getImageData(0,0,W,H):null,pops:JSON.stringify((S.pops||[]).map(({k,anim,...p})=>p))}:null});if(f.undo.length>15){f.undo.shift();const lo=f.undo[0].id;S.fxUndo=(S.fxUndo||[]).filter(e=>e.n>=lo);}}
+const undoKey=()=>{const u=S&&S.free&&S.free.undo[S.free.undo.length-1];return u?u.id:0;};
+function unsnap(u){S.free.ctx.putImageData(u.f,0,0);if(u.x){const X=u.x;if(X.l&&S.ltr){S.ltr.getContext('2d').putImageData(X.l,0,0);dirty('ltr');if(typeof ltRender==='function')ltRender();}if(X.rx&&S.pp){S.pp.rx.putImageData(X.rx,0,0);S.pp.ix.putImageData(X.ix,0,0);ppRender(S);dirty('pp');}const ps=JSON.parse(X.pops||'[]');if(ps.length!==(S.pops||[]).length){S.pops=ps;renderPops();dirty('pop');}}if(S.pulse){if(u.p)S.pulse.ctx.putImageData(u.p,0,0);else S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}}
 /* glow inks: soft light halo spilling around the colour (committed with blurred shadows in 'screen') */
 function haloDraw(c,src,hex){c.save();c.shadowColor=hex;c.shadowBlur=34;c.globalAlpha=.9;c.drawImage(src,0,0);c.shadowBlur=14;c.globalAlpha=1;c.drawImage(src,0,0);
   c.globalCompositeOperation='screen';c.shadowBlur=0;c.globalAlpha=.35;c.drawImage(src,0,0);c.restore();}
@@ -696,6 +743,7 @@ function fillFree(x,y){
   const r=S.lab[(y|0)*W+(x|0)]; if(!r)return; if(!allowPremiumUse(3))return; snap();
   const b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;
   showTry(r); const pulse=ink.kind==='pulse', halo=ink.kind==='glow', tc=pulse?pulseLayer().ctx:S.free.ctx;
+  {const m=new ImageData(bw,bh);for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p];m.data[(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3]=255;}const mc=mk();mc.getContext('2d').putImageData(m,bx,by);fxCoverOld(mc,bx,by,bw,bh,halo?1:adjOp(),pulse);}
   const im=halo?new ImageData(bw,bh):tc.getImageData(bx,by,bw,bh),D=im.data,sh=shader(bx,by,bw,bh);
   const op=halo?1:adjOp();for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p],x=i%W,y=(i/W)|0,j=(y-by)*bw*4+(x-bx)*4,c=sh(x,y);if(op<1){const a0=D[j+3]/255,a1=(c[3]??255)/255*op,ao=a1+a0*(1-a1)||1;for(let q=0;q<3;q++)D[j+q]=(c[q]*a1+D[j+q]*a0*(1-a1))/ao;D[j+3]=ao*255;}else{D[j]=c[0];D[j+1]=c[1];D[j+2]=c[2];D[j+3]=c[3]??255;}}
   if(halo){const t=document.createElement('canvas');t.width=W;t.height=H;t.getContext('2d').putImageData(im,bx,by);haloDraw(tc,t,ink.hex);}
@@ -706,6 +754,7 @@ function fillFree(x,y){
     const mc=mk();mc.getContext('2d').putImageData(m,bx,by);fxAdd(['rampfx'],ink.ramp,mc);}
   {const ks=fxKindsOf(ink);if(ks.length){const m=new ImageData(bw,bh);for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p];m.data[(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3]=255;}
     const mc=mk();mc.getContext('2d').putImageData(m,bx,by);fxAdd(ks,ink.hex,mc);}}
+  lastOpCapture(tc,bx,by,bw,bh,'fill');
   helperAfterColor(r);
 }
 /* ---------- Line Lock: soft resistance ----------
@@ -747,7 +796,11 @@ function beginStroke(x,y,pr,ptype){
 }
 function stamp(x,y,pr){
   const p=(pr>0&&pr!==.5)?pr:.5;
-  if(stroke.er){const R=eraR()/zoomSizeDiv();for(const c of S.pulse?[S.free.ctx,S.pulse.ctx]:[S.free.ctx]){c.save();c.globalCompositeOperation='destination-out';c.globalAlpha=.85;c.drawImage(tip,x-R,y-R,2*R,2*R);c.restore();}if(S.pulse)dirty('pulse');return;}
+  if(stroke.er){const R=eraR()/zoomSizeDiv(),P=S.pp;   /* v24: one eraser for everything under it: color, Pulse, tracing, Pop Pencil heights (and Pop Fill shapes, at the end) */
+    const cs=[S.free.ctx];if(S.pulse)cs.push(S.pulse.ctx);if(S.ltr&&mode==='free')cs.push(S.ltr.getContext('2d'));if(P&&P.any&&mode==='free'){cs.push(P.rx,P.ix);stroke.ppEr=true;}
+    for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.globalAlpha=.85;c.drawImage(tip,x-R,y-R,2*R,2*R);c.restore();}
+    {const r=S.lab[(y|0)*W+(x|0)];if(r)(stroke.erR||(stroke.erR=new Set())).add(r);}
+    if(S.pulse)dirty('pulse');if(S.ltr&&mode==='free'){dirty('ltr');stroke.ltEr=true;}return;}
   let R=penR()*(.65+.7*p)/zoomSizeDiv();
   if(stroke.st==='air'){R*=2.4;cov.globalAlpha=.16;for(let k=0;k<16;k++){const a=Math.random()*6.283,d=R*Math.sqrt(-2*Math.log(Math.random()+1e-6))*.42,rr=1+Math.random()*1.8;
       cov.drawImage(tip,x+Math.cos(a)*d-rr,y+Math.sin(a)*d-rr,2*rr,2*rr);}}
@@ -756,6 +809,7 @@ function stamp(x,y,pr){
     cov.globalAlpha=rich?.75+.25*p:.45+.4*p; cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);if(stroke.fur)furStamp(x,y,R);}
   const d=stroke.dirty,a=[x-R-2,y-R-2,x+R+2,y+R+2];
   stroke.dirty=d?[Math.min(d[0],a[0]),Math.min(d[1],a[1]),Math.max(d[2],a[2]),Math.max(d[3],a[3])]:a;
+  {const q=stroke.bbx;stroke.bbx=q?[Math.min(q[0],a[0]),Math.min(q[1],a[1]),Math.max(q[2],a[2]),Math.max(q[3],a[3])]:a.slice();}
 }
 let furC=null;
 const FURP={short:{n:16,life:[.7,1.3],gap:.35,amp:0,lam:1,lw:1.05},long:{n:13,life:[2.4,4],gap:.5,amp:.07,lam:4,lw:1.15},straight:{n:17,life:[5,10],gap:0,amp:0,lam:1,lw:.85},
@@ -812,15 +866,20 @@ function flush(){
   sctx.globalCompositeOperation='source-in';if(stroke.ramp)sctx.drawImage(rampC,x,y,w,h,x,y,w,h);else if(stroke.fur)sctx.drawImage(furC,x,y,w,h,x,y,w,h);else{sctx.fillStyle=grainPat;sctx.fillRect(x,y,w,h);}sctx.restore();
 }
 function commitPaint(){
+  let src=strokeC;if(!stroke.er&&stroke.st!=='water'){const b=stroke.bbx||[0,0,W,H],bx=b[0]-2,by=b[1]-2,bw=b[2]-b[0]+4,bh=b[3]-b[1]+4;
+    if(!stroke.neon&&(fxOverlap(bx,by,bw,bh)||under3DAt(bx,by,bw,bh)))src=solidStroke(strokeC,bx,by,bw,bh);   /* v24: over 3D work / effects the colour lays on top solidly */
+    fxCoverOld(src,bx,by,bw,bh,adjOp(),stroke.pulse);}
   if(!stroke.er){const c=stroke.pulse?pulseLayer().ctx:S.free.ctx;adjGlowDraw(c,strokeC,ink.hex);c.save();c.globalAlpha=adjOp();if(stroke.pulse){S.pulseUsed=true;dirty('pulse');}
     if(stroke.neon&&ink.kind==='glow'){haloDraw(c,strokeC,ink.hex);}
     else if(stroke.neon){c.shadowColor=ink.hex;c.shadowBlur=18;c.drawImage(strokeC,0,0);c.shadowBlur=6;c.drawImage(strokeC,0,0);c.shadowBlur=0;}
     else if(stroke.st==='water'){c.globalCompositeOperation='multiply';c.globalAlpha*=.9;}
-    c.drawImage(strokeC,0,0);c.restore();
+    c.drawImage(src,0,0);c.restore();
     if(stroke.ramp){const tm=mk(),tx=tm.getContext('2d');tx.drawImage(rampT,0,0);tx.globalCompositeOperation='destination-in';tx.drawImage(strokeC,0,0);fxAdd(['rampfx'],stroke.ramp.k,tm);}
     else fxAdd(fxKindsOf(ink),ink.hex,strokeC,0,0,stroke.path);}
 }
-function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er)setTimeout(fxClip,0);
+function eraserEnd(st){if(!S||mode!=='free')return;if(st.ppEr)ppRender(S);if(st.ltEr&&typeof ltRender==='function')ltRender();
+  if(st.erR&&S.pops&&S.pops.length){const n0=S.pops.length;S.pops=S.pops.filter(p=>!(p.rs||[p.r]).some(r=>st.erR.has(r)));if(S.pops.length!==n0){renderPops();dirty('pop');}}}
+function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er){setTimeout(fxClip,0);eraserEnd(stroke);}else if(stroke.bbx){const b=stroke.bbx;lastOpCapture(stroke.pulse?S.pulse.ctx:S.free.ctx,b[0],b[1],b[2]-b[0],b[3]-b[1],'stroke');}
   dirty('free'); strokeC.style.filter='';strokeC.style.opacity='';
   cov.clearRect(0,0,W,H);sctx.clearRect(0,0,W,H);stroke=null;}
 function cancelStroke(){ if(!stroke)return; cov.clearRect(0,0,W,H);sctx.clearRect(0,0,W,H);strokeC.style.filter='';
@@ -1270,6 +1329,7 @@ function fxRec(kind,hex,path){fxSetList(S);const same=S.fx.filter(q=>q.kind===ki
   const m=mk(),r=Object.assign({kind,hex,mask:m,mx:m.getContext('2d',{willReadFrequently:true}),bb:null,pts:[],parts:[],dirty:true},fxParams(path));if(FINK.has(kind)){lightN21=(lightN21+1)%7;r.light=LIGHTS21[lightN21];}S.fx.push(r);return r;}
 const LIGHTK=new Set(['mirror','shine','jshine','shimmer','twinkle','glowfx','neonfx','pulsefx']);
 function lightClock(r){return r.kind==='twinkle'?(CLK.twinkleSpeed||0):r.kind==='glowfx'?(CLK.glowSpeed||0):r.kind==='neonfx'?(CLK.neonSpeed||0):r.kind==='pulsefx'?PCLK:CCLK;}
+const glS=a=>Math.pow(a||1,1.5),glB=a=>Math.min(1,.3+.7*(a||1));   /* v24 glitter Size: low = tiny dim dot flashes, high = big bright stars */
 function drawLight(x,r){if(FINK.has(r.kind))return drawLightV21(x,r);if(!r.light||!r.bb||RM.matches)return;const lv=motionLvl({twinkle:'sparkle',glowfx:'glowStr',neonfx:'neonSpeed',pulsefx:'pulseSpeed'}[r.kind]||'shimmer');if(lv<=0)return;
   const [bx,by,bw,bh]=r.bb,X0=bx/MQ|0,Y0=by/MQ|0,w=Math.max(2,Math.min(WQ-X0,Math.ceil(bw/MQ)+2)),h=Math.max(2,Math.min(HQ-Y0,Math.ceil(bh/MQ)+2));
   const c=r.lc||(r.lc=document.createElement('canvas'));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}const g=c.getContext('2d');g.globalCompositeOperation='source-over';g.clearRect(0,0,w,h);
@@ -1279,13 +1339,13 @@ function drawLight(x,r){if(FINK.has(r.kind))return drawLightV21(x,r);if(!r.light
   const L2=({bloom:'sweep',ripple:'double',beam:'chaser'})[r.light]||r.light;   // v22: old circular types (saved pictures) map to directional ones
   if(L2==='sweep')flowBand(g,0,0,w,h,flowSweep(r,tt,per,0),.09,.9);
   else if(L2==='double'){flowBand(g,0,0,w,h,flowSweep(r,tt,per,0),.05,.85);flowBand(g,0,0,w,h,flowSweep(r,tt,per*1.37,1),.035,.6);}
-  else if(L2==='star'){for(let k=0;k<3;k++){const pk=per*(.7+.6*hash2(k,r.seed)),tk=tt/pk+hash2(k,r.seed+3)*5,ck=Math.floor(tk),q=tk-ck,[px,py]=(()=>{const p=r.pts.length?r.pts[Math.floor(hash2(ck*7+k,r.seed)*r.pts.length)]:[bx+bw/2,by+bh/2];return [p[0]/MQ-X0,p[1]/MQ-Y0];})(),a=hash2(ck,r.seed+k)<.3?0:Math.pow(Math.sin(Math.PI*q),3),R=(4+L*.1)*a*(.6+.6*hash2(ck,k+9));if(a<.03)continue;g.strokeStyle=Wc+a.toFixed(3)+')';g.lineWidth=1.2;g.beginPath();
+  else if(L2==='star'){for(let k=0;k<3;k++){const pk=per*(.7+.6*hash2(k,r.seed)),tk=tt/pk+hash2(k,r.seed+3)*5,ck=Math.floor(tk),q=tk-ck,[px,py]=(()=>{const p=r.pts.length?r.pts[Math.floor(hash2(ck*7+k,r.seed)*r.pts.length)]:[bx+bw/2,by+bh/2];return [p[0]/MQ-X0,p[1]/MQ-Y0];})(),a=hash2(ck,r.seed+k)<.3?0:Math.pow(Math.sin(Math.PI*q),3),R=(4+L*.1)*a*(.6+.6*hash2(ck,k+9))*(r.kind==='twinkle'?Math.min(1.6,glS(r.amt)):1);if(a<.03)continue;g.strokeStyle=Wc+a.toFixed(3)+')';g.lineWidth=1.2;g.beginPath();
       g.moveTo(px-R,py);g.lineTo(px+R,py);g.moveTo(px,py-R);g.lineTo(px,py+R);g.moveTo(px-R*.35,py-R*.35);g.lineTo(px+R*.35,py+R*.35);g.moveTo(px+R*.35,py-R*.35);g.lineTo(px-R*.35,py+R*.35);g.stroke();
       const gr=g.createRadialGradient(px,py,0,px,py,Math.max(1,R*.5));gr.addColorStop(0,Wc+a.toFixed(3)+')');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(px-R,py-R,2*R,2*R);}}
   else if(L2==='chaser'){const fs=flowSweep(r,tt,per,0),A=fs.ang!=null?fs.ang:flowDir(r),c2=Math.cos(A),s2=Math.sin(A),uu=fs.p<-.9?-9:fs.p;g.fillStyle='#fff';for(let j=-L/2;j<L/2;j+=7){const sh=(vnoise1(j*.03+fs.c*1.9,r.seed)-.5)*.5;for(let i=-L/2;i<L/2;i+=4.5){const dd=(i/L+.5)-uu-sh,a=Math.max(0,1-Math.abs(dd)/.12)**3;if(a<.12)continue;
       const jx=(hash2((i*9)|0,(j*7+r.seed)|0)-.5)*2.4,jy=(hash2((j*5)|0,(i*3+r.seed)|0)-.5)*2.4,px=cx+c2*i-s2*j+jx,py=cy+s2*i+c2*j+jy;if(px<0||py<0||px>w||py>h)continue;g.globalAlpha=a;g.fillRect(px-.7,py-.7,1.4,1.4);}}g.globalAlpha=1;}
   g.globalCompositeOperation='destination-in';g.drawImage(r.mask,X0*MQ,Y0*MQ,w*MQ,h*MQ,0,0,w,h);
-  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8:1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
+  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8*glB(r.amt):1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
 function drawLightV21(x,r){if(!r.light||!r.bb||RM.matches)return;const lv=motionLvl({twinkle:'sparkle',glowfx:'glowStr',neonfx:'neonSpeed',pulsefx:'pulseSpeed'}[r.kind]||'shimmer');if(lv<=0)return;
   const [bx,by,bw,bh]=r.bb,X0=bx/MQ|0,Y0=by/MQ|0,w=Math.max(2,Math.min(WQ-X0,Math.ceil(bw/MQ)+2)),h=Math.max(2,Math.min(HQ-Y0,Math.ceil(bh/MQ)+2));
   const c=r.lc||(r.lc=document.createElement('canvas'));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}const g=c.getContext('2d');g.globalCompositeOperation='source-over';g.clearRect(0,0,w,h);
@@ -1305,14 +1365,39 @@ function drawLightV21(x,r){if(!r.light||!r.bb||RM.matches)return;const lv=motion
   else if(L2==='beam'){g.save();g.translate(cx,cy);g.rotate(tt*1.1*(r.seed%2?1:-1)+D);const gr=g.createLinearGradient(0,-L*.06,0,L*.06);gr.addColorStop(0,Wc+'0)');gr.addColorStop(.5,Wc+'.8)');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(-L,-L*.06,2*L,L*.12);g.restore();}
   g.globalCompositeOperation='destination-in';g.drawImage(r.mask,X0*MQ,Y0*MQ,w*MQ,h*MQ,0,0,w,h);
   x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8:1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
-function fxAdd(kinds,hex,src,sx=0,sy=0,path=null){if(!kinds.length||!S)return;const u={n:S.free.undo.length,m:[]};
-  for(const k of kinds){const r=fxRec(k,hex,path),c=mk();r.amt=ink&&ink.kind==='mix'&&ink.mix&&ink.mix.amt?(ink.mix.amt[mixSlotOf(k)]||1):(r.amt||1);c.getContext('2d').drawImage(r.mask,0,0);u.m.push(k==='mirror'?[r,c,phCopy(r)]:[r,c]);r.mx.drawImage(src,sx,sy);r.dirty=true;r.boost=performance.now()/1000;if(k==='mirror')chromePhase(r,src,sx,sy,path);}
-  S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-5);
+/* v24: new colour always sits ON TOP. Paint (2D or 3D, stroke or fill) hides the older effects under it by cutting its coverage out of their
+   masks (and out of the Pulse layer when the new paint is not Pulse). The cut parts are kept in the undo entry, so undo brings them back exactly. */
+function fxCoverOld(src,bx,by,bw,bh,a=1,keepPulse=false){if(!S||mode==='cbn'||a<=0)return false;bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));if(bw<=0||bh<=0)return false;
+  const u={n:undoKey(),m:[]};let ov=false;
+  for(const r of (S.fx||[])){if(r.dirty)fxScan(r);if(!r.bb)continue;const [rx,ry,rw,rh]=r.bb;if(rx>bx+bw||ry>by+bh||rx+rw<bx||ry+rh<by)continue;
+    const c=document.createElement('canvas');c.width=bw;c.height=bh;c.getContext('2d').drawImage(r.mask,bx,by,bw,bh,0,0,bw,bh);u.m.push([r,c,undefined,bx,by]);if(r.kind!=='cover')ov=true;
+    r.mx.save();r.mx.globalCompositeOperation='destination-out';r.mx.globalAlpha=a;r.mx.drawImage(src,bx,by,bw,bh,bx,by,bw,bh);r.mx.restore();r.dirty=true;}
+  {const near=(S.fx||[]).some(r=>r.kind!=='cover'&&r.bb&&!(r.bb[0]>bx+bw+60||r.bb[1]>by+bh+60||r.bb[0]+r.bb[2]<bx-60||r.bb[1]+r.bb[3]<by-60));
+    if(near){const last=S.fx[S.fx.length-1];let rc=last&&last.kind==='cover'?last:(S.fx.length>=40?[...S.fx].reverse().find(q=>q.kind==='cover'):null);
+      if(!rc){const m=mk();rc={kind:'cover',hex:'#000000',mask:m,mx:m.getContext('2d',{willReadFrequently:true}),bb:null,pts:[],parts:[],dirty:true,seed:1,ph:0,dir:0,light:null,sp:1};S.fx.push(rc);}
+      const c=document.createElement('canvas');c.width=bw;c.height=bh;c.getContext('2d').drawImage(rc.mask,bx,by,bw,bh,0,0,bw,bh);u.m.push([rc,c,undefined,bx,by]);
+      rc.mx.save();rc.mx.globalAlpha=a;rc.mx.drawImage(src,bx,by,bw,bh,bx,by,bw,bh);rc.mx.restore();rc.dirty=true;}}
+  if(u.m.length)S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);
+  if(!keepPulse&&S.pulse&&S.pulseUsed){const p=S.pulse.ctx;p.save();p.globalCompositeOperation='destination-out';p.globalAlpha=a;p.drawImage(src,bx,by,bw,bh,bx,by,bw,bh);p.restore();dirty('pulse');}
+  if(u.m.length){dirty('fx');}return ov;}
+function fxOverlap(bx,by,bw,bh){return (S.fx||[]).some(r=>{if(r.kind==='cover')return false;if(r.dirty)fxScan(r);const q=r.bb;return q&&!(q[0]>bx+bw||q[1]>by+bh||q[0]+q[2]<bx||q[1]+q[3]<by);});}
+function solidStroke(sc,bx,by,bw,bh){bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));const c=mk();if(bw<=0||bh<=0)return sc;
+  const im=sc.getContext('2d').getImageData(bx,by,bw,bh),d=im.data,o=new Uint8ClampedArray(d);
+  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){let m=0,mj=-1;for(let dy=-1;dy<=1;dy++){const yy=y+dy;if(yy<0||yy>=bh)continue;for(let dx=-1;dx<=1;dx++){const xx=x+dx;if(xx<0||xx>=bw)continue;const j=(yy*bw+xx)*4;if(d[j+3]>m){m=d[j+3];mj=j;}}}
+    const i=(y*bw+x)*4;if(m>0){if(d[i+3]<m*.5){o[i]=d[mj];o[i+1]=d[mj+1];o[i+2]=d[mj+2];}o[i+3]=Math.min(255,m*3);}}
+  im.data.set(o);c.getContext('2d').putImageData(im,bx,by);return c;}
+/* v24: is there 3D work (Pop Pencil relief or Pop Fill) under this box? */
+function under3DAt(bx,by,bw,bh){bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));if(bw<=0||bh<=0||!S)return false;
+  if(S.pp&&S.pp.any){const d=S.pp.rx.getImageData(bx,by,bw,bh).data;for(let i=3;i<d.length;i+=16)if(d[i]>20)return true;}
+  if(S.pops&&S.pops.length&&S.lab){for(let y=by;y<by+bh;y+=4)for(let x=bx;x<bx+bw;x+=4){const l=S.lab[y*W+x];if(l&&S.pops.some(p=>(p.rs||[p.r]).includes(l)))return true;}}return false;}
+function fxAdd(kinds,hex,src,sx=0,sy=0,path=null){if(!kinds.length||!S)return;const u={n:undoKey(),m:[]};
+  for(const k of kinds){const n0=(S.fx||[]).length,r=fxRec(k,hex,path),fresh=S.fx.length>n0,c=fresh?null:mk();r.amt=ink&&ink.kind==='mix'&&ink.mix&&ink.mix.amt?(ink.mix.amt[mixSlotOf(k)]||1):(r.amt||1);r.mixO=ink&&ink.kind==='mix'&&ink.mix?ink.mix[mixSlotOf(k)]:null;r.sf=null;if(c)c.getContext('2d').drawImage(r.mask,0,0);u.m.push(k==='mirror'?[r,c,phCopy(r)]:[r,c]);r.mx.drawImage(src,sx,sy);r.dirty=true;r.boost=performance.now()/1000;if(k==='mirror')chromePhase(r,src,sx,sy,path);}
+  S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);
   fxAttach();fxStart();dirty('fx');}
 function fxScan(r){ // bbox + sample points of a mask (for particles and sheen extents)
   const d=r.mx.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;const pts=[];
   for(let y=0;y<H;y+=3)for(let x=0;x<W;x+=3){if(d[(y*W+x)*4+3]>60){if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;pts.push(x,y);}}
-  r.bb=x1<0?null:[x0,y0,x1-x0+1,y1-y0+1];const n=pts.length/2,keep=[];for(let i=0;i<Math.min(n,500);i++){const j=(Math.random()*n)|0;keep.push([pts[j*2],pts[j*2+1]]);}
+  r.bb=x1<0?null:[x0,y0,x1-x0+1,y1-y0+1];const n=pts.length/2,keep=[];let sd=((r.seed||1)*2654435761)>>>0;const rnd=()=>{sd=(sd+0x6D2B79F5)>>>0;let z=sd;z=Math.imul(z^(z>>>15),z|1);z^=z+Math.imul(z^(z>>>7),z|61);return((z^(z>>>14))>>>0)/4294967296;};/* v24: deterministic sampling, so an undone mask draws exactly as before */for(let i=0;i<Math.min(n,500);i++){const j=(rnd()*n)|0;keep.push([pts[j*2],pts[j*2+1]]);}
   r.pts=keep;r.dirty=false;r.sf=null;r.loose=null;r.tint=null;r.nm=null;r.cf=null;r.shade=null;r.td=null;r.dq=null;r.bolt=null;r.texC=null;r.mv=(r.mv||0)+1;if(!r.bb)r.parts=[];}
 function fxLoose(r,blur,n=2){ // soft, spread mask so wisps / puffs can hover just around the colour
   const c=mk(),x=c.getContext('2d');x.filter=`blur(${blur}px)`;for(let i=0;i<n;i++)x.drawImage(r.mask,0,0);x.filter='none';return c;}
@@ -1322,7 +1407,7 @@ function fxClip(){ // after erase / undo / clear: keep effects only where colour
   if(!S||!S.fx||!S.fx.length)return;const d=(mode==='cbn'?S.cbn.ctx:S.free.ctx).getImageData(0,0,W,H),pd=S.pulse&&mode!=='cbn'?S.pulse.ctx.getImageData(0,0,W,H).data:null,m=new ImageData(W,H);for(let i=3;i<d.data.length;i+=4)if(d.data[i]>8||(pd&&pd[i]>8))m.data[i]=255;
   const c=mk();c.getContext('2d').putImageData(m,0,0);
   for(const r of S.fx){r.mx.save();r.mx.globalCompositeOperation='destination-in';r.mx.drawImage(c,0,0);r.mx.restore();r.dirty=true;}
-  S.fx.forEach(r=>{if(r.dirty)fxScan(r);});S.fx=S.fx.filter(r=>r.bb);if(S.fxL)S.fxL[mode]=S.fx;dirty('fx');fxDraw(performance.now());}
+  S.fx.forEach(r=>{if(r.dirty)fxScan(r);});{const ref=new Set();for(const e of (S.fxUndo||[]))for(const q of e.m)ref.add(q[0]);S.fx=S.fx.filter(r=>r.bb||ref.has(r));}if(S.fxL)S.fxL[mode]=S.fx;dirty('fx');fxDraw(performance.now());}
 /* v12 (as in v8): colour layers always sit under the 3D shading, so painting or filling a popped area changes its colour and keeps its height */
 function under3D(c){const ref=[S&&S.popSh,S&&S.pp&&S.pp.sh].filter(e=>e&&e.parentNode===layers).sort((a,b)=>a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING?-1:1)[0];if(ref){if(c.nextSibling!==ref||c.parentNode!==layers)layers.insertBefore(c,ref);}else if(!c.isConnected)layers.appendChild(c);}
 function fxAttach(){if(!S)return;const c=fxLayer();under3D(c);c.style.display='';fxFilter();}
@@ -1338,7 +1423,7 @@ function fxCells(r){if(r.cells&&r.cellsMv===r.mv)return r.cells;const [bx,by,bw,
   const R=Math.sqrt(bw*bh/K)*1.25;C.forEach((c,k)=>c.R=R*(.85+.35*hash2(k,sd+13)));r.cellsMv=r.mv;return r.cells=C;}
 let CELLC=null;
 function cellPass(x,r,t,kp,op,fn){const C=fxCells(r),[bx,by,bw,bh]=r.bb,pad=50;
-  if(C.length===1){const X0=Math.max(0,bx-pad),Y0=Math.max(0,by-pad);fn(x,t*C[0].sp*kp+C[0].ph,[X0,Y0,Math.min(W,bx+bw+pad)-X0,Math.min(H,by+bh+pad)-Y0]);return;}
+  if(C.length===1){const X0=Math.max(0,bx-pad),Y0=Math.max(0,by-pad);x.save();fn(x,t*C[0].sp*kp+C[0].ph,[X0,Y0,Math.min(W,bx+bw+pad)-X0,Math.min(H,by+bh+pad)-Y0]);x.restore();return;}
   const F=(CELLC||(CELLC=mk())).getContext('2d');
   for(const c of C){const e=c.R+pad,sx=Math.max(0,Math.floor(c.x-e)),sy=Math.max(0,Math.floor(c.y-e)),sw=Math.min(W,Math.ceil(c.x+e))-sx,sh=Math.min(H,Math.ceil(c.y+e))-sy;if(sw<=0||sh<=0)continue;
     F.save();F.globalCompositeOperation='source-over';F.globalAlpha=1;F.shadowBlur=0;F.clearRect(sx,sy,sw,sh);F.beginPath();F.rect(sx,sy,sw,sh);F.clip();fn(F,t*c.sp*kp+c.ph,[sx,sy,sw,sh]);F.restore();
@@ -1415,7 +1500,7 @@ function fxDrawRec(x,r,t){ // t in seconds
     if(!r.sf){const n=Math.min(r.pts.length,Math.max(24,Math.round(bw*bh/650*Math.min(2,r.amt||1))));r.sf=[];for(let i=0;i<n;i++){const q=r.pts[(i*97+sd)%r.pts.length];r.sf.push([q[0]+(hash2(i+sd,3)-.5)*3,q[1]+(hash2(i+sd,5)-.5)*3,hash2(i+sd,7)*6.283,.7+hash2(i+sd,11)*2.2,hash2(i+sd,13)<.22]);}}
     x.save();x.globalCompositeOperation='lighter';const tg=tinted(mix(hex2rgb(r.hex),WHITE,.35).map(v=>Math.round(v)).reduce((a,v)=>a+v.toString(16).padStart(2,'0'),'#'),1);
     for(const [px,py,ph,sp,hot] of r.sf){let a;if(still)a=hash2(px|0,py|0)>.78?.55:0;else{const w=Math.sin(t*sp*(1.2+lv*1.6)+ph);a=Math.pow(Math.max(0,w),hot?8:14);}
-      if(a<.04)continue;const R2=(hot?5.5:2.6)*(.5+.5*a)*(r.amt||1);x.globalAlpha=Math.min(1,a*(still?1:.55+.6*lv));x.drawImage(GLINT,px-R2*2,py-R2*2,R2*4,R2*4);if(hot){x.globalAlpha*=.5;x.drawImage(tg,px-R2*1.6,py-R2*1.6,R2*3.2,R2*3.2);}}
+      if(a<.04)continue;const R2=(hot?5.5:2.6)*(.5+.5*a)*glS(r.amt);x.globalAlpha=Math.min(1,a*(still?1:.55+.6*lv)*glB(r.amt));x.drawImage(GLINT,px-R2*2,py-R2*2,R2*4,R2*4);if(hot){x.globalAlpha*=.5;x.drawImage(tg,px-R2*1.6,py-R2*1.6,R2*3.2,R2*3.2);}}
     x.restore();if(still)return;
     const boost=Math.max(0,1-(fxNow-(r.boost||0))/1.4);   // sparkle boost: a burst of glints right after new glitter goes down
     const cap=Math.min(FXCAP.twinkle*(1+boost),Math.max(6,Math.round(bw*bh/2600*(.4+lv)))*(1+1.5*boost),r.pts.length*2),dt=Math.min(.1,Math.max(0,t-(r.lt||t)));r.lt=t;
@@ -1718,8 +1803,9 @@ let PPLV=null;function ppPulse(x,t){ // light pulses travel up through raised Po
   const c=P.pc||(P.pc=Object.assign(document.createElement('canvas'),{width:WQ,height:HQ}));c.getContext('2d').putImageData(q,0,0);
   x.save();x.globalCompositeOperation='lighter';x.imageSmoothingQuality='high';x.drawImage(c,0,0,W,H);x.restore();}
 let fxTotal=0,fxRaf=0,fxLast=0;
-function fxDraw(now){if(!S||!S.fxC)return;const x=S.fxC.getContext('2d');x.clearRect(0,0,W,H);const t=RM.matches?1.2:now/1000;fxNow=now/1000;{const d=Math.min(.4,Math.max(0,fxNow-pclkLast));pclkLast=fxNow;PCLK+=d*motionLvl('pulseSpeed');if(!CFIX)CCLK+=d*motionLvl('shimmerSpeed');for(const k of ['twinkleSpeed','neonSpeed','glowSpeed','boltSpeed','smokeSpeed','partSpeed'])if(!(BFIX&&k==='boltSpeed'))CLK[k]=(CLK[k]||0)+d*motionLvl(k);}
-  const t0=performance.now();fxTotal=(S.fx||[]).reduce((a,r)=>a+r.parts.length,0);{const mir=(S.fx||[]).filter(r=>r.kind==='mirror');let mDone=false;for(const r of S.fx||[]){const q=performance.now();if(r.kind==='mirror'){if(!mDone){mDone=true;drawMirrors(x,mir);}}else if(r.amt&&Math.abs(r.amt-1)>.02&&!PARTK(r.kind)){const A=AMTC||(AMTC=mk()),ax=A.getContext('2d');ax.clearRect(0,0,W,H);fxDrawRec(ax,r,t);if(LIGHTK.has(r.kind))drawLight(ax,r);x.save();x.globalAlpha=Math.min(1,r.amt);x.drawImage(A,0,0);if(r.amt>1){x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,r.amt-1);x.drawImage(A,0,0);}x.restore();r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;continue;}   /* v23: Mix intensity */
+function fxDraw(now){if(!S||!S.fxC)return;const x=S.fxC.getContext('2d');if(x.reset)x.reset();else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.shadowBlur=0;x.shadowColor='rgba(0,0,0,0)';x.filter='none';}x.clearRect(0,0,W,H);const t=RM.matches?1.2:now/1000;fxNow=now/1000;{const d=Math.min(.4,Math.max(0,fxNow-pclkLast));pclkLast=fxNow;PCLK+=d*motionLvl('pulseSpeed');if(!CFIX)CCLK+=d*motionLvl('shimmerSpeed');for(const k of ['twinkleSpeed','neonSpeed','glowSpeed','boltSpeed','smokeSpeed','partSpeed'])if(!(BFIX&&k==='boltSpeed'))CLK[k]=(CLK[k]||0)+d*motionLvl(k);}
+  const t0=performance.now();fxTotal=(S.fx||[]).reduce((a,r)=>a+r.parts.length,0);{const mir=(S.fx||[]).filter(r=>r.kind==='mirror');let mDone=false;for(const r of S.fx||[]){const q=performance.now();if(r.kind!=='mirror'&&r.dirty)fxScan(r);if(r.kind!=='mirror'&&r!==S.fx[0]){if(r.bb){const [ex,ey,ew,eh]=r.bb;x.save();x.globalCompositeOperation='destination-out';x.drawImage(r.mask,ex,ey,ew,eh,ex,ey,ew,eh);x.restore();}}if(r.kind==='cover'||(r.kind!=='mirror'&&!r.bb))continue;   /* v24: newer paint hides the older effects' glow under it */
+    if(r.kind==='mirror'){if(!mDone){mDone=true;drawMirrors(x,mir);}}else if(r.amt&&Math.abs(r.amt-1)>.02&&!PARTK(r.kind)){const A=AMTC||(AMTC=mk()),ax=A.getContext('2d');ax.clearRect(0,0,W,H);fxDrawRec(ax,r,t);if(LIGHTK.has(r.kind))drawLight(ax,r);x.save();x.globalAlpha=Math.min(1,r.amt);x.drawImage(A,0,0);if(r.amt>1){x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,r.amt-1);x.drawImage(A,0,0);}x.restore();r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;continue;}   /* v23: Mix intensity */
     else fxDrawRec(x,r,t);if(LIGHTK.has(r.kind))drawLight(x,r);r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;}}ppPulse(x,t);fxMs=fxMs*.8+(performance.now()-t0)*.2;}
 let fxMs=0,AMTC=null;const PARTK=k=>k==='twinkle'||k==='smoke'||k==='cloud'||k.startsWith('pt');
 function mixSlotOf(k){return PARTK(k)?'part':(k==='pulsefx'||k==='glowfx'||k==='boltfx'||(k==='shimmer'&&ink.mix&&ink.mix.anim==='shimmer'))?'anim':'finish';}
@@ -1728,7 +1814,7 @@ const fxNeedsLoop=()=>!RM.matches||(S&&(S.fx||[]).some(r=>(motionLvl('shimmer')>
 function fxStart(){if(fxRaf||!fxLive())return;fxAttach();if(!fxNeedsLoop()||document.hidden){fxDraw(performance.now());return;}
   const step=now=>{fxRaf=0;if(!fxLive()||document.hidden)return;if(!fxNeedsLoop()){fxDraw(now);return;}if(now-fxLast>=Math.max(32,fxMs*2.2)){fxLast=now;fxDraw(now);}/* adaptive: slow machines draw effects less often so taps and strokes stay responsive */fxRaf=requestAnimationFrame(step);};fxRaf=requestAnimationFrame(step);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(fxRaf);fxRaf=0;cancelAnimationFrame(pvRaf);pvRaf=0;}else{fxStart();pvStart();}});
-function saveFx(st){const L=st.fxL||{free:st.fx||[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){const a=(L[md]||[]).filter(r=>r.bb||r.dirty).map(r=>Object.assign({kind:r.kind,hex:r.hex,m:r.mask.toDataURL('image/png')},r.phC?{ph:r.phC.toDataURL('image/png')}:{},r.seed?{P:{seed:r.seed,ph:r.ph,dir:r.dir,light:r.light,sp:r.sp}}:{}));a.length?LS.set(key+st.n,a):LS.del(key+st.n);}}
+function saveFx(st){const L=st.fxL||{free:st.fx||[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){const a=(L[md]||[]).filter(r=>r.bb||r.dirty).map(r=>Object.assign({kind:r.kind,hex:r.hex,m:r.mask.toDataURL('image/png')},r.phC?{ph:r.phC.toDataURL('image/png')}:{},r.seed?{P:{seed:r.seed,ph:r.ph,dir:r.dir,light:r.light,sp:r.sp,amt:r.amt||1,mixO:r.mixO||null}}:{}));a.length?LS.set(key+st.n,a):LS.del(key+st.n);}}
 async function loadFx(st){st.fxL={free:[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){st.fx=st.fxL[md];const a=LS.get(key+st.n,[]);for(const q of a){try{const im=await loadImg(q.m);const m=mk();const mx=m.getContext('2d',{willReadFrequently:true});mx.drawImage(im,0,0);
   const rr=Object.assign({kind:q.kind,hex:q.hex,mask:m,mx,bb:null,pts:[],parts:[],dirty:true},q.P||{});if(q.ph){try{phCanvas(rr);rr.phX.drawImage(await loadImg(q.ph),0,0);rr.phV=1;}catch(e){}}st.fx.push(rr);}catch(e){}}}st.fx=st.fxL[mode];}
 function fxSetList(st){if(!st)return;st.fxL=st.fxL||{free:st.fx||[],cbn:[]};st.fxL[mode==='cbn'?'free':'cbn']=st.fxL[mode==='cbn'?'free':'cbn']||[];st.fx=st.fxL[mode]=st.fxL[mode]||[];}
@@ -1742,7 +1828,7 @@ const MIX=Object.assign({on:false,finish:'metal',anim:'pulse',part:'glitter'},LS
 function specOfSet(set){if(set.id==='ramp')return {kinds:['ramp'],ramps:['rainbow','sunset','ocean','gold'],colors:['#ef4444','#fb923c','#0891b2','#d4a015']};if(set.type==='plain')return {kinds:['plain'],colors:[set.colors[3],set.colors[7],set.colors[11]||set.colors[1],set.colors[5]]};
   const it=set.items;if(set.id==='brush')return {kinds:['brush'],colors:['#3a6ad6','#c9473d','#4c9a5b']};
   return {kinds:[set.id],colors:[0,1,2,3].map(i=>it[i%it.length].hex)};}
-function specOfMix(hexes){return {kinds:['mix'],mix:{finish:MIX.finish,anim:MIX.anim,part:MIX.part},colors:hexes||[color,'#d4af37','#3a6ad6']};}
+function specOfMix(hexes){return {kinds:['mix'],mix:{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:{...MIX.amt}},colors:hexes||[color,'#d4af37','#3a6ad6']};}
 const tileCache={};function tilePat(x,kind,hex){const k=kind+hex;if(!tileCache[k])tileCache[k]=inkTile(kind,hex);return x.createPattern(tileCache[k],'repeat');}
 function pvPath(x,w,h,i,n,prog){const y0=h*(i+.8)/(n+.6),amp=h/(n+1)*.35;x.beginPath();const x0=w*.05,x1=w*.95,e=x0+(x1-x0)*prog;
   for(let px=x0;px<=e;px+=2){const py=y0+Math.sin(px/w*9+i*1.7)*amp;px===x0?x.moveTo(px,py):x.lineTo(px,py);}return [e,y0+Math.sin(e/w*9+i*1.7)*amp];}
@@ -1774,7 +1860,7 @@ function drawFxPreview(cv,spec,t){const x=cv.getContext('2d'),w=cv.width,h=cv.he
       x.globalCompositeOperation='source-atop';x.shadowBlur=0;x.strokeStyle=g;pvPath(x,w,h,i,n,prog);x.stroke();x.globalCompositeOperation='source-over';}
     if(part==='glitter'){x.shadowBlur=0;x.globalCompositeOperation='lighter';for(let s=0;s<22;s++){const per=.5+hash2(s,i*7)*.9,tt=t+hash2(i,s)*5,cyc=Math.floor(tt/per),u0=(tt/per)-cyc;
         const uu=hash2(s*13+cyc,i+3)*prog,hot=hash2(cyc,s*5+i)<.2,px=w*.05+(w*.9)*uu+u0*2,py=h*(i+.8)/(n+.6)+Math.sin((w*.05+(w*.9)*uu)/w*9+i*1.7)*h/(n+1)*.35+(hash2(s,cyc)-.5)*lw*.9-u0*2;
-        const a=(u0<.18?u0/.18:Math.pow(1-(u0-.18)/.82,2))*(hot?1:.6)*fade,R2=lw*(hot?.5:.22)*(.6+.4*a);if(a>.03){x.globalAlpha=a;x.drawImage(GLINT,px-R2*2,py-R2*2,R2*4,R2*4);}}x.globalCompositeOperation='source-over';}
+        const pa=(m.amt&&m.amt.part)||1,a=(u0<.18?u0/.18:Math.pow(1-(u0-.18)/.82,2))*(hot?1:.6)*fade*glB(pa),R2=lw*(hot?.5:.22)*(.6+.4*a)*glS(pa);if(a>.03){x.globalAlpha=a;x.drawImage(GLINT,px-R2*2,py-R2*2,R2*4,R2*4);}}x.globalCompositeOperation='source-over';}
     else if(anim==='shimmer'){x.fillStyle='#fff';x.shadowBlur=0;for(let s=0;s<7;s++){const u=((s*.137+i*.31)%1)*prog,px=w*.05+(w*.9)*u,py=h*(i+.8)/(n+.6)+Math.sin(px/w*9+i*1.7)*h/(n+1)*.35,a=Math.pow(Math.max(0,Math.sin(t*2.2+s*1.9+i)),3);if(a>.05)star(x,px+(s%3-1)*lw*.3,py,lw*(.35+.5*a),a*fade);}}
     if(part==='smoke'||part==='cloud'){const spr=tinted(hex,1);for(let s=0;s<9;s++){const u=((s*.113+i*.2)%1)*prog,px=w*.05+(w*.9)*u,py=h*(i+.8)/(n+.6)+Math.sin(px/w*9+i*1.7)*h/(n+1)*.35;
         if(part==='smoke'){const age=((t*.3+s*.29+i*.13)%1),sz=lw*(1.1+age*2.4),ws=wispSprite(hex);x.save();x.globalAlpha=.8*Math.sin(Math.PI*age)*fade;
@@ -1822,7 +1908,10 @@ function productPreview(cv,key,from){ // store row + upgrade sheet
 function mixOwned(opt){const set=SETS[SETI[MIXSET[opt]]];return !set||owned(set);}
 function mixSetsUsed(){return ['finish','anim','part'].map(s=>MIX[s]).filter(o=>o&&o!=='none'&&o!=='plain').map(o=>SETS[SETI[MIXSET[o]]]).filter(Boolean);}
 function mixInk(){ink={kind:'mix',hex:color,id:null,mix:{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:{...MIX.amt}}};setInkPattern();markColor();}
+/* v24: the Size / Intensity slider changes the strokes already drawn with that Mix option, live (and they keep it in autosave) */
+function mixAmtLive(slot){if(!S||!S.fx)return;const v=MIX.amt[slot]||1,o=MIX[slot];let n=0;for(const r of S.fx){if(!r.mixO||r.mixO!==o||mixSlotOf(r.kind)!==slot)continue;r.amt=v;r.sf=null;n++;}if(n){dirty('fx');fxDraw(performance.now());}return n;}
 function buildMixer(){const el=$('#mixer');if(!el)return;
+  {let h=el.querySelector('.mxhint');if(!h){h=document.createElement('small');h.className='mxhint';h.textContent='Changes preview live; Accept keeps them.';const sd=el.querySelector('.mxside');(sd||el).appendChild(h);}}
   const row=(slot,label)=>`<div class="mxrow"><b>${label}</b>${MIXK[slot].map(([id,name,prod])=>{const own=!prod||mixOwned(id),set=SETS[SETI[MIXSET[id]]],l=set&&!own?Trials.left(set.id):0;
     return `<button class="mxo${MIX[slot]===id?' on':''}${own?'':' lk'}" data-slot="${slot}" data-o="${id}" title="${own?name:name+' · locked'}">${own?'':LOCK}${name}${own?'':`<small>${l?l+' free':'Unlock'}</small>`}</button>`;}).join('')}</div>`;
   el.querySelector('.mxrows').innerHTML=row('finish','Finish')+row('anim','Animation')+row('part','Particles');
@@ -1830,7 +1919,7 @@ function buildMixer(){const el=$('#mixer');if(!el)return;
     const nm={finish:'Finish',anim:'Animation',part:'Particles'},cur=MIX.sel,lab=MIXK[cur].find(q=>q[0]===MIX[cur]),v=MIX.amt[cur]||1,word=cur==='part'?'Size':'Intensity';
     am.innerHTML=`<div class="mxat">${['finish','anim','part'].map(k=>`<button class="mxas${k===cur?' on':''}" data-s="${k}">${nm[k]}</button>`).join('')}</div><b>${word} · ${esc(lab?lab[1]:'')}</b><input type="range" min="0.3" max="2.5" step="0.05" value="${v}" aria-label="${word} of the ${nm[cur]}"><em>${Math.round(v*100)}%</em>`;
     am.querySelectorAll('.mxas').forEach(b=>b.onclick=()=>{MIX.sel=b.dataset.s;LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});buildMixer();});
-    const ri=am.querySelector('input');ri.oninput=()=>{MIX.amt[cur]=+ri.value;am.querySelector('em').textContent=Math.round(ri.value*100)+'%';LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});if(MIX.on)mixInk();};
+    const ri=am.querySelector('input');ri.oninput=()=>{MIX.amt[cur]=+ri.value;am.querySelector('em').textContent=Math.round(ri.value*100)+'%';LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});if(MIX.on)mixInk();mixAmtLive(cur);};
     ['pointerdown','click'].forEach(ev=>am.addEventListener(ev,e=>e.stopPropagation()));}
   el.querySelectorAll('.mxo').forEach(b=>b.onclick=()=>{const slot=b.dataset.slot,o=b.dataset.o,set=SETS[SETI[MIXSET[o]]];
     if(set&&!owned(set)&&Trials.left(set.id)<=0){openUpgrade(null,set.product);return;}
@@ -2065,10 +2154,20 @@ function suggestFor(r){const out=[],add=h=>{h=h.toLowerCase();if(!out.includes(h
   const tint=hx=>{const c=hex2rgb(hx),m=sceneMood();return '#'+mix(c,m,.18).map(v=>Math.round(v).toString(16).padStart(2,'0')).join('');};
   add(tint(hsl2hex(h+28,s*.95,l)));add(tint(hsl2hex(h-28,s*.95,l+.04)));add(tint(hsl2hex(h+180,Math.max(.25,s*.6),Math.min(.6,l+.02))));
   add(hsl2hex(h,s*1.05,l-.16));add(hsl2hex(h,s*.8,l+.16));return out.slice(0,5);}
+/* v24 (desktop): the color suggestions sit in a column OUTSIDE the picture, on its left (right side only if the left has no room),
+   so they never cover the drawing. Phone keeps its strip above the tab bar. */
+function placeTry(){const el=$('#tryrow');if(!el||el.hidden)return;const phone=matchMedia('(max-width:600px)').matches;
+  if(phone){if(el.parentNode!==stage)stage.appendChild(el);el.classList.remove('col','slim');el.style.cssText='';return;}
+  if(el.parentNode!==document.body)document.body.appendChild(el);el.classList.add('col');el.classList.remove('slim');el.style.visibility='hidden';el.style.left='0px';el.style.top='0px';
+  const r=stage.getBoundingClientRect();let w=el.offsetWidth,h=el.offsetHeight;const roomL=r.left-12,roomR=innerWidth-r.right-12;
+  if(Math.max(roomL,roomR)<w){el.classList.add('slim');w=el.offsetWidth;h=el.offsetHeight;}
+  if(Math.max(roomL,roomR)<w){el.style.visibility='';el.hidden=true;return;}
+  const left=roomL>=w?r.left-8-w:r.right+8,top=Math.max(8,Math.min(innerHeight-h-8,r.top));el.style.left=Math.round(left)+'px';el.style.top=Math.round(top)+'px';el.style.visibility='';}
+addEventListener('resize',()=>placeTry());
 function showTry(r){if(!hintsOn()||mode!=='free'||!r||tool==='eraser'||tool==='pop')return;const sw=suggestFor(r),el=$('#tryrow');el.classList.remove('natural');el.querySelector('b').textContent='Try';
   el.querySelector('.tsw').innerHTML=sw.map((h,i)=>`<button style="background:${h}" data-c="${h}" title="${i===0&&S.num[r]?'From the color guide':colorName(h)}">${i===0&&S.num[r]?'<i>★</i>':''}</button>`).join('');
   el.querySelectorAll('.tsw button').forEach(b=>b.onclick=e=>{e.stopPropagation();pickColor(b.dataset.c);el.hidden=true;});
-  el.hidden=false;clearTimeout(tryT);tryT=setTimeout(()=>el.hidden=true,8000);}
+  el.hidden=false;placeTry();clearTimeout(tryT);tryT=setTimeout(()=>el.hidden=true,8000);}
 /* ---------- natural colours: hover (mouse) or long-press (touch) an area -> the sample bar shows true-to-life colours for
    that part (skin tones for hands, browns for wood, blues for sky...). The scene's colour guide comes first. Only a hint. */
 const NATURAL={skin:['#f6d7c3','#eec1a0','#d9a07b','#b97a56','#8d5a3b','#5c3a28'],nail:['#f7d9d0','#efc4b8','#e0a99a','#c98f80'],
@@ -2086,7 +2185,7 @@ function showNatural(r){if(!hintsOn()||mode!=='free'||!r||!S)return;const ty=reg
   if(g)add(g);(NATURAL[ty]||suggestFor(r)).forEach(add);const el=$('#tryrow');el.classList.add('natural');el.querySelector('b').textContent='Natural · '+(NATNAME[ty]||ty);
   el.querySelector('.tsw').innerHTML=out.slice(0,6).map((h,i)=>`<button style="background:${h}" data-c="${h}" title="${i===0&&g?'From the color guide':colorName(h)}">${i===0&&g?'<i>★</i>':''}</button>`).join('');
   el.querySelectorAll('.tsw button').forEach(b=>b.onclick=e=>{e.stopPropagation();pickColor(b.dataset.c);el.hidden=true;});
-  el.hidden=false;el.dataset.r=r;clearTimeout(tryT);tryT=setTimeout(()=>el.hidden=true,6000);}
+  el.hidden=false;el.dataset.r=r;placeTry();clearTimeout(tryT);tryT=setTimeout(()=>el.hidden=true,6000);}
 let natT=0,natR=0,lpT=0;
 stage.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||e.buttons||mode!=='free'||!S)return;if(e.target.closest&&e.target.closest('.tryrow,.nudge,.zoomui,.ideasbar'))return;
   const [x,y]=toCanvas(e),r=labAt(x,y);clearTimeout(natT);if(!r||r===natR&&!$('#tryrow').hidden)return;natT=setTimeout(()=>{natR=r;showNatural(r);},420);},{passive:true});
@@ -2255,8 +2354,8 @@ function undo(){
   if(mode==='cbn'){const c=S.cbn,b=c.hist.pop();if(!b)return;
     for(const r of b){c.filled[r]=0;paintRegion(r,[0,0,0],0);if(S.tgt[r]){c.doneT[S.num[r]]--;c.done--;}}
     c.complete=false;highlight();drawNums();progress();dirty('cbn');fxClip();}
-  else{const n=S.free.undo.length,u=S.free.undo.pop();if(u){unsnap(u);dirty('free');
-    while(S.fxUndo&&S.fxUndo.length&&S.fxUndo[S.fxUndo.length-1].n===n){for(const [r,c,pc] of S.fxUndo.pop().m){r.mx.clearRect(0,0,W,H);r.mx.drawImage(c,0,0);r.dirty=true;if(pc!==undefined)phRestore(r,pc);if(!(S.fx||[]).includes(r))S.fx.push(r);}}
+  else{const u=S.free.undo.pop(),n=u&&u.id;if(u){S.lastOp=null;if($('#adjust')&&!$('#adjust').hidden){setTimeout(adjBuild,0);}adjFlash();unsnap(u);dirty('free');
+    while(S.fxUndo&&S.fxUndo.length&&S.fxUndo[S.fxUndo.length-1].n===n){for(const [r,c,pc,ox,oy] of S.fxUndo.pop().m){if(!c){r.mx.clearRect(0,0,W,H);}else if(ox!=null){r.mx.clearRect(ox,oy,c.width,c.height);r.mx.drawImage(c,ox,oy);}else{r.mx.clearRect(0,0,W,H);r.mx.drawImage(c,0,0);}r.dirty=true;if(pc!==undefined)phRestore(r,pc);if(!(S.fx||[]).includes(r))S.fx.push(r);}}
     fxClip();}}
 }
 let armT=0;
@@ -2333,21 +2432,22 @@ $('#idea3d').onclick=()=>idea3d();$('#idea3dApply').onclick=idea3dApply;
 /* v20: Mix opens as an overlay on the bottom section only (same footprint as the pencil and tool boxes; the picture never moves).
    Accept keeps the mix and returns to the bar; Cancel puts everything back as it was */
 let mixPrev=null;
-function openMix(){adjClose();mixPrev={on:MIX.on,finish:MIX.finish,anim:MIX.anim,part:MIX.part};$('#mxOff').hidden=!MIX.on;if(MIX.on){buildMixer();$('#mixer').hidden=false;}else setMix(true);}
-function adjOpen(){const el=$('#adjust');if(!el)return;if(!$('#mixer').hidden)mixCancel&&mixCancel();el.hidden=false;$('#adjBtn')&&$('#adjBtn').classList.add('on');adjBuild();}
+function openMix(){adjClose();mixPrev={on:MIX.on,finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:{...MIX.amt}};$('#mxOff').hidden=!MIX.on;if(MIX.on){buildMixer();$('#mixer').hidden=false;}else setMix(true);}
+function adjOpen(){const el=$('#adjust');if(!el)return;if(!$('#mixer').hidden)mixCancel&&mixCancel();el.hidden=false;$('#adjBtn')&&$('#adjBtn').classList.add('on');adjBuild();adjFlash();}
 function adjClose(){const el=$('#adjust');if(el)el.hidden=true;$('#adjBtn')&&$('#adjBtn').classList.remove('on');if(phP==='adjust'){phP=null;app.dataset.ph='';phSync();}}
-function adjBuild(){const el=$('#adjRows');if(!el||!ink)return;adjSync();const k=adjKey(),a=ADJ[k]||{},fmt=(d,v)=>(d[0]==='h'||d[0]==='b'||d[0]==='w')&&v>0?'+'+v+d[6]:v+d[6];
-  el.innerHTML=ADJDEF.map(d=>{const v=adjVal(a,d[0]);return `<label class="adjr" title="${esc(d[7])}"><span>${d[1]}</span><input type="range" data-k="${d[0]}" min="${d[2]}" max="${d[3]}" step="${d[5]}" value="${v}" aria-label="${esc(d[1])}"><em>${fmt(d,v)}</em></label>`;}).join('');
-  const sw=()=>{$('#adjBefore').style.background=ink.base||ink.hex;$('#adjAfter').style.background=ink.hex;$('#adjAfter').style.opacity=adjOp();$('#adjAfter').style.boxShadow=curAdj()&&adjVal(curAdj(),'g')>0?`0 0 ${4+adjVal(curAdj(),'g')*.14}px ${ink.hex}`:'';
-    $('#adjName').textContent=(ink.id&&PREM[ink.id]?PREM[ink.id].name:ink.kind==='mix'?'Mix · '+colorName(ink.base||ink.hex):colorName(ink.base||ink.hex))+(curAdj()?' · adjusted':'');};sw();
-  el.querySelectorAll('input').forEach(i=>i.oninput=()=>{const kk=adjKey();ADJ[kk]=Object.assign({},ADJ[kk]||{},{[i.dataset.k]:+i.value});const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);
-    LS.set('adj',ADJ);setInkPattern();sw();});}
-function adjReset(){delete ADJ[adjKey()];LS.set('adj',ADJ);setInkPattern();adjBuild();}
+function adjBuild(){const el=$('#adjRows');if(!el)return;const L=S&&S.lastOp,a=L?L.a:{},fmt=(d,v)=>(d[0]==='h'||d[0]==='b'||d[0]==='w')&&v>0?'+'+v+d[6]:v+d[6];
+  el.innerHTML=ADJDEF.map(d=>{const v=adjVal(a,d[0]);return `<label class="adjr" title="${esc(d[7])}"><span>${d[1]}</span><input type="range" data-k="${d[0]}" min="${d[2]}" max="${d[3]}" step="${d[5]}" value="${v}" aria-label="${esc(d[1])}"${L?'':' disabled'}><em>${fmt(d,v)}</em></label>`;}).join('');
+  $('#adjust').classList.toggle('empty',!L);$('#adjReset').disabled=!L;
+  const sw=()=>{const A=$('#adjAfter'),Bf=$('#adjBefore');if(!L){Bf.style.background='transparent';A.style.background='transparent';A.style.opacity=1;A.style.boxShadow='';$('#adjName').textContent='Draw a stroke or fill first, then adjust it here';return;}
+    const oa=opAdj(),hx=opHex(L,oa);Bf.style.background=L.hex;A.style.background=hx;A.style.opacity=adjVal(L.a,'o')/100;A.style.boxShadow=adjVal(L.a,'g')>0?`0 0 ${4+adjVal(L.a,'g')*.14}px ${hx}`:'';
+    $('#adjName').textContent=L.name+(L.kind==='fill'?' · fill':' · stroke')+(oa?' · adjusted':'');};sw();
+  el.querySelectorAll('input').forEach(i=>i.oninput=()=>{if(!S.lastOp)return;S.lastOp.a[i.dataset.k]=+i.value;adjCarry={...S.lastOp.a};LS.set('adjCarry',adjCarry);const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);sw();lastOpRenderSoon();});}
+function adjReset(){adjCarry={};LS.set('adjCarry',adjCarry);if(S&&S.lastOp){S.lastOp.a={};lastOpRender();}adjBuild();adjFlash();}
 (function(){const b=$('#adjBtn');if(!b)return;b.onclick=e=>{e.stopPropagation();$('#adjust').hidden?adjOpen():adjClose();};$('#adjX').onclick=adjClose;$('#adjDone').onclick=adjClose;$('#adjReset').onclick=adjReset;
   ['pointerdown','click'].forEach(ev=>$('#adjust').addEventListener(ev,e=>e.stopPropagation()));})();
 function closeMix(){$('#mixer').hidden=true;mixPrev=null;if(phP==='mix'){phP=null;app.dataset.ph='';phSync();}}
 function mixAccept(){closeMix();buildPalette();toast('Mix on · color with your pencils');}
-function mixCancel(){const p=mixPrev;closeMix();if(!p)return;MIX.finish=p.finish;MIX.anim=p.anim;MIX.part=p.part;LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part});
+function mixCancel(){const p=mixPrev;closeMix();if(!p)return;const live=['finish','anim','part'].filter(k=>(MIX.amt[k]||1)!==((p.amt||{})[k]||1));MIX.finish=p.finish;MIX.anim=p.anim;MIX.part=p.part;if(p.amt){MIX.amt={...p.amt};live.forEach(mixAmtLive);}LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});
   if(!p.on)setMix(false);else{mixInk();setInkPattern();markColor();}}
 $('#mixBtn').onclick=openMix;
 /* v20 phone (<=600px): slim top bar (Menu, Undo, Pen size) and a slim bottom strip of tabs. Each tab opens ONE small panel
@@ -2610,13 +2710,14 @@ for(const key of ['pencils','palettes','effects3d','smoke','clouds','gradients']
 
 /* ---------- test / debug hooks (read-only helpers) ---------- */
 window.EP={
-  freeAt:(x,y)=>[...S.free.ctx.getImageData(x|0,y|0,1,1).data],setFxs:(k,v)=>setFxs(k,v),ink:()=>({...ink}),linesC:()=>S&&linesOf(S).c,adj:()=>({key:adjKey(),a:curAdj()}),parts:()=>(S.fx||[]).map(r=>[r.kind,r.parts.length,r.amt||1]),fxKeys:()=>fxKeysFor(SETS[setIdx]),fxFilter:()=>S&&S.fxC&&S.fxC.style.filter,
+  setsInfo:()=>SETS.map(s=>({id:s.id,name:s.name,product:s.product,type:s.type,colors:s.type==='plain'?s.colors:s.items.map(p=>p.kind==='brush'?[p.name,'']:[p.name,p.hex]),unlocked:s.product?ENT[s.product].unlocked():true})),mixAmtLive:(k)=>mixAmtLive(k),
+  freeAt:(x,y)=>[...S.free.ctx.getImageData(x|0,y|0,1,1).data],setFxs:(k,v)=>setFxs(k,v),ink:()=>({...ink}),linesC:()=>S&&linesOf(S).c,adj:()=>{const L=S&&S.lastOp;return L?{kind:L.kind,a:{...L.a},hex:L.hex,adjHex:opHex(L,opAdj()),bb:[L.bx,L.by,L.bw,L.bh],px:L.M.reduce((p,v)=>p+v,0),recs:L.recs.map(q=>[q[0].kind,q[0].hex])}:null;},parts:()=>(S.fx||[]).map(r=>[r.kind,r.parts.length,r.amt||1]),fxKeys:()=>fxKeysFor(SETS[setIdx]),fxFilter:()=>S&&S.fxC&&S.fxC.style.filter,
   ctx:()=>({ctx:app.dataset.ctx,tag:($('#ctxtag')||{}).textContent,mem:Object.fromEntries(Object.entries(TMEM).map(([k,v])=>[k,{hex:v.ink.hex,id:v.ink.id||null,set:SETS[v.setIdx].id,tool:v.tool}]))}),
   pickGuide:k=>pickNum(k),
   texVariant:(k,h)=>texVariant(k,h),furStyle:()=>furStyle,furAt:(x,y)=>{const d=(furC||mk()).getContext('2d').getImageData(x|0,y|0,1,1).data;return [d[0],d[1],d[2],d[3]];},
   compCrop:(x,y,w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(composite(),x,y,w,h,0,0,w,h);return c.toDataURL('image/png');},
   texAt:(k,h,x,y)=>{const D=texTile(k,texVariant(k,h),hex2rgb(h),true).data,j=(Math.min(H-1,Math.max(0,y))*W+Math.min(W-1,Math.max(0,x)))*4;return [D[j],D[j+1],D[j+2]];},
-  fxDrawNow:()=>fxDraw(performance.now()),fxDrawAt:(ms)=>fxDraw(ms),
+  fxDrawNow:()=>fxDraw(performance.now()),fxDrawAt:(ms)=>fxDraw(ms),_fx:{fxDrawRec,drawPulseBands,fxTint},
   boltI:(t)=>boltI(t),bolt:()=>(S.fx||[]).filter(r=>r.kind==='boltfx').map(r=>({hex:r.hex,I:r.lastI||0,off:r.bolt?r.bolt.off:null})),boltClock:(t)=>{if(t==null){BFIX=false;return CLK.boltSpeed;}BFIX=true;CLK.boltSpeed=t;fxDraw(performance.now());return t;},openUpgrade:(k)=>openUpgrade(null,k),fxSets:(k)=>SETS.filter(q=>q.product===k&&q.type==='ink').map(q=>q.name),
 clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   fxHexes:()=>(S.fx||[]).map(r=>[r.kind,r.hex]),
