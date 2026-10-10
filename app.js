@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=24;
+const EP_BUILD=25;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -277,7 +277,7 @@ function lastOpCapture(ctx,x,y,w,h,kind){if(!S||mode==='cbn')return;const u=S.fr
   const pulse=ctx!==S.free.ctx,src=pulse?u.p:u.f,B=new ImageData(bw,bh);if(src){const sd=src.data,bd=B.data;for(let r=0;r<bh;r++){const o=((by+r)*W+bx)*4;bd.set(sd.subarray(o,o+bw*4),r*bw*4);}}
   const A=ctx.getImageData(bx,by,bw,bh),ad=A.data,bd=B.data,mk8=new Uint8Array(bw*bh);let any=0;for(let i=0,j=0;i<mk8.length;i++,j+=4)if(ad[j]!==bd[j]||ad[j+1]!==bd[j+1]||ad[j+2]!==bd[j+2]||ad[j+3]!==bd[j+3]){mk8[i]=1;any++;}
   if(!any)return;const n=undoKey(),recs=[];for(const e of (S.fxUndo||[]))if(e.n===n)for(const q of e.m)if(q[3]==null&&!recs.some(z=>z[0]===q[0]))recs.push([q[0],q[0].hex]);
-  S.lastOp={kind,pulse,bx,by,bw,bh,B,A,M:mk8,n,hex:ink.base||ink.hex,name:ink.id&&PREM[ink.id]?PREM[ink.id].name:ink.kind==='mix'?'Mix · '+colorName(ink.base||ink.hex):colorName(ink.base||ink.hex),recs,a:{...adjCarry}};if(opAdj())lastOpRender();   /* v24: a new stroke starts from the previous stroke's Adjust values */
+  S.lastOp={path:typeof stroke!=='undefined'&&stroke&&stroke.path&&stroke.path.length>1?[stroke.path[0],stroke.path[stroke.path.length-1]]:null,kind,pulse,bx,by,bw,bh,B,A,M:mk8,n,hex:ink.base||ink.hex,name:ink.id&&PREM[ink.id]?PREM[ink.id].name:ink.kind==='mix'?'Mix · '+colorName(ink.base||ink.hex):colorName(ink.base||ink.hex),recs,a:{...adjCarry}};if(opAdj())lastOpRender();   /* v24: a new stroke starts from the previous stroke's Adjust values */
   if($('#adjust')&&!$('#adjust').hidden)setTimeout(()=>{adjBuild();adjFlash();},0);}
 let adjCarry=LS.get('adjCarry',{});if(!adjCarry||typeof adjCarry!=='object')adjCarry={};
 function opAdj(){const L=S&&S.lastOp;return L&&ADJDEF.some(([k,, , ,d])=>L.a[k]!=null&&L.a[k]!==d)?L.a:null;}
@@ -599,7 +599,7 @@ function markColor(){setTimeout(sizeUI,0);const sl=$('#saveLoop');if(sl)sl.hidde
     ab.classList.toggle('on',ink.id===anyId(k));ab.classList.toggle('cur',mine);if(sw)sw.style.background=mine?ink.hex:'conic-gradient(#f44,#fa3,#ee4,#4c6,#3cd,#46f,#a5f,#f4a,#f44)';ab.dataset.c=mine?ink.hex:'';}}
 }
 function pickNum(k){ if(mode==='free'){pickColor(S.d.palette[k-1]);return;} selNum=k;markColor();highlight();drawNums();}
-function pickColor(h){color=h;ink=settings.chromeFinish&&!MIX.on?{kind:'chrome',hex:h,id:'c-any'}:{kind:'plain',hex:h,id:null};if(ink.id==='c-any')enableTilt();if(tool==='eraser'||tool==='poperase')setTool(backTool());if(MIX.on)mixInk();setInkPattern();markColor();
+function pickColor(h){color=h;ink=settings.chromeFinish&&!MIX.on?{kind:'chrome',hex:h,id:'c-any'}:{kind:'plain',hex:h,id:null};if(ink.id==='c-any')enableTilt();if(tool==='eraser'||tool==='poperase')setTool(backTool());if(MIX.on){if($('#mixer').hidden&&!pickColor.keepMix)setMix(false);else mixInk();}   /* v25: after Mix is accepted, picking another pencil ends Mix, so no effect leaks into plain strokes */setInkPattern();markColor();
   $$('#pgroup .brush').forEach(b=>{b.innerHTML=premiumIcon(PREM[b.dataset.p]);});}
 /* v16: the bottom bar follows the tool. Pencil shows the drawing pencils, Fill the fill colors, Pop Pencil its options plus pencils,
    Pop Fill (pencils too, for Color while popping) / Eraser / Pop Erase their options. Each of Pencil (incl. brushes), Fill and Pop Pencil remembers its last pencil or color. */
@@ -730,7 +730,7 @@ function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.cl
 let toastT=0;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),1600);}
 
 /* ---------- free color ---------- */
-function snap(){if(S)S.lastOp=null;const f=S.free,er=tool==='eraser'&&mode==='free';S.useq=(S.useq||0)+1;f.undo.push({id:S.useq,t:Date.now(),f:f.ctx.getImageData(0,0,W,H),p:S.pulseUsed?S.pulse.ctx.getImageData(0,0,W,H):null,
+function snap(){if(S)S.lastOp=null;const f=S.free,er=(tool==='eraser'||tool==='poperase')&&mode==='free';S.useq=(S.useq||0)+1;f.undo.push({id:S.useq,t:Date.now(),f:f.ctx.getImageData(0,0,W,H),p:S.pulseUsed?S.pulse.ctx.getImageData(0,0,W,H):null,
     x:er?{l:S.ltr?S.ltr.getContext('2d').getImageData(0,0,W,H):null,rx:S.pp&&S.pp.any?S.pp.rx.getImageData(0,0,W,H):null,ix:S.pp&&S.pp.any?S.pp.ix.getImageData(0,0,W,H):null,pops:JSON.stringify((S.pops||[]).map(({k,anim,...p})=>p))}:null});if(f.undo.length>15){f.undo.shift();const lo=f.undo[0].id;S.fxUndo=(S.fxUndo||[]).filter(e=>e.n>=lo);}}
 const undoKey=()=>{const u=S&&S.free&&S.free.undo[S.free.undo.length-1];return u?u.id:0;};
 function unsnap(u){S.free.ctx.putImageData(u.f,0,0);if(u.x){const X=u.x;if(X.l&&S.ltr){S.ltr.getContext('2d').putImageData(X.l,0,0);dirty('ltr');if(typeof ltRender==='function')ltRender();}if(X.rx&&S.pp){S.pp.rx.putImageData(X.rx,0,0);S.pp.ix.putImageData(X.ix,0,0);ppRender(S);dirty('pp');}const ps=JSON.parse(X.pops||'[]');if(ps.length!==(S.pops||[]).length){S.pops=ps;renderPops();dirty('pop');}}if(S.pulse){if(u.p)S.pulse.ctx.putImageData(u.p,0,0);else S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}}
@@ -790,6 +790,7 @@ function beginStroke(x,y,pr,ptype){
   lastStroke={snapped:onInk,start:r,regions:locked&&r?[r]:[],breaks:0,locked};
   strokeC.style.filter=stroke.neon?(ink.kind==='glow'?`drop-shadow(0 0 8px ${ink.hex}) drop-shadow(0 0 18px ${ink.hex})`:`drop-shadow(0 0 3px ${ink.hex}) drop-shadow(0 0 9px ${ink.hex})`):'';
   if(stroke.region)setMask(r);
+  if(stroke.er&&mode==='free')fxEraseBegin();
   if(ink.kind==='ramp'&&!stroke.er&&!stroke.st){rampC=rampC||mk();rampT=rampT||mk();rampC.getContext('2d').clearRect(0,0,W,H);rampT.getContext('2d').clearRect(0,0,W,H);stroke.ramp={k:ink.ramp,d:0,last:[x,y]};}
   if(inkKind()==='fur'&&!stroke.er&&!stroke.st){furC=furC||mk();furC.getContext('2d').clearRect(0,0,W,H);stroke.fur={dx:0,dy:1,has:false,s:0,lx:x,ly:y,lanes:null};}
   if(!stroke.er)showTry(r||labAt(x,y));
@@ -799,7 +800,8 @@ function stamp(x,y,pr){
   const p=(pr>0&&pr!==.5)?pr:.5;
   if(stroke.er){const R=eraR()/zoomSizeDiv(),P=S.pp;   /* v24: one eraser for everything under it: color, Pulse, tracing, Pop Pencil heights (and Pop Fill shapes, at the end) */
     const cs=[S.free.ctx];if(S.pulse)cs.push(S.pulse.ctx);if(S.ltr&&mode==='free')cs.push(S.ltr.getContext('2d'));if(P&&P.any&&mode==='free'){cs.push(P.rx,P.ix);stroke.ppEr=true;}
-    for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.globalAlpha=.85;c.drawImage(tip,x-R,y-R,2*R,2*R);c.restore();}
+    for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.globalAlpha=(P&&(c===P.rx||c===P.ix))?1:.85;c.drawImage(tip,x-R,y-R,2*R,2*R);c.restore();}
+    if(mode==='free')fxEraseAt(x,y,R);
     {const r=S.lab[(y|0)*W+(x|0)];if(r)(stroke.erR||(stroke.erR=new Set())).add(r);}
     if(S.pulse)dirty('pulse');if(S.ltr&&mode==='free'){dirty('ltr');stroke.ltEr=true;}return;}
   let R=penR()*(.65+.7*p)/zoomSizeDiv();
@@ -878,7 +880,8 @@ function commitPaint(){
     if(stroke.ramp){const tm=mk(),tx=tm.getContext('2d');tx.drawImage(rampT,0,0);tx.globalCompositeOperation='destination-in';tx.drawImage(strokeC,0,0);fxAdd(['rampfx'],stroke.ramp.k,tm);}
     else fxAdd(fxKindsOf(ink),ink.hex,strokeC,0,0,stroke.path);}
 }
-function eraserEnd(st){if(!S||mode!=='free')return;if(st.ppEr)ppRender(S);if(st.ltEr&&typeof ltRender==='function')ltRender();
+function eraserEnd(st){if(!S||mode!=='free')return;for(const r of (S.fx||[]))if(r.erD){r.erD=false;r.dirty=true;}   /* v25: rescan erased masks once, when the stroke ends */
+  if(st.ppEr)ppRender(S);if(st.ltEr&&typeof ltRender==='function')ltRender();
   if(st.erR&&S.pops&&S.pops.length){const n0=S.pops.length;S.pops=S.pops.filter(p=>!(p.rs||[p.r]).some(r=>st.erR.has(r)));if(S.pops.length!==n0){renderPops();dirty('pop');}}}
 function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er){setTimeout(fxClip,0);eraserEnd(stroke);}else if(stroke.bbx){const b=stroke.bbx;lastOpCapture(stroke.pulse?S.pulse.ctx:S.free.ctx,b[0],b[1],b[2]-b[0],b[3]-b[1],'stroke');}
   dirty('free'); strokeC.style.filter='';strokeC.style.opacity='';
@@ -1143,7 +1146,13 @@ function popUI(show){const hs=$('#ppH');if(hs){const v=show!=null?show:Math.roun
   const m=$('#popMode');m.setAttribute('aria-pressed',String(POP.pressed));m.dataset.m=popModeName().toLowerCase();
   m.querySelectorAll('i').forEach(b=>b.classList.toggle('on',b.dataset.v===m.dataset.m));}
 /* Pop Erase: flattens a manual pop (2D) or the template relief of an area (3D modes); tap again in 3D to restore */
-function popErase(x,y){const r=labAt(x,y);if(!r||!S)return;const hadPop=(S.pops||[]).some(q=>(q.rs||[q.r]).includes(r));S.popSel={k:hadPop?'pop':'pp',r};setTimeout(()=>popUI(0),0);if(ppEraseAt(r)){toast('Flattened');return;}
+function popErase(x,y){const r=labAt(x,y);if(!r||!S)return;const hadPop=(S.pops||[]).some(q=>(q.rs||[q.r]).includes(r));S.popSel={k:hadPop?'pop':'pp',r};setTimeout(()=>popUI(0),0);
+  if(mode==='free'){   /* v25: one Pop Erase tap clears everything 3D in that area at once (Pop Pencil height, Pop Fill raise/inset, background pop)
+       plus every live effect laid there (Glowing via Pop Fill, glitter, shimmer…); the colour stays. Undo brings it all back. */
+    snap();fxEraseBegin();let did=ppEraseAt(r);const n0=(S.pops||[]).length;S.pops=(S.pops||[]).filter(p=>!(p.rs||[p.r]).includes(r));if(S.pops.length!==n0){renderPops();dirty('pop');did=true;}
+    if(fxEraseRegion(r))did=true;
+    if(did){toast('Flattened · effects removed');return;}
+    {const u=S.free.undo.pop();if(u)while(S.fxUndo&&S.fxUndo.length&&S.fxUndo[S.fxUndo.length-1].n===u.id)S.fxUndo.pop();}}if(ppEraseAt(r)){toast('Flattened');return;}
   {const i=(S.pops||[]).findIndex(p=>(p.rs||[p.r]).includes(r));if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');toast('Flattened');return;}if(!D3.on){toast('Nothing raised here');return;}}   /* v16: Pop Fill shapes flatten first, in 2D and 3D; in 3D a second tap flattens the page relief */
   const T=depthOf(S);if(!T)return;S.flat3d=S.flat3d||[];const fl=new Set(S.flat3d);
   if(!T.lv[r]){toast('Already flat');return;}
@@ -1228,7 +1237,8 @@ function relParallax(){if(!S||!S.relief||!D3.on)return;const k=Math.min(4,1+Z.z*
   S.relief.sh.style.transform=`translate(${(-tilt.x*k*1.2).toFixed(2)}px,${(-tilt.y*k*1.2).toFixed(2)}px)`;
   S.relief.li.style.transform=`translate(${(tilt.x*.4).toFixed(2)}px,${(tilt.y*.4).toFixed(2)}px)`;
   if(D3.band)bandParallax();}
-let swayRaf=0;function sway(){if(swayRaf||!D3.on||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+let swayRaf=0;function sway(){return;   /* v25: no idle light drift: on an idle page the 3D light swayed across every shape, which read as leftover shimmer after erasing. The light still follows mouse / tilt. */
+  if(swayRaf||!D3.on||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const step=t=>{if(!D3.on){swayRaf=0;return;}if(performance.now()-D3.lastMove>2500){tilt={x:Math.sin(t/2600)*.9,y:Math.cos(t/3400)*.5};popParallax();}swayRaf=requestAnimationFrame(step);};swayRaf=requestAnimationFrame(step);}
 /* optional parallax view: the finished picture split into depth bands that slide apart as you tilt / move */
 function bandView(on){D3.band=on;const v=$('#bandv');$('#bandBtn')&&$('#bandBtn').classList.toggle('on',on);
@@ -1270,9 +1280,15 @@ function fxSliderRow(k){const f=FXS[k],l=document.createElement('label');l.class
   const i=l.querySelector('input[type=range]'),nb=l.querySelector('.fxn');i.oninput=()=>setFxs(k,isSpd(k)?spdVal(k,+i.value):+i.value);   /* v13: typed values (e.g. 0.3), clamped to the slider's range, both stay in sync */
   numBox(nb,f.min,f.max,v=>setFxs(k,v));['pointerdown','click'].forEach(ev=>l.addEventListener(ev,e=>e.stopPropagation()));return l;}
 /* v22: each effect setting is a compact button showing its value; tapping it opens a small slider popover (tap outside closes) */
+/* v25: one Reset control (circular arrow + "Reset") used the same way in every settings panel */
+const RSTSVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg><span>Reset</span>';
+function rstBtn(fn,tip){const b=document.createElement('button');b.type='button';b.className='rstb';b.title=tip||'Reset to default';b.innerHTML=RSTSVG;b.onclick=e=>{e.stopPropagation();fn();};return b;}
+function mixReset(){const live=['finish','anim','part'].filter(k=>(MIX.amt[k]||1)!==1);MIX.finish='metal';MIX.anim='pulse';MIX.part='glitter';MIX.amt={finish:1,anim:1,part:1};live.forEach(mixAmtLive);
+  LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});if(MIX.on)mixInk();buildMixer();if(MIX.on)buildPalette();}
+function popReset(){setPopH(.6);if(typeof applySelHeight==='function')applySelHeight(popH());if(typeof popUI==='function')popUI();}
 function fxSlider(k){const f=FXS[k],w=document.createElement('span');w.className='fxw';w.dataset.k=k;
   w.innerHTML=`<button type="button" class="fxb" title="${esc(f.tip)}"><span>${f.lab}</span><b>${fxsLabel(k,motionLvl(k))}</b></button>`;
-  const pop=document.createElement('div');pop.className='fxpop';pop.hidden=true;pop.appendChild(fxSliderRow(k));w.appendChild(pop);
+  const pop=document.createElement('div');pop.className='fxpop';pop.hidden=true;pop.appendChild(fxSliderRow(k));pop.appendChild(rstBtn(()=>{setFxs(k,f.def);applyFxs();},'Reset '+f.lab+' to its default'));w.appendChild(pop);
   const btn=w.querySelector('.fxb');btn.onclick=e=>{e.stopPropagation();const open=pop.hidden;fxPopClose();if(!open)return;pop.hidden=false;btn.classList.add('on');
     const r=btn.getBoundingClientRect(),pw=pop.offsetWidth,ph=pop.offsetHeight,vw=innerWidth;let x=Math.max(6,Math.min(vw-pw-6,r.left+r.width/2-pw/2)),y=r.top-ph-8;if(y<6)y=r.bottom+8;
     pop.style.left=x+'px';pop.style.top=y+'px';const i=pop.querySelector('input[type=range]');i&&i.focus({preventScroll:true});};
@@ -1327,8 +1343,12 @@ function flowBand(g,x0,y0,w,h,fs,wd,a,Wc0){if(!fs||fs.p<-.9)return;const L=Math.
     gr.addColorStop(0,Wc+'0)');gr.addColorStop(.5,Wc+a+')');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(xc-hw,yy-.5,2*hw,st+1);}g.restore();}
 function fxParams(path){const seed=1+((Math.random()*999983)|0);let dir=Math.random()*6.2832;if(path&&path.length>1){const a=path[0],b=path[path.length-1];if(Math.hypot(b[0]-a[0],b[1]-a[1])>6)dir=Math.atan2(b[1]-a[1],b[0]-a[0]);}
   lightN=(lightN+1)%LIGHTS.length;return {seed,ph:Math.random()*20,dir,pathDir:!!(path&&path.length>1),light:LIGHTS[lightN],sp:.8+Math.random()*.45};}
-function fxRec(kind,hex,path){fxSetList(S);const same=S.fx.filter(q=>q.kind===kind&&q.hex===hex),lim=(kind==='smoke'||kind==='cloud'||kind.startsWith('texfx')||kind.startsWith('pt'))?3:6;
-  if(same.length&&(same.length>=lim||S.fx.length>=40))return same[same.length-1];
+/* v25: every stroke gets its own effect record (own direction, start phase and loop length), so a stroke pulled right runs right even
+   if the one before ran left, and a page of pulse strokes never beats together. Only past a high cap do strokes share a record, and then
+   the one whose direction is closest. */
+function fxRec(kind,hex,path){fxSetList(S);const same=S.fx.filter(q=>q.kind===kind&&q.hex===hex),heavy=kind==='smoke'||kind==='cloud'||kind.startsWith('texfx')||kind.startsWith('pt'),lim=heavy?6:24;
+  if(same.length&&(same.length>=lim||S.fx.length>=90)){const pd=fxParams(path);if(!pd.pathDir)return same[same.length-1];
+    const ad=q=>{const d=Math.abs(((q.dir||0)-pd.dir+Math.PI*3)%(Math.PI*2)-Math.PI);return d;};return same.slice().sort((a,b)=>ad(a)-ad(b))[0];}
   const m=mk(),r=Object.assign({kind,hex,mask:m,mx:m.getContext('2d',{willReadFrequently:true}),bb:null,pts:[],parts:[],dirty:true},fxParams(path));if(FINK.has(kind)){lightN21=(lightN21+1)%7;r.light=LIGHTS21[lightN21];}S.fx.push(r);return r;}
 const LIGHTK=new Set(['mirror','shine','jshine','shimmer','twinkle','glowfx','neonfx','pulsefx']);
 function lightClock(r){return r.kind==='twinkle'?(CLK.twinkleSpeed||0):r.kind==='glowfx'?(CLK.glowSpeed||0):r.kind==='neonfx'?(CLK.neonSpeed||0):r.kind==='pulsefx'?PCLK:CCLK;}
@@ -1397,10 +1417,28 @@ function fxAdd(kinds,hex,src,sx=0,sy=0,path=null){if(!kinds.length||!S)return;co
   for(const k of kinds){const n0=(S.fx||[]).length,r=fxRec(k,hex,path),fresh=S.fx.length>n0,c=fresh?null:mk();r.amt=ink&&ink.kind==='mix'&&ink.mix&&ink.mix.amt?(ink.mix.amt[mixSlotOf(k)]||1):(r.amt||1);r.mixO=ink&&ink.kind==='mix'&&ink.mix?ink.mix[mixSlotOf(k)]:null;r.sf=null;if(c)c.getContext('2d').drawImage(r.mask,0,0);u.m.push(k==='mirror'?[r,c,phCopy(r)]:[r,c]);r.mx.drawImage(src,sx,sy);r.dirty=true;r.boost=performance.now()/1000;if(k==='mirror')chromePhase(r,src,sx,sy,path);}
   S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);
   fxAttach();fxStart();dirty('fx');}
+/* v25: the eraser removes the effect itself, not just the colour under it. Every effect mask (glitter, shimmer, glow, pulse, fur
+   sheen, Mix, Pop Fill effects, old autosaves alike) is cut at full strength where the eraser passes, its particles there are dropped,
+   and an undo copy of each mask is kept so Undo brings the effect back exactly. */
+function fxEraseBegin(){if(!S||!S.fx||!S.fx.length)return;const u={n:undoKey(),m:[]};
+  for(const r of S.fx){if(r.dirty)fxScan(r);if(!r.bb)continue;const [bx,by,bw,bh]=r.bb,c=document.createElement('canvas');c.width=bw;c.height=bh;c.getContext('2d').drawImage(r.mask,bx,by,bw,bh,0,0,bw,bh);u.m.push([r,c,undefined,bx,by]);}
+  if(u.m.length)S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);}
+function fxEraseAt(x,y,R){if(!S||!S.fx)return;let hit=false;for(const r of S.fx){const b=r.bb;if(!b||x+R<b[0]||y+R<b[1]||x-R>b[0]+b[2]||y-R>b[1]+b[3])continue;
+    r.mx.save();r.mx.globalCompositeOperation='destination-out';r.mx.globalAlpha=1;r.mx.beginPath();r.mx.arc(x,y,R*1.05,0,6.2832);r.mx.fill();r.mx.restore();r.erD=true;hit=true;
+    if(r.parts&&r.parts.length)r.parts=r.parts.filter(p=>Math.hypot((p.sx!=null?p.sx:p.x)-x,(p.sy!=null?p.sy:p.y)-y)>R*1.05);}
+  if(hit)dirty('fx');}
+function fxEraseRegion(r){if(!S||!S.fx||!S.fx.length)return false;const b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;
+  const c=document.createElement('canvas');c.width=bw;c.height=bh;const cx=c.getContext('2d'),m=cx.createImageData(bw,bh);for(let p=S.off[r];p<S.off[r+1];p++){const q=S.pix[p],X=q%W-bx,Y=(q/W|0)-by;m.data[(Y*bw+X)*4+3]=255;}cx.putImageData(m,0,0);
+  cx.filter='blur(1.5px)';cx.drawImage(c,0,0);cx.drawImage(c,0,0);let hit=false;
+  for(const f of S.fx){if(f.dirty)fxScan(f);const q=f.bb;if(!q||bx+bw<q[0]||by+bh<q[1]||bx>q[0]+q[2]||by>q[1]+q[3])continue;
+    const a=f.mx.getImageData(bx,by,bw,bh).data,md=m.data;let any=false;for(let i=3;i<a.length;i+=4)if(a[i]>20&&md[i]){any=true;break;}if(!any)continue;
+    f.mx.save();f.mx.globalCompositeOperation='destination-out';f.mx.drawImage(c,bx,by);f.mx.restore();f.dirty=true;hit=true;}
+  if(hit){fxClip();dirty('fx');}return hit;}
 function fxScan(r){ // bbox + sample points of a mask (for particles and sheen extents)
   const d=r.mx.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;const pts=[];
   for(let y=0;y<H;y+=3)for(let x=0;x<W;x+=3){if(d[(y*W+x)*4+3]>60){if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;pts.push(x,y);}}
   r.bb=x1<0?null:[x0,y0,x1-x0+1,y1-y0+1];const n=pts.length/2,keep=[];let sd=((r.seed||1)*2654435761)>>>0;const rnd=()=>{sd=(sd+0x6D2B79F5)>>>0;let z=sd;z=Math.imul(z^(z>>>15),z|1);z^=z+Math.imul(z^(z>>>7),z|61);return((z^(z>>>14))>>>0)/4294967296;};/* v24: deterministic sampling, so an undone mask draws exactly as before */for(let i=0;i<Math.min(n,500);i++){const j=(rnd()*n)|0;keep.push([pts[j*2],pts[j*2+1]]);}
+  if(r.parts&&r.parts.length)r.parts=r.parts.filter(p=>{const px=(p.sx!=null?p.sx:p.x)|0,py=(p.sy!=null?p.sy:p.y)|0;return px>=0&&py>=0&&px<W&&py<H&&d[(py*W+px)*4+3]>20;});   /* v25: no particle outlives the mask under it */
   r.pts=keep;r.dirty=false;r.sf=null;r.loose=null;r.tint=null;r.nm=null;r.cf=null;r.shade=null;r.td=null;r.dq=null;r.bolt=null;r.texC=null;r.mv=(r.mv||0)+1;if(!r.bb)r.parts=[];}
 function fxLoose(r,blur,n=2){ // soft, spread mask so wisps / puffs can hover just around the colour
   const c=mk(),x=c.getContext('2d');x.filter=`blur(${blur}px)`;for(let i=0;i<n;i++)x.drawImage(r.mask,0,0);x.filter='none';return c;}
@@ -1800,6 +1838,7 @@ function drawPulseBands(x,r,t,o){if(!r.bb)return;const Q=depthQ(r),[bx,by,bw,bh]
   scx.globalCompositeOperation='destination-in';scx.drawImage(r.mask,bx,by,bw,bh,bx,by,bw,bh);scx.globalCompositeOperation='source-over';
   x.save();x.globalCompositeOperation='lighter';x.drawImage(scratch,bx,by,bw,bh,bx,by,bw,bh);x.restore();}
 let PPLV=null;function ppPulse(x,t){ // light pulses travel up through raised Pop Pencil areas (height = depth)
+  return;   /* v25: off. Every Pop Pencil stroke (and Hair / any pencil drawn in 3D) got a moving white light pulse, so plain strokes looked like they still shimmered. Only effect pencils animate now. */
   const P=S&&S.pp;if(!P||!P.any||!P.hq)return;const q=P.pq||(P.pq=new ImageData(WQ,HQ)),D=q.data,tt=RM.matches?.3:t;if(!PPLV){PPLV=new Uint8Array(WQ*HQ);for(let i=0;i<PPLV.length;i++)PPLV[i]=Math.min(7,(vnoise3((i%WQ)*.05,((i/WQ)|0)*.05,0,911)*8)|0);}
   const luts=[];for(let L=0;L<8;L++){const lut=new Float32Array(33),tl=tt*(1+(hash2(L,77)<.5?-1:1)*(.05+.05*hash2(L,79)))+hash2(L,78)*9;for(let k=0;k<=32;k++)lut[k]=lightPulseE(k/32,tl,.35,1,'forward');luts.push(lut);}   // v23: no page-wide pulse in step
   for(let i=0;i<P.hq.length;i++){const hv=P.hq[i],j=i*4;if(hv<=.02){D[j+3]=0;continue;}D[j]=255;D[j+1]=246;D[j+2]=222;D[j+3]=luts[PPLV[i]][Math.round(Math.min(1,hv)*32)]*120;}
@@ -2125,7 +2164,7 @@ function linesDoneGlow(){const b=$('#linesBtn');if(!b||!S)return;b.classList.tog
   $('#lnHide').onclick=()=>setLines({h:linesOf(S).h?0:1});
   $$('#linesPop .lns').forEach(b=>b.onclick=()=>setLines(b.dataset.s==='none'?{h:1}:b.dataset.s==='see'?{h:0,f:.55}:{h:0,f:0}));   /* v19: three line styles */
   {const t=$('#lnTrace');if(t)t.onclick=()=>ltSet(!LT.on);const b=$('#ltBtn');if(b)b.onclick=()=>ltSet(!LT.on);}
-  $('#lnReset').onclick=()=>setLines({...LINES0});
+  $('#lnReset').onclick=()=>setLines({...LINES0});{const b=$('#mxReset');if(b)b.onclick=e=>{e.stopPropagation();mixReset();};const p=$('#ppReset');if(p)p.onclick=e=>{e.stopPropagation();popReset();};}
   $('#lnX').onclick=()=>{p.hidden=true;};})();
 
 function popPreview(x,Wp,Hp){ // upgrade-sheet preview: three raised shapes + one pressed
@@ -2444,12 +2483,29 @@ function adjBuild(){const el=$('#adjRows');if(!el)return;const L=S&&S.lastOp,a=L
   const sw=()=>{const A=$('#adjAfter'),Bf=$('#adjBefore');if(!L){Bf.style.background='transparent';A.style.background='transparent';A.style.opacity=1;A.style.boxShadow='';$('#adjName').textContent='Draw a stroke or fill first, then adjust it here';return;}
     const oa=opAdj(),hx=opHex(L,oa);Bf.style.background=L.hex;A.style.background=hx;A.style.opacity=adjVal(L.a,'o')/100;A.style.boxShadow=adjVal(L.a,'g')>0?`0 0 ${4+adjVal(L.a,'g')*.14}px ${hx}`:'';
     $('#adjName').textContent=L.name+(L.kind==='fill'?' · fill':' · stroke')+(oa?' · adjusted':'');};sw();
-  el.querySelectorAll('input').forEach(i=>i.oninput=()=>{if(!S.lastOp)return;S.lastOp.a[i.dataset.k]=+i.value;adjCarry={...S.lastOp.a};LS.set('adjCarry',adjCarry);const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);sw();lastOpRenderSoon();});}
-function adjReset(){adjCarry={};LS.set('adjCarry',adjCarry);if(S&&S.lastOp){S.lastOp.a={};lastOpRender();}adjBuild();adjFlash();}
+  adjFxRow(el,L);
+  el.querySelectorAll('input:not(.adjsp)').forEach(i=>i.oninput=()=>{if(!S.lastOp)return;S.lastOp.a[i.dataset.k]=+i.value;adjCarry={...S.lastOp.a};LS.set('adjCarry',adjCarry);const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);sw();lastOpRenderSoon();});}
+/* v25: add a live effect to the last stroke only (its own record: own direction, phase and speed), or change that stroke's effect speed.
+   Other strokes and the rest of the picture are not touched. Undo of the stroke removes the added effect too. */
+const ADJFX=[['none','None',null],['shimmer','Shimmer','shimmer'],['glitter','Glitter','twinkle'],['glowing','Glowing','glowfx'],['metallic','Metallic','shine'],['pulse','Pulse','pulsefx'],['neon','Neon','neonfx']];
+function adjFxRecs(L){return (L.recs||[]).map(q=>q[0]).filter(r=>(S.fx||[]).includes(r));}
+function adjSetFx(id){const L=S&&S.lastOp;if(!L)return;
+  if(L.fxAdd){const gone=new Set(L.fxAdd.recs);S.fx=S.fx.filter(r=>!gone.has(r));L.recs=(L.recs||[]).filter(q=>!gone.has(q[0]));if(S.fxL)S.fxL[mode]=S.fx;L.fxAdd=null;}
+  const d=ADJFX.find(q=>q[0]===id);if(d&&d[2]){fxSetList(S);const m=mk(),mx=m.getContext('2d',{willReadFrequently:true}),im=new ImageData(L.bw,L.bh);for(let i=0;i<L.M.length;i++)if(L.M[i])im.data[i*4+3]=L.A.data[i*4+3];mx.putImageData(im,L.bx,L.by);
+    const r=Object.assign({kind:d[2],hex:opHex(L,opAdj()),mask:m,mx,bb:null,pts:[],parts:[],dirty:true},fxParams(L.path||null));if(FINK.has(d[2])){lightN21=(lightN21+1)%7;r.light=LIGHTS21[lightN21];}
+    r.sp0=r.sp;if(L.spd)r.sp=r.sp0*L.spd;S.fx.push(r);L.fxAdd={id,recs:[r]};L.recs=(L.recs||[]).concat([[r,L.hex]]);S.fxUndo=(S.fxUndo||[]).concat([{n:L.n,m:[[r,null]]}]).slice(-300);fxAttach();fxStart();}
+  dirty('fx');fxDraw(performance.now());adjBuild();}
+function adjSetSpeed(v){const L=S&&S.lastOp;if(!L)return;L.spd=v;for(const r of adjFxRecs(L)){if(r.sp0==null)r.sp0=r.sp||1;r.sp=r.sp0*v;}dirty('fx');}
+function adjFxRow(el,L){const cur=L&&L.fxAdd?L.fxAdd.id:'none',has=L&&adjFxRecs(L).length,v=L&&L.spd||1;
+  const w=document.createElement('div');w.className='adjfx';w.innerHTML=`<span>Effect</span><div class="adjfxb">${ADJFX.map(d=>`<button type="button" class="chip${d[0]===cur?' on':''}" data-fx="${d[0]}"${L?'':' disabled'}>${d[1]}</button>`).join('')}</div>`;
+  w.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();adjSetFx(b.dataset.fx);});el.appendChild(w);
+  const l=document.createElement('label');l.className='adjr';l.title='Effect speed for this stroke only';l.innerHTML=`<span>Effect speed</span><input class="adjsp" type="range" min="0.1" max="3" step="0.05" value="${v}"${has?'':' disabled'} aria-label="Effect speed for this stroke"><em>${v.toFixed(2)}×</em>`;
+  const i=l.querySelector('input');i.oninput=()=>{adjSetSpeed(+i.value);l.querySelector('em').textContent=(+i.value).toFixed(2)+'×';};el.appendChild(l);}
+function adjReset(){adjCarry={};if(S&&S.lastOp){if(S.lastOp.fxAdd)adjSetFx('none');if(S.lastOp.spd)adjSetSpeed(1);S.lastOp.spd=null;}LS.set('adjCarry',adjCarry);if(S&&S.lastOp){S.lastOp.a={};lastOpRender();}adjBuild();adjFlash();}
 (function(){const b=$('#adjBtn');if(!b)return;b.onclick=e=>{e.stopPropagation();$('#adjust').hidden?adjOpen():adjClose();};$('#adjX').onclick=adjClose;$('#adjDone').onclick=adjClose;$('#adjReset').onclick=adjReset;
   ['pointerdown','click'].forEach(ev=>$('#adjust').addEventListener(ev,e=>e.stopPropagation()));})();
 function closeMix(){$('#mixer').hidden=true;mixPrev=null;if(phP==='mix'){phP=null;app.dataset.ph='';phSync();}}
-function mixAccept(){closeMix();buildPalette();toast('Mix on · color with your pencils');}
+function mixAccept(){closeMix();buildPalette();toast('Mix on · picking another pencil turns Mix off');}
 function mixCancel(){const p=mixPrev;closeMix();if(!p)return;const live=['finish','anim','part'].filter(k=>(MIX.amt[k]||1)!==((p.amt||{})[k]||1));MIX.finish=p.finish;MIX.anim=p.anim;MIX.part=p.part;if(p.amt){MIX.amt={...p.amt};live.forEach(mixAmtLive);}LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});
   if(!p.on)setMix(false);else{mixInk();setInkPattern();markColor();}}
 $('#mixBtn').onclick=openMix;

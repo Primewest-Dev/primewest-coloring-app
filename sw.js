@@ -1,6 +1,6 @@
 /* Ember Post coloring – offline cache (network-first for the app, cache as offline fallback). Only used when served over http(s).
    The chapter list (data/story.js) decides which scene files get cached, so new chapters need no edit here. */
-const CACHE='emberpost-coloring-v24-2';
+const CACHE='emberpost-coloring-v25';
 let SCENE_FILES=[];
 try{importScripts('data/story.js');const CH=self.EP_STORY.chapters||[];SCENE_FILES=[].concat(CH.filter(c=>c.data).map(c=>'./'+c.data),CH.filter(c=>typeof c.lines==='string').map(c=>'./'+c.lines),CH.filter(c=>c.data).map(c=>'./'+c.data.replace(/\.js$/,'_depth.js')),CH.filter(c=>c.cut&&c.cut.art).map(c=>'./'+c.cut.art));}catch(e){}
 const ASSETS=['./','./index.html','./app.css','./app.js','./fonts.css','./premium-config.js','./manifest.json',

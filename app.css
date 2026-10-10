@@ -1062,3 +1062,21 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 #freerow.pfit{gap:2px}
 #freerow.pfit>.pencil,#freerow.pfit .pitems>.pencil{zoom:var(--pz,1)}
 #freerow.pfit .pitems{gap:2px}
+/* v25: the set-name slot has one fixed width so the ‹ › arrows never move while thumbing through sets; long names end in … (full name in the tooltip) */
+#palbox .setsel{flex:none}
+#palbox .slabel{flex:none!important;width:var(--slw,236px);max-width:var(--slw,236px);height:26px;line-height:26px;display:flex;align-items:center;justify-content:flex-start;gap:6px}
+#palbox .slabel>*{line-height:26px}
+#palbox .slabel .sname{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#palbox .slabel .scount,#palbox .slabel .sstate{flex:none}
+#palbox .slock[hidden]{display:inline-flex;visibility:hidden}
+@media (max-width:600px){#palbox .slabel{--slw:148px}#palbox .slabel .sstate{display:none}}
+@media (orientation:landscape) and (max-height:520px){#palbox .slabel{--slw:132px}#palbox .slabel .scount,#palbox .slabel .sstate{display:none!important}}
+/* v25: the same small Reset (circular arrow) in every settings panel */
+.rstb{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 10px 0 8px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#ffe2bd;font:600 11px Poppins;cursor:pointer;flex:none;margin-right:auto}
+.rstb svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.rstb:hover{background:rgba(255,179,92,.14)}.rstb:disabled{opacity:.4}
+.fxpop .rstb{margin:6px 0 0}
+.popswwrap .rstb{height:24px;margin:0 0 0 6px;padding:0 8px 0 6px}
+.buildno{margin:10px 0 4px;text-align:center;font:600 11px Poppins;color:var(--mute);letter-spacing:.06em}
+.adjfx{display:flex;flex-direction:column;gap:6px;margin-top:6px}.adjfx>span{font:600 12px Poppins;color:var(--mute)}
+.adjfxb{display:flex;flex-wrap:wrap;gap:6px}.adjfxb .chip{height:28px;padding:0 10px;font-size:11px}.adjfxb .chip.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b}
