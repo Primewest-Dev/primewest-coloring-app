@@ -2717,7 +2717,7 @@ window.EP={
   texVariant:(k,h)=>texVariant(k,h),furStyle:()=>furStyle,furAt:(x,y)=>{const d=(furC||mk()).getContext('2d').getImageData(x|0,y|0,1,1).data;return [d[0],d[1],d[2],d[3]];},
   compCrop:(x,y,w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(composite(),x,y,w,h,0,0,w,h);return c.toDataURL('image/png');},
   texAt:(k,h,x,y)=>{const D=texTile(k,texVariant(k,h),hex2rgb(h),true).data,j=(Math.min(H-1,Math.max(0,y))*W+Math.min(W-1,Math.max(0,x)))*4;return [D[j],D[j+1],D[j+2]];},
-  fxDrawNow:()=>fxDraw(performance.now()),fxDrawAt:(ms)=>fxDraw(ms),_fx:{fxDrawRec,drawPulseBands,fxTint},
+  fxDrawNow:()=>fxDraw(performance.now()),fxDrawAt:(ms)=>fxDraw(ms),
   boltI:(t)=>boltI(t),bolt:()=>(S.fx||[]).filter(r=>r.kind==='boltfx').map(r=>({hex:r.hex,I:r.lastI||0,off:r.bolt?r.bolt.off:null})),boltClock:(t)=>{if(t==null){BFIX=false;return CLK.boltSpeed;}BFIX=true;CLK.boltSpeed=t;fxDraw(performance.now());return t;},openUpgrade:(k)=>openUpgrade(null,k),fxSets:(k)=>SETS.filter(q=>q.product===k&&q.type==='ink').map(q=>q.name),
 clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   fxHexes:()=>(S.fx||[]).map(r=>[r.kind,r.hex]),
