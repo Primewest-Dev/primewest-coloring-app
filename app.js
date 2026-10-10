@@ -1319,7 +1319,9 @@ function flowSweep(r,T,per0,slot,o){o=o||{};const sd=((r.seed||1)+slot*7717)|0,p
   const act=o.act?o.act[0]+o.act[1]*hash2(c,sd+11):.62+.3*hash2(c,sd+11),ease=o.ease!=null?1+(hash2(c,sd+13)-.5)*o.ease:.75+.5*hash2(c,sd+13);if(u>act)return {p:-1,c,sd};let q=Math.pow(u/act,ease);q=q*q*(3-2*q);   /* ease in/out: each pass speeds up, then slows to a near-stop before the next (or the reverse) */
   if(runDir(c,sd)<0)q=1-q;const jit=(hash2(c,sd+19)-.5)*2*J;   // per-cycle angle jitter (+/- 15..30 deg by default)
   return {p:q*(o.span||1.5)-(o.lead||.25),ang:(o.base!=null?o.base:flowDir(r))+jit+(slot&&o.base==null?hash2(sd,29)*.5-.25:0),c,sd,straight:!!o.straight};}
-function flowBand(g,x0,y0,w,h,fs,wd,a){if(!fs||fs.p<-.9)return;const L=Math.hypot(w,h),N=fs.straight?1:Math.max(5,Math.min(12,Math.round(L/50))),st=L/N,Wc='rgba(255,255,255,';
+/* v24: Neon / Glowing shine in their own colour (never a white flash) */
+function lightCol(r){if(r.kind!=='neonfx'&&r.kind!=='glowfx')return 'rgba(255,255,255,';const c=mix(hex2rgb(r.hex),WHITE,.2).map(v=>Math.round(v));return `rgba(${c[0]},${c[1]},${c[2]},`;}
+function flowBand(g,x0,y0,w,h,fs,wd,a,Wc0){if(!fs||fs.p<-.9)return;const L=Math.hypot(w,h),N=fs.straight?1:Math.max(5,Math.min(12,Math.round(L/50))),st=L/N,Wc=Wc0||'rgba(255,255,255,';
   g.save();g.translate(x0+w/2,y0+h/2);g.rotate(fs.ang);for(let k=0;k<N;k++){const yy=-L/2+k*st,off=fs.straight?0:(vnoise1(k*.38+fs.c*2.3,fs.sd+31)-.5)*.34+(vnoise1(k*1.3+fs.c*5.1,fs.sd+37)-.5)*.06,
     xc=(fs.p+off-.5)*L,hw=wd*L*(fs.straight?1:.75+.5*vnoise1(k*.5+fs.c,fs.sd+41)),gr=g.createLinearGradient(xc-hw,0,xc+hw,0);
     gr.addColorStop(0,Wc+'0)');gr.addColorStop(.5,Wc+a+')');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(xc-hw,yy-.5,2*hw,st+1);}g.restore();}
@@ -1334,23 +1336,23 @@ const glS=a=>Math.pow(a||1,1.5),glB=a=>Math.min(1,.3+.7*(a||1));   /* v24 glitte
 function drawLight(x,r){if(FINK.has(r.kind))return drawLightV21(x,r);if(!r.light||!r.bb||RM.matches)return;const lv=motionLvl({twinkle:'sparkle',glowfx:'glowStr',neonfx:'neonSpeed',pulsefx:'pulseSpeed'}[r.kind]||'shimmer');if(lv<=0)return;
   const [bx,by,bw,bh]=r.bb,X0=bx/MQ|0,Y0=by/MQ|0,w=Math.max(2,Math.min(WQ-X0,Math.ceil(bw/MQ)+2)),h=Math.max(2,Math.min(HQ-Y0,Math.ceil(bh/MQ)+2));
   const c=r.lc||(r.lc=document.createElement('canvas'));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}const g=c.getContext('2d');g.globalCompositeOperation='source-over';g.clearRect(0,0,w,h);
-  const per=3.2+(r.seed%1000)/1000*2.6,tt=lightClock(r)*(r.sp||1)+(r.ph||0),cyc=Math.floor(tt/per),u=tt/per-cyc,D=r.dir||0,cs=Math.cos(D),sn=Math.sin(D),L=Math.hypot(w,h),cx=w/2,cy=h/2,Wc='rgba(255,255,255,';
+  const per=3.2+(r.seed%1000)/1000*2.6,tt=lightClock(r)*(r.sp||1)+(r.ph||0),cyc=Math.floor(tt/per),u=tt/per-cyc,D=r.dir||0,cs=Math.cos(D),sn=Math.sin(D),L=Math.hypot(w,h),cx=w/2,cy=h/2,GL=r.kind==='neonfx'||r.kind==='glowfx',Wc=lightCol(r);
   const pick=k=>{const p=r.pts.length?r.pts[Math.floor(hash2(cyc*7+k,r.seed)*r.pts.length)]:[bx+bw/2,by+bh/2];return [p[0]/MQ-X0,p[1]/MQ-Y0];};
   const band=(pos,wd,a)=>{const x0=cx+cs*(pos-.5)*L,y0=cy+sn*(pos-.5)*L,gr=g.createLinearGradient(x0-cs*wd*L,y0-sn*wd*L,x0+cs*wd*L,y0+sn*wd*L);gr.addColorStop(0,Wc+'0)');gr.addColorStop(.5,Wc+a+')');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(0,0,w,h);};
   const L2=({bloom:'sweep',ripple:'double',beam:'chaser'})[r.light]||r.light;   // v22: old circular types (saved pictures) map to directional ones
-  if(L2==='sweep')flowBand(g,0,0,w,h,flowSweep(r,tt,per,0),.09,.9);
-  else if(L2==='double'){flowBand(g,0,0,w,h,flowSweep(r,tt,per,0),.05,.85);flowBand(g,0,0,w,h,flowSweep(r,tt,per*1.37,1),.035,.6);}
+  if(L2==='sweep')flowBand(g,0,0,w,h,flowSweep(r,tt,per,0),.09,.9,Wc);
+  else if(L2==='double'){flowBand(g,0,0,w,h,flowSweep(r,tt,per,0),.05,.85,Wc);flowBand(g,0,0,w,h,flowSweep(r,tt,per*1.37,1),.035,.6,Wc);}
   else if(L2==='star'){for(let k=0;k<3;k++){const pk=per*(.7+.6*hash2(k,r.seed)),tk=tt/pk+hash2(k,r.seed+3)*5,ck=Math.floor(tk),q=tk-ck,[px,py]=(()=>{const p=r.pts.length?r.pts[Math.floor(hash2(ck*7+k,r.seed)*r.pts.length)]:[bx+bw/2,by+bh/2];return [p[0]/MQ-X0,p[1]/MQ-Y0];})(),a=hash2(ck,r.seed+k)<.3?0:Math.pow(Math.sin(Math.PI*q),3),R=(4+L*.1)*a*(.6+.6*hash2(ck,k+9))*(r.kind==='twinkle'?Math.min(1.6,glS(r.amt)):1);if(a<.03)continue;g.strokeStyle=Wc+a.toFixed(3)+')';g.lineWidth=1.2;g.beginPath();
       g.moveTo(px-R,py);g.lineTo(px+R,py);g.moveTo(px,py-R);g.lineTo(px,py+R);g.moveTo(px-R*.35,py-R*.35);g.lineTo(px+R*.35,py+R*.35);g.moveTo(px+R*.35,py-R*.35);g.lineTo(px-R*.35,py+R*.35);g.stroke();
       const gr=g.createRadialGradient(px,py,0,px,py,Math.max(1,R*.5));gr.addColorStop(0,Wc+a.toFixed(3)+')');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(px-R,py-R,2*R,2*R);}}
-  else if(L2==='chaser'){const fs=flowSweep(r,tt,per,0),A=fs.ang!=null?fs.ang:flowDir(r),c2=Math.cos(A),s2=Math.sin(A),uu=fs.p<-.9?-9:fs.p;g.fillStyle='#fff';for(let j=-L/2;j<L/2;j+=7){const sh=(vnoise1(j*.03+fs.c*1.9,r.seed)-.5)*.5;for(let i=-L/2;i<L/2;i+=4.5){const dd=(i/L+.5)-uu-sh,a=Math.max(0,1-Math.abs(dd)/.12)**3;if(a<.12)continue;
+  else if(L2==='chaser'){const fs=flowSweep(r,tt,per,0),A=fs.ang!=null?fs.ang:flowDir(r),c2=Math.cos(A),s2=Math.sin(A),uu=fs.p<-.9?-9:fs.p;g.fillStyle=GL?Wc+'1)':'#fff';for(let j=-L/2;j<L/2;j+=7){const sh=(vnoise1(j*.03+fs.c*1.9,r.seed)-.5)*.5;for(let i=-L/2;i<L/2;i+=4.5){const dd=(i/L+.5)-uu-sh,a=Math.max(0,1-Math.abs(dd)/.12)**3;if(a<.12)continue;
       const jx=(hash2((i*9)|0,(j*7+r.seed)|0)-.5)*2.4,jy=(hash2((j*5)|0,(i*3+r.seed)|0)-.5)*2.4,px=cx+c2*i-s2*j+jx,py=cy+s2*i+c2*j+jy;if(px<0||py<0||px>w||py>h)continue;g.globalAlpha=a;g.fillRect(px-.7,py-.7,1.4,1.4);}}g.globalAlpha=1;}
   g.globalCompositeOperation='destination-in';g.drawImage(r.mask,X0*MQ,Y0*MQ,w*MQ,h*MQ,0,0,w,h);
-  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8*glB(r.amt):1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
+  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(GL?.4:1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8*glB(r.amt):1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
 function drawLightV21(x,r){if(!r.light||!r.bb||RM.matches)return;const lv=motionLvl({twinkle:'sparkle',glowfx:'glowStr',neonfx:'neonSpeed',pulsefx:'pulseSpeed'}[r.kind]||'shimmer');if(lv<=0)return;
   const [bx,by,bw,bh]=r.bb,X0=bx/MQ|0,Y0=by/MQ|0,w=Math.max(2,Math.min(WQ-X0,Math.ceil(bw/MQ)+2)),h=Math.max(2,Math.min(HQ-Y0,Math.ceil(bh/MQ)+2));
   const c=r.lc||(r.lc=document.createElement('canvas'));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}const g=c.getContext('2d');g.globalCompositeOperation='source-over';g.clearRect(0,0,w,h);
-  const per=3.2+(r.seed%1000)/1000*2.6,tt=lightClock(r)*(r.sp||1)+(r.ph||0),cyc=Math.floor(tt/per),u=tt/per-cyc,D=r.dir||0,cs=Math.cos(D),sn=Math.sin(D),L=Math.hypot(w,h),cx=w/2,cy=h/2,Wc='rgba(255,255,255,';
+  const per=3.2+(r.seed%1000)/1000*2.6,tt=lightClock(r)*(r.sp||1)+(r.ph||0),cyc=Math.floor(tt/per),u=tt/per-cyc,D=r.dir||0,cs=Math.cos(D),sn=Math.sin(D),L=Math.hypot(w,h),cx=w/2,cy=h/2,GL=r.kind==='neonfx'||r.kind==='glowfx',Wc=lightCol(r);
   const pick=k=>{const p=r.pts.length?r.pts[Math.floor(hash2(cyc*7+k,r.seed)*r.pts.length)]:[bx+bw/2,by+bh/2];return [p[0]/MQ-X0,p[1]/MQ-Y0];};
   const band=(pos,wd,a)=>{const x0=cx+cs*(pos-.5)*L,y0=cy+sn*(pos-.5)*L,gr=g.createLinearGradient(x0-cs*wd*L,y0-sn*wd*L,x0+cs*wd*L,y0+sn*wd*L);gr.addColorStop(0,Wc+'0)');gr.addColorStop(.5,Wc+a+')');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(0,0,w,h);};
   const L2=r.light;
@@ -1361,11 +1363,11 @@ function drawLightV21(x,r){if(!r.light||!r.bb||RM.matches)return;const lv=motion
   else if(L2==='star'){for(let k=0;k<3;k++){const q=(u*1.5+k*.33)%1,[px,py]=pick(k),a=Math.pow(Math.sin(Math.PI*q),3),R=(4+L*.1)*a;if(a<.03)continue;g.strokeStyle=Wc+a.toFixed(3)+')';g.lineWidth=1.2;g.beginPath();
       g.moveTo(px-R,py);g.lineTo(px+R,py);g.moveTo(px,py-R);g.lineTo(px,py+R);g.moveTo(px-R*.35,py-R*.35);g.lineTo(px+R*.35,py+R*.35);g.moveTo(px+R*.35,py-R*.35);g.lineTo(px-R*.35,py+R*.35);g.stroke();
       const gr=g.createRadialGradient(px,py,0,px,py,Math.max(1,R*.5));gr.addColorStop(0,Wc+a.toFixed(3)+')');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(px-R,py-R,2*R,2*R);}}
-  else if(L2==='chaser'){g.fillStyle='#fff';for(let j=-L/2;j<L/2;j+=7)for(let i=-L/2;i<L/2;i+=4.5){const a=Math.pow(Math.max(0,Math.sin(6.2832*((i/L)*2-u*2)+j*.05)),8);if(a<.12)continue;
+  else if(L2==='chaser'){g.fillStyle=GL?Wc+'1)':'#fff';for(let j=-L/2;j<L/2;j+=7)for(let i=-L/2;i<L/2;i+=4.5){const a=Math.pow(Math.max(0,Math.sin(6.2832*((i/L)*2-u*2)+j*.05)),8);if(a<.12)continue;
       const jx=(hash2((i*9)|0,(j*7+r.seed)|0)-.5)*2.4,jy=(hash2((j*5)|0,(i*3+r.seed)|0)-.5)*2.4,px=cx+cs*i-sn*j+jx,py=cy+sn*i+cs*j+jy;if(px<0||py<0||px>w||py>h)continue;g.globalAlpha=a;g.fillRect(px-.7,py-.7,1.4,1.4);}g.globalAlpha=1;}
   else if(L2==='beam'){g.save();g.translate(cx,cy);g.rotate(tt*1.1*(r.seed%2?1:-1)+D);const gr=g.createLinearGradient(0,-L*.06,0,L*.06);gr.addColorStop(0,Wc+'0)');gr.addColorStop(.5,Wc+'.8)');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(-L,-L*.06,2*L,L*.12);g.restore();}
   g.globalCompositeOperation='destination-in';g.drawImage(r.mask,X0*MQ,Y0*MQ,w*MQ,h*MQ,0,0,w,h);
-  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8:1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
+  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(GL?.4:1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8:1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
 /* v24: new colour always sits ON TOP. Paint (2D or 3D, stroke or fill) hides the older effects under it by cutting its coverage out of their
    masks (and out of the Pulse layer when the new paint is not Pulse). The cut parts are kept in the undo entry, so undo brings them back exactly. */
 function fxCoverOld(src,bx,by,bw,bh,a=1,keepPulse=false){if(!S||mode==='cbn'||a<=0)return false;bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));if(bw<=0||bh<=0)return false;
