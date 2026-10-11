@@ -1322,3 +1322,29 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
   .psbox .psname{position:absolute;left:auto;right:0;width:max-content;max-width:180px;bottom:1px;text-align:right;background:#241a12;padding:0 3px;border-radius:3px;font-size:9px;line-height:10px;min-width:0;pointer-events:none}
   #tools .grp.right{min-width:0;flex:1 1 auto}
 }
+/* b61: tablet portrait: the Pen size and Style sliders get their own full-width row above the buttons (they were ~40 px each) */
+@media (min-width:601px) and (max-width:1100px) and (min-height:521px) and (orientation:portrait){
+  #tools{flex-wrap:wrap;row-gap:8px}
+  #tools .grp.right{display:contents}
+  #tools .szbar{order:-1;flex:1 1 100%!important;overflow:visible;padding-top:4px;padding-bottom:4px}
+  #tools .szbar .bxt{display:inline!important;flex:none}
+  #tools .szbar #szRange{flex:1 1 50%;min-width:120px}
+  .psbox{flex:1 1 50%;margin-left:14px;padding-left:14px;display:flex;align-items:center;gap:8px}
+  .psbox #psRange{flex:1 1 auto;min-width:120px}
+  .psbox .psname{position:static;max-width:9.5em;background:none;font-size:12px;line-height:14px;padding:0;flex:0 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left}
+  #tools .grp.free-only{flex:1 1 0;min-width:0}#tools .grp.free-only:has(#scBtn:not([hidden])){flex:2 1 0}#tools .grp.free-only .big:not([hidden]){flex:1 1 0;min-width:0}
+  #tools .act.big{flex:1 1 0;min-width:0}
+  /* Pop Pencil controls (they ran off the right edge): height row, then the Color while popping / 3D idea row */
+  #setbar #toolopts{flex:1 1 100%;flex-wrap:wrap;row-gap:6px;min-width:0}
+  #setbar #toolopts .popswwrap{flex:1 1 100%;min-width:0;display:flex;align-items:center;gap:8px}
+  #setbar .pph{flex:1 1 auto;min-width:0}
+  #setbar .pph input[type=range]{flex:1 1 auto;width:auto!important;min-width:80px}
+  #setbar .pph .fxn{flex:none;width:56px;height:30px;font-size:13px;text-align:center}
+  #setbar #toolopts .popctl{flex:1 1 100%;display:flex;gap:8px;min-width:0}
+  #setbar .popctl>.chip:not([hidden]){flex:1 1 auto;min-width:0}
+}
+@media (min-width:601px) and (max-width:760px) and (min-height:521px) and (orientation:portrait){
+  #tools .szbar .bxt{display:none!important}
+  #tools .szbar #szRange,.psbox #psRange{min-width:90px}
+  .psbox .psname{max-width:none;flex:none}
+}
