@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=39;
+const EP_BUILD=40;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -985,7 +985,7 @@ function breakThrough(r,x,y,pr){
   d.className='llpulse';d.style.left=(cx-sr.left)+'px';d.style.top=(cy-sr.top)+'px';stage.appendChild(d);setTimeout(()=>d.remove(),600);
   stamp(x,y,pr);
 }
-function eraseFlush(x,y,w,h){if(!S)return;const cs=[S.free.ctx];if(S.pulse)cs.push(S.pulse.ctx);if(S.ltr&&mode==='free'){cs.push(S.ltr.getContext('2d'));stroke.ltEr=true;}
+function eraseFlush(x,y,w,h){if(!S)return;const cs=[S.free.ctx];if(FLAT)for(const q of FLAT)cs.push(q.f.getContext('2d'));if(S.pulse)cs.push(S.pulse.ctx);if(S.ltr&&mode==='free'){cs.push(S.ltr.getContext('2d'));stroke.ltEr=true;}
   const P=S.pp;if(P&&P.any&&mode==='free'){cs.push(P.rx,P.ix);stroke.ppEr=true;}
   for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.drawImage(covC,x,y,w,h,x,y,w,h);c.restore();}
   if(mode==='free'&&S.fx&&S.fx.length){let u=stroke.fxu;for(const r of S.fx){const b=r.bb;if(!b||x>b[0]+b[2]||y>b[1]+b[3]||x+w<b[0]||y+h<b[1])continue;
@@ -1004,7 +1004,9 @@ function flush(){
   sctx.save();sctx.beginPath();sctx.rect(x,y,w,h);sctx.clip();sctx.clearRect(x,y,w,h);sctx.drawImage(covC,x,y,w,h,x,y,w,h);
   sctx.globalCompositeOperation='source-in';if(stroke.ramp)sctx.drawImage(rampC,x,y,w,h,x,y,w,h);else if(stroke.fur)sctx.drawImage(furC,x,y,w,h,x,y,w,h);else{sctx.fillStyle=grainPat;sctx.fillRect(x,y,w,h);}sctx.restore();
 }
-function commitPaint(){snapFill();try{const b=stroke&&stroke.bbx;if(b&&!stroke.er)popsRecolor(b[0]-2,b[1]-2,b[2]-b[0]+4,b[3]-b[1]+4);}catch(e){}
+function commitPaint(){snapFill();try{const b=stroke&&stroke.bbx;if(b&&!stroke.er&&((S.pops||[]).length||(S.pp&&S.pp.any))){   /* b40: only the areas the stroke really touched (sampled), not its whole box */
+    const x0=Math.max(0,b[0]-2|0),y0=Math.max(0,b[1]-2|0),w=Math.min(W,(b[2]+3)|0)-x0,h=Math.min(H,(b[3]+3)|0)-y0;if(w>0&&h>0){const d=strokeC.getContext('2d').getImageData(x0,y0,w,h).data,L=new Set(),st=w*h>40000?3:2;
+      for(let y=0;y<h;y+=st)for(let x=0;x<w;x+=st)if(d[(y*w+x)*4+3]>8){const l=S.lab[(y0+y)*W+x0+x];if(l)L.add(l);}popsRecolor(x0,y0,w,h,L);}}}catch(e){}
   let src=strokeC;if(!stroke.er&&stroke.st!=='water'){const b=stroke.bbx||[0,0,W,H],bx=b[0]-2,by=b[1]-2,bw=b[2]-b[0]+4,bh=b[3]-b[1]+4;
     if(!stroke.neon&&(fxOverlap(bx,by,bw,bh)||under3DAt(bx,by,bw,bh)))src=solidStroke(strokeC,bx,by,bw,bh);   /* v24: over 3D work / effects the colour lays on top solidly */
     if(src!==strokeC&&stroke.region){const sx=src.getContext('2d');sx.save();sx.globalCompositeOperation='destination-in';sx.drawImage(maskC,0,0);sx.restore();}   /* b30: Line Lock also clips the solid pass, so nothing spills past the line */
@@ -1050,7 +1052,7 @@ function ltMask(){if(S.ltM)return S.ltM;const m=inkMap();if(!m)return null;const
   const c=mk(),x=c.getContext('2d'),im=x.createImageData(W,H);for(let i=0;i<M.length;i++)if(M[i])im.data[i*4+3]=255;x.putImageData(im,0,0);
   return (S.ltM={M,c});}
 let ltTmp=null,ltSC=null;
-function ltRender(){const v=$('#ltrV');if(!v)return;const x=v.getContext('2d');v.style.transform=zoomer.style.transform;x.clearRect(0,0,W,H);if(!S)return;if(S.ltr)x.drawImage(S.ltr,0,0);
+function ltRender(){const v=$('#ltrV');if(!v)return;const x=v.getContext('2d');v.style.transform=zoomer.style.transform;x.clearRect(0,0,W,H);{const on=!!(S&&(S.ltr||(LTS&&LTS.moved)));v.style.display=on?'':'none';}if(!S)return;   /* b40: an unused trace layer stays out of the frame */if(S.ltr)x.drawImage(S.ltr,0,0);
   if(LTS&&LTS.moved){const mm=ltMask();if(!mm)return;if(LTS.er){x.save();x.globalCompositeOperation='destination-out';x.drawImage(ltSC,0,0);x.restore();return;}
     ltTmp=ltTmp||mk();const t=ltTmp.getContext('2d');t.clearRect(0,0,W,H);t.drawImage(ltSC,0,0);t.globalCompositeOperation='destination-in';t.drawImage(mm.c,0,0);t.globalCompositeOperation='source-over';x.drawImage(ltTmp,0,0);}}
 function ltColor(){return (ink&&ink.kind!=='mix'&&ink.hex)||color;}
@@ -1202,7 +1204,20 @@ function up(e){
 }
 stage.addEventListener('pointerup',up);
 /* b36: decorative CSS animations pause while a finger / mouse is down on the picture */
-stage.addEventListener('pointerdown',()=>app.classList.add('busy'),true);for(const ev of ['pointerup','pointercancel'])window.addEventListener(ev,()=>app.classList.remove('busy'),true);stage.addEventListener('pointercancel',up);
+/* b40: while a pencil/eraser stroke is live, the layers that cannot change are merged into one snapshot canvas and the originals
+   hidden. Without GPU canvas acceleration the browser re-uploads every visible canvas each frame (~1 ms per 1600x900 canvas),
+   so 8-11 stacked layers cost more than the stroke itself. Restored on pointerup, before the stroke is committed. */
+let FLAT=null;
+function flatOn(){if(FLAT||!S||!layers)return;try{const vol=tool==='eraser'?(mode==='free'?new Set():null):   /* eraser: every layer is erased along the path, so the merged snapshot is erased the same way (eraseFlush) */(tool==='pencil'||tool==='push')&&mode==='free'?new Set(tool==='push'?[S.free&&S.free.c,S.pulse&&S.pulse.c]:[]):null;if(!vol)return;
+  const k=W/(layers.clientWidth||W),runs=[];let cur=[];const flush=()=>{if(cur.length>=2)runs.push(cur);cur=[];};
+  for(const c of layers.children){if(c.tagName!=='CANVAS'||vol.has(c)){flush();continue;}const st=getComputedStyle(c);if(st.display==='none'||st.visibility==='hidden'||+st.opacity===0)continue;
+    if(st.mixBlendMode!=='normal'||st.filter!=='none'||c.width!==W||c.height!==H){flush();continue;}let tx=0,ty=0;
+    if(st.transform&&st.transform!=='none'){const m=/^matrix\(([^)]+)\)$/.exec(st.transform);if(!m){flush();continue;}const v=m[1].split(',').map(Number);if(Math.abs(v[0]-1)>1e-3||Math.abs(v[3]-1)>1e-3||Math.abs(v[1])>1e-3||Math.abs(v[2])>1e-3){flush();continue;}tx=v[4]*k;ty=v[5]*k;}
+    cur.push({c,o:+st.opacity,tx,ty});}
+  flush();if(!runs.length)return;FLAT=[];
+  for(const run of runs){const f=mk();f.className='flat-layer';f.style.pointerEvents='none';const x=f.getContext('2d');for(const q of run){x.globalAlpha=q.o;x.drawImage(q.c,q.tx,q.ty);}x.globalAlpha=1;layers.insertBefore(f,run[0].c);for(const q of run)q.c.style.visibility='hidden';FLAT.push({f,run});}}catch(e){flatOff();}}
+function flatOff(){if(!FLAT)return;const F=FLAT;FLAT=null;for(const {f,run} of F){for(const q of run)q.c.style.visibility='';f.remove();}}
+stage.addEventListener('pointerdown',e=>{app.classList.add('busy');if(e.isPrimary!==false&&!(handOn&&handOn()))flatOn();},true);for(const ev of ['pointerup','pointercancel'])window.addEventListener(ev,()=>{app.classList.remove('busy');flatOff();},true);window.addEventListener('blur',flatOff);stage.addEventListener('pointercancel',up);
 stage.addEventListener('contextmenu',e=>e.preventDefault());
 
 
@@ -1243,9 +1258,12 @@ const PAPER=[251,248,240];
 function baseRGBA(st,x0,y0,w,h){try{if(mode==='cbn'&&st.cbn&&st.cbn.ctx)return st.cbn.ctx.getImageData(x0,y0,w,h).data;return st.free.ctx.getImageData(x0,y0,w,h).data;}catch(e){return new Uint8ClampedArray(w*h*4);}}
 const baseAt=(B,j,o)=>{const a=B[j+3];if(a>=250){o[0]=B[j];o[1]=B[j+1];o[2]=B[j+2];return o;}const k=a/255;o[0]=B[j]*k+PAPER[0]*(1-k);o[1]=B[j+1]*k+PAPER[1]*(1-k);o[2]=B[j+2]*k+PAPER[2]*(1-k);o[0]|=0;o[1]|=0;o[2]|=0;return o;};
 /* colours changed under a popped area -> re-shade those pops (debounced) */
-let popRecolT=0;function popsRecolor(bx,by,bw,bh){if(!S||!(S.pops||[]).length&&!(S.pp&&S.pp.any))return;clearTimeout(popRecolT);const R=[bx,by,bx+bw,by+bh];
-  popRecolT=setTimeout(()=>{if(!S)return;let any=false,deep=false;for(const p of S.pops||[])for(const r of (p.rs||[p.r])){const b=r*4;if(S.bb[b+2]<R[0]||S.bb[b]>R[2]||S.bb[b+3]<R[1]||S.bb[b+1]>R[3])continue;if(p.deep){const c=dpCache.get(p);if(c){c.col=null;c.key=null;}deep=true;}else any=true;}
-    if(any)renderPops();if(deep)deepRender(S,true);if(S.pp&&S.pp.any)ppRender(S,[Math.max(0,R[0]),Math.max(0,R[1]),Math.min(W-1,R[2]),Math.min(H-1,R[3])]);if(any||deep)dirty('pop');},160);}
+function popsRerenderSome(list){const st=S,mark=new Uint8Array(st.N);for(const p of list)for(const r of (p.rs||[p.r]))mark[r]=1;const rm=regionMask(st,mark),sh=st.popSh.getContext('2d'),li=st.popLi.getContext('2d');
+  const t1=mk(),t2=mk(),a=t1.getContext('2d'),b=t2.getContext('2d');for(const p of list){const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;a.globalAlpha=b.globalAlpha=k;popRender(st,p,a,b);}
+  for(const [c,t] of [[sh,t1],[li,t2]]){const tx=t.getContext('2d');tx.globalAlpha=1;tx.globalCompositeOperation='destination-in';tx.drawImage(rm,0,0);c.save();c.globalCompositeOperation='destination-out';c.drawImage(rm,0,0);c.restore();c.drawImage(t,0,0);}}
+let popRecolT=0,popRecolL=null;function popsRecolor(bx,by,bw,bh,labs){if(!S||!(S.pops||[]).length&&!(S.pp&&S.pp.any))return;if(labs){if(!labs.size)return;popRecolL=popRecolL||new Set();for(const l of labs)popRecolL.add(l);}else popRecolL=null;clearTimeout(popRecolT);const R=[bx,by,bx+bw,by+bh];
+  popRecolT=setTimeout(()=>{if(!S)return;const LL=popRecolL;popRecolL=null;let any=false,deep=false;for(const p of S.pops||[])for(const r of (p.rs||[p.r])){if(LL&&!LL.has(r))continue;const b=r*4;if(S.bb[b+2]<R[0]||S.bb[b]>R[2]||S.bb[b+3]<R[1]||S.bb[b+1]>R[3])continue;if(p.deep){const c=dpCache.get(p);if(c){c.col=null;c.key=null;}deep=true;}else any=true;}
+    if(any){const aff=(S.pops||[]).filter(p=>!p.deep&&(p.rs||[p.r]).some(r=>LL?LL.has(r):true));if(LL&&aff.length&&aff.length<(S.pops||[]).filter(p=>!p.deep).length&&S.popSh)popsRerenderSome(aff);else renderPops();}if(deep)deepRender(S,true);if(S.pp&&S.pp.any)ppRender(S,[Math.max(0,R[0]),Math.max(0,R[1]),Math.min(W-1,R[2]),Math.min(H-1,R[3])]);if(any||deep)dirty('pop');},160);}
 function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and light ctx `li` (both W×H)
   const rs0=pop.rs||[pop.r],inG=new Set(rs0),A=adjacency(st),rs=rs0.slice();
   const one=rs0.length===1;   // v13: a single line-enclosed area keeps its holes, so enclosed shapes (clouds, lightning, stars) get a clean frame
@@ -1630,7 +1648,7 @@ function fxSliderRow(k){const f=FXS[k],l=document.createElement('label');l.class
 /* v25: one Reset control (circular arrow + "Reset") used the same way in every settings panel */
 const RSTSVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4.5h4.5"/></svg><span>Reset</span>';
 function rstBtn(fn,tip){const b=document.createElement('button');b.type='button';b.className='rstb';b.title=tip||'Reset to default';b.innerHTML=RSTSVG;b.onclick=e=>{e.stopPropagation();fn();};return b;}
-function mixReset(){MIX.finish='metal';MIX.amt={finish:1,anim:1,part:1};for(const q of MXL){MIX.L[q[0]]={on:q[0]==='pulse'||q[0]==='glitter',p:posOfAmp(1)};delete settings[q[4]];}LS.set('settings',settings);applyFxs();for(const q of MXL)mixLayerLive(q[0]);mixSync();mixSave();
+function mixReset(){MIX.S={};if(S)for(const r of mixLastRecs())delete r.spd;MIX.finish='metal';MIX.amt={finish:1,anim:1,part:1};for(const q of MXL){MIX.L[q[0]]={on:q[0]==='pulse'||q[0]==='glitter',p:posOfAmp(1)};delete settings[q[4]];}LS.set('settings',settings);applyFxs();for(const q of MXL)mixLayerLive(q[0]);mixSync();mixSave();
   LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});if(MIX.on)mixInk();buildMixer();if(MIX.on)buildPalette();}
 function popReset(){setPopH(.6);if(typeof applySelHeight==='function')applySelHeight(popH());if(typeof popUI==='function')popUI();}
 function fxSlider(k){const f=FXS[k],w=document.createElement('span');w.className='fxw';w.dataset.k=k;
@@ -1763,7 +1781,7 @@ function under3DAt(bx,by,bw,bh){bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.
   if(S.pp&&S.pp.any){const d=S.pp.rx.getImageData(bx,by,bw,bh).data;for(let i=3;i<d.length;i+=16)if(d[i]>20)return true;}
   if(S.pops&&S.pops.length&&S.lab){for(let y=by;y<by+bh;y+=4)for(let x=bx;x<bx+bw;x+=4){const l=S.lab[y*W+x];if(l&&S.pops.some(p=>(p.rs||[p.r]).includes(l)))return true;}}return false;}
 function fxAdd(kinds,hex,src,sx=0,sy=0,path=null){if(!kinds.length||!S)return;const u={n:undoKey(),m:[]};
-  for(const k of kinds){const n0=(S.fx||[]).length,r=fxRec(k,hex,path),fresh=S.fx.length>n0,c=fresh?null:mk();r.amt=ink&&ink.kind==='mix'&&ink.mix&&ink.mix.L&&MXK[k]&&(MXK[k] in ink.mix.L)?ink.mix.L[MXK[k]]:ink&&ink.kind==='mix'&&ink.mix&&ink.mix.amt?(ink.mix.amt[mixSlotOf(k)]||1):(r.amt||1);r.mixO=ink&&ink.kind==='mix'&&ink.mix?(MXK[k]&&ink.mix.L?MXK[k]:ink.mix[mixSlotOf(k)]):null;if(ink&&ink.kind==='mix'){if(!S.lastMix||S.lastMix.n!==u.n)S.lastMix={n:u.n,recs:[],hex};S.lastMix.recs.push(r);}r.sf=null;if(c)c.getContext('2d').drawImage(r.mask,0,0);u.m.push(k==='mirror'?[r,c,phCopy(r)]:[r,c]);r.mx.drawImage(src,sx,sy);r.dirty=true;r.boost=performance.now()/1000;if(k==='mirror')chromePhase(r,src,sx,sy,path);}
+  for(const k of kinds){const n0=(S.fx||[]).length,r=fxRec(k,hex,path),fresh=S.fx.length>n0,c=fresh?null:mk();r.amt=ink&&ink.kind==='mix'&&ink.mix&&ink.mix.L&&MXK[k]&&(MXK[k] in ink.mix.L)?ink.mix.L[MXK[k]]:ink&&ink.kind==='mix'&&ink.mix&&ink.mix.amt?(ink.mix.amt[mixSlotOf(k)]||1):(r.amt||1);r.mixO=ink&&ink.kind==='mix'&&ink.mix?(MXK[k]&&ink.mix.L?MXK[k]:ink.mix[mixSlotOf(k)]):null;if(ink&&ink.kind==='mix'){const sk9=KSPD(r.kind);if(sk9&&MIX.S&&MIX.S[sk9]!=null)r.spd=MIX.S[sk9];if(!S.lastMix||S.lastMix.n!==u.n)S.lastMix={n:u.n,recs:[],hex};S.lastMix.recs.push(r);}r.sf=null;if(c)c.getContext('2d').drawImage(r.mask,0,0);u.m.push(k==='mirror'?[r,c,phCopy(r)]:[r,c]);r.mx.drawImage(src,sx,sy);r.dirty=true;r.boost=performance.now()/1000;if(k==='mirror')chromePhase(r,src,sx,sy,path);}
   S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);
   fxAttach();fxStart();dirty('fx');}
 /* v25: the eraser removes the effect itself, not just the colour under it. Every effect mask (glitter, shimmer, glow, pulse, fur
@@ -2202,9 +2220,12 @@ let PPLV=null;function ppPulse(x,t){ // light pulses travel up through raised Po
   const c=P.pc||(P.pc=Object.assign(document.createElement('canvas'),{width:WQ,height:HQ}));c.getContext('2d').putImageData(q,0,0);
   x.save();x.globalCompositeOperation='lighter';x.imageSmoothingQuality='high';x.drawImage(c,0,0,W,H);x.restore();}
 let fxTotal=0,fxRaf=0,fxLast=0;
-function fxBegin(now,x){if(x.reset)x.reset();else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.shadowBlur=0;x.shadowColor='rgba(0,0,0,0)';x.filter='none';}x.clearRect(0,0,W,H);const t=RM.matches?1.2:now/1000;fxNow=now/1000;{const d=Math.min(.4,Math.max(0,fxNow-pclkLast));pclkLast=fxNow;PCLK+=d*motionLvl('pulseSpeed');if(!CFIX)CCLK+=d*motionLvl('shimmerSpeed');for(const k of ['twinkleSpeed','neonSpeed','glowSpeed','boltSpeed','smokeSpeed','partSpeed'])if(!(BFIX&&k==='boltSpeed'))CLK[k]=(CLK[k]||0)+d*motionLvl(k);}
+function fxBegin(now,x){if(x.reset)x.reset();else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.shadowBlur=0;x.shadowColor='rgba(0,0,0,0)';x.filter='none';}x.clearRect(0,0,W,H);const t=RM.matches?1.2:now/1000;fxNow=now/1000;{const d=Math.min(.4,Math.max(0,fxNow-pclkLast));pclkLast=fxNow;FXD=d;PCLK+=d*motionLvl('pulseSpeed');if(!CFIX)CCLK+=d*motionLvl('shimmerSpeed');for(const k of ['twinkleSpeed','neonSpeed','glowSpeed','boltSpeed','smokeSpeed','partSpeed'])if(!(BFIX&&k==='boltSpeed'))CLK[k]=(CLK[k]||0)+d*motionLvl(k);}
   return t;}
-function fxOne(x,r,t,J){const mir=J.mir;const q=performance.now();if(r.kind!=='mirror'&&r.dirty)fxScan(r);if(r.kind!=='mirror'&&r!==S.fx[0]){if(r.bb){const [ex,ey,ew,eh]=r.bb;x.save();x.globalCompositeOperation='destination-out';x.drawImage(r.mask,ex,ey,ew,eh,ex,ey,ew,eh);x.restore();}}if(r.kind==='cover'||(r.kind!=='mirror'&&!r.bb))return;if(r.amt!=null&&r.amt<=.001)return;   /* b37: intensity 0 = not drawn at all */   /* v24: newer paint hides the older effects' glow under it */
+/* b40: Mix strokes keep their own Speed (r.spd): the effect's shared clock is swapped for the stroke's own clock while it draws */
+let FXD=0;const clkGet=k=>k==='pulseSpeed'?PCLK:k==='shimmerSpeed'?CCLK:(CLK[k]||0),clkSet=(k,v)=>{if(k==='pulseSpeed')PCLK=v;else if(k==='shimmerSpeed')CCLK=v;else CLK[k]=v;};
+function fxOne(x,r,t,J){const sk=r.spd!=null?KSPD(r.kind):null;if(!sk)return fxOne0(x,r,t,J);const g=clkGet(sk);if(r.ck==null)r.ck=g;r.ck+=FXD*r.spd;clkSet(sk,r.ck);try{return fxOne0(x,r,t,J);}finally{clkSet(sk,g);}}
+function fxOne0(x,r,t,J){const mir=J.mir;const q=performance.now();if(r.kind!=='mirror'&&r.dirty)fxScan(r);if(r.kind!=='mirror'&&r!==S.fx[0]){if(r.bb){const [ex,ey,ew,eh]=r.bb;x.save();x.globalCompositeOperation='destination-out';x.drawImage(r.mask,ex,ey,ew,eh,ex,ey,ew,eh);x.restore();}}if(r.kind==='cover'||(r.kind!=='mirror'&&!r.bb))return;if(r.amt!=null&&r.amt<=.001)return;   /* b37: intensity 0 = not drawn at all */   /* v24: newer paint hides the older effects' glow under it */
     if(r.kind==='mirror'){if(!J.mDone){J.mDone=true;drawMirrors(x,mir);}}else if(r.amt&&Math.abs(r.amt-1)>.02&&!PARTK(r.kind)){const bq=r.bb,PD=90,qx=Math.max(0,bq[0]-PD),qy=Math.max(0,bq[1]-PD),qw=Math.min(W,bq[0]+bq[2]+PD)-qx,qh=Math.min(H,bq[1]+bq[3]+PD)-qy,A=fxScratch(qw,qh,'a'),ax=A.getContext('2d');ax.setTransform(1,0,0,1,0,0);ax.clearRect(0,0,A.width,A.height);ax.save();ax.setTransform(1,0,0,1,-qx,-qy);ax.beginPath();ax.rect(qx,qy,qw,qh);ax.clip();fxDrawRec(ax,r,t);if(LIGHTK.has(r.kind))drawLight(ax,r);ax.restore();x.save();x.globalAlpha=Math.min(1,r.amt);x.drawImage(A,0,0,qw,qh,qx,qy,qw,qh);if(r.amt>1){x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,r.amt-1);x.drawImage(A,0,0,qw,qh,qx,qy,qw,qh);}x.restore();   /* b36: bbox-sized scratch */r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;return;}   /* v23: Mix intensity */
     else fxDrawRec(x,r,t);if(LIGHTK.has(r.kind))drawLight(x,r);r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;if(r.ms>10&&(r.kmax||3)>1){r.kmax=(r.kmax||3)-1;r.cells=null;r.ms=0;}   /* b36: an expensive effect drops to fewer animation cells */}
 function fxDraw(now){if(!S||!S.fxC)return;FXJ=null;const x=S.fxC.getContext('2d'),t=fxBegin(now,x),t0=performance.now();fxTotal=(S.fx||[]).reduce((a,r)=>a+r.parts.length,0);
@@ -2228,13 +2249,13 @@ function mixSlotOf(k){return PARTK(k)?'part':(k==='pulsefx'||k==='glowfx'||k==='
 const fxLive=()=>S&&((S.fx&&S.fx.length)||(S.pp&&S.pp.any));
 const KSPD=k=>({shimmer:'shimmerSpeed',shine:'shimmerSpeed',jshine:'shimmerSpeed',mirror:'shimmerSpeed',twinkle:'twinkleSpeed',neonfx:'neonSpeed',glowfx:'glowSpeed',boltfx:'boltSpeed',pulsefx:'pulseSpeed',smoke:'smokeSpeed',cloud:'smokeSpeed'})[k]||(k&&k.startsWith('pt')?'partSpeed':null);
 /* b37: the effect loop only runs while something can move: an effect at intensity 0 or Speed 'Stopped' costs no CPU at all */
-function fxMoves(r){if(r.amt!=null&&r.amt<=.001)return false;const sk=KSPD(r.kind);if(!sk)return r.kind!=='cover';if(motionLvl(sk)<=0)return false;if(['mirror','shine','jshine','shimmer'].includes(r.kind)&&motionLvl('shimmer')<=0)return false;if(r.kind==='twinkle'&&motionLvl('sparkle')<=0)return false;if(RM.matches&&['mirror','shine','jshine','shimmer','twinkle'].includes(r.kind))return true;return true;}
+function fxMoves(r){if(r.amt!=null&&r.amt<=.001)return false;if(r.spd!=null&&KSPD(r.kind))return r.spd>0;const sk=KSPD(r.kind);if(!sk)return r.kind!=='cover';if(motionLvl(sk)<=0)return false;if(['mirror','shine','jshine','shimmer'].includes(r.kind)&&motionLvl('shimmer')<=0)return false;if(r.kind==='twinkle'&&motionLvl('sparkle')<=0)return false;if(RM.matches&&['mirror','shine','jshine','shimmer','twinkle'].includes(r.kind))return true;return true;}
 const fxNeedsLoop=()=>!!S&&(S.fx||[]).some(fxMoves);   /* b38: Pop Pencil has no moving light (ppPulse is off), so it never keeps the loop running */
 function fxStart(){if(fxRaf||!fxLive())return;fxAttach();if(!fxNeedsLoop()||document.hidden){fxDraw(performance.now());return;}
   const step=now=>{fxRaf=0;if(!fxLive()||document.hidden)return;if(!fxNeedsLoop()){fxDraw(now);return;}if(perfBusy()){FXJ=null;}else if(FXJ){if(fxSliced(now))fxLast=now;}else if(now-fxLast>=fxGap()){if(fxSliced(now))fxLast=now;}/* adaptive: slow machines draw effects less often so taps and strokes stay responsive */fxRaf=requestAnimationFrame(step);};fxRaf=requestAnimationFrame(step);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(fxRaf);fxRaf=0;cancelAnimationFrame(pvRaf);pvRaf=0;}else{fxStart();pvStart();}});
 function fxUrl(r){if(r.dirty)fxScan(r);if(r._url&&r._urlV===r.mv)return r._url;r._urlV=r.mv;return r._url=r.mask.toDataURL('image/png');}   /* b33: re-encode a mask only when it changed */
-function saveFx(st){const L=st.fxL||{free:st.fx||[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){const a=(L[md]||[]).filter(r=>r.bb||r.dirty).map(r=>Object.assign({kind:r.kind,hex:r.hex,m:fxUrl(r)},r.phC?{ph:r.phC.toDataURL('image/png')}:{},r.seed?{P:{seed:r.seed,ph:r.ph,dir:r.dir,light:r.light,sp:r.sp,amt:r.amt||1,mixO:r.mixO||null}}:{}));a.length?LS.set(key+st.n,a):LS.del(key+st.n);}}
+function saveFx(st){const L=st.fxL||{free:st.fx||[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){const a=(L[md]||[]).filter(r=>r.bb||r.dirty).map(r=>Object.assign({kind:r.kind,hex:r.hex,m:fxUrl(r)},r.phC?{ph:r.phC.toDataURL('image/png')}:{},r.seed?{P:{seed:r.seed,ph:r.ph,dir:r.dir,light:r.light,sp:r.sp,amt:r.amt||1,mixO:r.mixO||null,...(r.spd!=null?{spd:r.spd}:{})}}:r.spd!=null?{P:{spd:r.spd,amt:r.amt||1}}:{}));a.length?LS.set(key+st.n,a):LS.del(key+st.n);}}
 async function loadFx(st){st.fxL={free:[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){st.fx=st.fxL[md];const a=LS.get(key+st.n,[]);for(const q of a){try{const im=await loadImg(q.m);const m=mk();const mx=m.getContext('2d',{willReadFrequently:true});mx.drawImage(im,0,0);
   const rr=Object.assign({kind:q.kind,hex:q.hex,mask:m,mx,bb:null,pts:[],parts:[],dirty:true},q.P||{});if(q.ph){try{phCanvas(rr);rr.phX.drawImage(await loadImg(q.ph),0,0);rr.phV=1;}catch(e){}}st.fx.push(rr);}catch(e){}}}st.fx=st.fxL[mode];}
 function fxSetList(st){if(!st)return;st.fxL=st.fxL||{free:st.fx||[],cbn:[]};st.fxL[mode==='cbn'?'free':'cbn']=st.fxL[mode==='cbn'?'free':'cbn']||[];st.fx=st.fxL[mode]=st.fxL[mode]||[];}
@@ -2244,7 +2265,7 @@ const MIXK={finish:[['plain','Plain',null],['metal','Metallic','pencils'],['chro
   anim:[['none','None',null],['pulse','Pulse','pencils'],['glow','Glowing','pencils'],['shimmer','Shimmer','pencils'],['lightning','Lightning','pencils']],
   part:[['none','None',null],['glitter','Glitter','pencils'],['smoke','Smoke','smoke'],['cloud','Cloud','clouds'],['water','Water',null],['fire','Fire & Embers',null],['sparks','Sparks',null],['snow','Snow',null],['bubbles','Bubbles',null],['stars','Stars',null],['leaves','Leaves',null]]};
 const MIXSET={fur:'fur',wood:'wood',brick:'brick',stone:'stone',flower:'flower',lightning:'lightning',metal:'metal',chrome:'chrome',neon:'neon',jewel:'jewel',pulse:'pulse',glow:'glow',shimmer:'jewel',glitter:'glitter',smoke:'smoke',cloud:'cloud'};
-const MIX=Object.assign({on:false,finish:'metal',anim:'pulse',part:'glitter'},LS.get('mix',{}));MIX.on=false;MIX.amt=Object.assign({finish:1,anim:1,part:1},MIX.amt||{});MIX.sel=MIX.sel||'part';
+const MIX=Object.assign({on:false,finish:'metal',anim:'pulse',part:'glitter'},LS.get('mix',{}));MIX.on=false;MIX.amt=Object.assign({finish:1,anim:1,part:1},MIX.amt||{});MIX.sel=MIX.sel||'part';MIX.S=MIX.S&&typeof MIX.S==='object'?MIX.S:{};
 /* b37 Mix v2: every effect is its own layer (On/Off + Intensity; Speed is per effect type). Old anim/part choices migrate. */
 const MXL=[['pulse','Pulse','anim','pulsefx','pulseSpeed'],['glow','Glowing','anim','glowfx','glowSpeed'],['shimmer','Shimmer','anim','shimmer','shimmerSpeed'],['lightning','Lightning','anim','boltfx','boltSpeed'],
   ['glitter','Glitter','part','twinkle','twinkleSpeed'],['smoke','Smoke','part','smoke','smokeSpeed'],['cloud','Cloud','part','cloud','smokeSpeed'],['water','Water','part','ptwater','partSpeed'],['fire','Fire & Embers','part','ptfire','partSpeed'],
@@ -2254,7 +2275,7 @@ const MXK=Object.fromEntries(MXL.map(q=>[q[3],q[0]]));
 const ampOf=p=>p<=.005?0:Math.round(2.5*Math.pow(p,2)*1000)/1000, posOfAmp=a=>a<=0?0:Math.sqrt(a/2.5);
 if(!MIX.L){MIX.L={};for(const q of MXL)MIX.L[q[0]]={on:MIX.anim===q[0]||MIX.part===q[0],p:posOfAmp(q[2]==='part'&&MIX.part===q[0]?(MIX.amt.part||1):q[2]==='anim'&&MIX.anim===q[0]?(MIX.amt.anim||1):1)};}
 for(const q of MXL)if(!MIX.L[q[0]])MIX.L[q[0]]={on:false,p:posOfAmp(1)};
-function mixSave(){LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel,L:MIX.L});}
+function mixSave(){LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel,L:MIX.L,S:MIX.S});}
 function mixSync(){const a=MXL.find(q=>q[2]==='anim'&&MIX.L[q[0]].on),b=MXL.find(q=>q[2]==='part'&&MIX.L[q[0]].on);MIX.anim=a?a[0]:'none';MIX.part=b?b[0]:'none';}
 mixSync();
 const MIX_PRESETS=[['Storm','plain',['lightning','smoke']],['Treasure','metal',['glitter','shimmer']],['Campfire','plain',['fire','smoke','glow']],['Winter','jewel',['snow','shimmer']],
@@ -2361,7 +2382,7 @@ function buildMixer(){const el=$('#mixer');if(!el)return;
   const lockOf=id=>{const set=SETS[SETI[MIXSET[id]]];return set&&!owned(set)?set:null;};
   const fin=`<div class="mxrow mxfin"><b>Finish</b>${MIXK.finish.map(([id,name])=>{const lk=lockOf(id);return `<button class="mxo${MIX.finish===id?' on':''}${lk?' lk':''}" data-fin="${id}" title="${lk?name+' · locked':name}">${lk?LOCK:''}${name}</button>`;}).join('')}</div>`;
   const pre=`<div class="mxrow mxpre"><b>Start from</b>${MIX_PRESETS.map((q,i)=>`<button class="mxo mxp" data-pre="${i}" title="Start from ${esc(mixPresetLabel(q))}">${esc(mixPresetLabel(q))}</button>`).join('')}</div>`;
-  const spdCell=(k)=>{const v=motionLvl(k),pp=spdPos(k,v);return `<label class="mxl-s"><span>Speed</span><input type="range" min="0" max="1" step="0.005" value="${pp}" data-spd="${k}" aria-label="Speed"><em>${v<=0?'Stopped':Math.round(v*100)+'%'}</em></label>`;};
+  const spdCell=(k)=>{const v=MIX.S&&MIX.S[k]!=null?MIX.S[k]:motionLvl(k),pp=spdPos(k,v);return `<label class="mxl-s"><span>Speed</span><input type="range" min="0" max="1" step="0.005" value="${pp}" data-spd="${k}" aria-label="Speed"><em>${v<=0?'Stopped':Math.round(v*100)+'%'}</em></label>`;};
   const rows=MXL.map(q=>{const L=MIX.L[q[0]],lk=lockOf(q[0]),a=ampOf(L.p);return `<div class="mxl${L.on?' on':''}${lk?' lk':''}" data-l="${q[0]}"><svg class="mxi" viewBox="0 0 24 24" aria-hidden="true">${MXICON[q[0]]||''}</svg><b>${q[1]}${lk?' '+LOCK:''}</b>
     <button class="mxtog" role="switch" aria-checked="${L.on}" aria-label="${q[1]} on or off" data-tog="${q[0]}"><i></i></button>
     <label class="mxl-a"><span>${q[2]==='part'?'Amount':'Intensity'}</span><input type="range" min="0" max="1" step="0.005" value="${L.p}" data-amt="${q[0]}" aria-label="${q[1]} intensity"><em>${a<=0?'0':Math.round(a*100)+'%'}</em></label>${spdCell(q[4])}</div>`;}).join('');
@@ -2374,7 +2395,7 @@ function buildMixer(){const el=$('#mixer');if(!el)return;
     const row=b.closest('.mxl');row.classList.toggle('on',L.on);b.setAttribute('aria-checked',L.on);row.querySelector('[data-amt]').value=L.p;row.querySelector('.mxl-a em').textContent=Math.round(ampOf(L.p)*100)+'%';});
   el.querySelectorAll('[data-amt]').forEach(i=>i.oninput=()=>{const k=i.dataset.amt,L=MIX.L[k];L.p=+i.value;const a=ampOf(L.p);if(!L.on&&a>0){L.on=true;const row=i.closest('.mxl');row.classList.add('on');row.querySelector('.mxtog').setAttribute('aria-checked','true');}
     i.parentNode.querySelector('em').textContent=a<=0?'0':Math.round(a*100)+'%';after();mixLayerLive(k);});
-  el.querySelectorAll('[data-spd]').forEach(i=>i.oninput=()=>{const k=i.dataset.spd,v=spdVal(k,+i.value);settings[k]=v;LS.set('settings',settings);applyFxs();
+  el.querySelectorAll('[data-spd]').forEach(i=>i.oninput=()=>{const k=i.dataset.spd,v=spdVal(k,+i.value);MIX.S[k]=v;mixSave();for(const r of mixLastRecs())if(KSPD(r.kind)===k)r.spd=v;fxRedrawSoon();   /* b40: per stroke: the last Mix stroke and the next ones, older strokes keep their speed */
     el.querySelectorAll(`[data-spd="${k}"]`).forEach(o=>{if(o!==i)o.value=i.value;o.parentNode.querySelector('em').textContent=v<=0?'Stopped':Math.round(v*100)+'%';});fxStart();});
   ['pointerdown','click'].forEach(ev=>el.querySelector('.mxrows').addEventListener(ev,e=>e.stopPropagation()));
   const cv=el.querySelector('canvas.mxpv');if(cv&&!cv._pv)cv._pv=pvAdd(cv,t=>{mixSync();drawFxPreview(cv,specOfMix([color,MIX.finish==='plain'?'#ff7b2e':'#d4af37','#3a6ad6']),t);});}
@@ -2970,7 +2991,7 @@ $('#idea3d').onclick=()=>idea3d();$('#idea3dApply').onclick=idea3dApply;
 /* v20: Mix opens as an overlay on the bottom section only (same footprint as the pencil and tool boxes; the picture never moves).
    Accept keeps the mix and returns to the bar; Cancel puts everything back as it was */
 let mixPrev=null;
-function openMix(){adjClose();if(typeof dpClose==='function')dpClose();mixPrev={on:MIX.on,finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:{...MIX.amt},L:JSON.parse(JSON.stringify(MIX.L)),spd:Object.fromEntries(MXL.map(q=>[q[4],settings[q[4]]]))};$('#mxOff').hidden=!MIX.on;if(MIX.on){buildMixer();$('#mixer').hidden=false;}else setMix(true);}
+function openMix(){adjClose();if(typeof dpClose==='function')dpClose();mixPrev={on:MIX.on,finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:{...MIX.amt},L:JSON.parse(JSON.stringify(MIX.L)),spd:Object.fromEntries(MXL.map(q=>[q[4],settings[q[4]]])),S:{...MIX.S},rs:(S?mixLastRecs():[]).map(r=>[r,r.spd])};$('#mxOff').hidden=!MIX.on;if(MIX.on){buildMixer();$('#mixer').hidden=false;}else setMix(true);}
 function adjOpen(){const el=$('#adjust');if(!el)return;if(typeof dpClose==='function')dpClose();setTimeout(()=>typeof sheetSync==='function'&&sheetSync(),0);if(!$('#mixer').hidden)mixCancel&&mixCancel();el.hidden=false;$('#adjBtn')&&$('#adjBtn').classList.add('on');adjBuild();adjFlash();}
 function adjClose(){const el=$('#adjust');if(el)el.hidden=true;if(typeof sheetSync==='function'&&$('#sheetBg'))setTimeout(sheetSync,0);$('#adjBtn')&&$('#adjBtn').classList.remove('on');if(phP==='adjust'){phP=null;app.dataset.ph='';phSync();}}
 function adjBuild(){const el=$('#adjRows');if(!el)return;const L=S&&S.lastOp,a=L?L.a:{},fmt=(d,v)=>(d[0]==='h'||d[0]==='b'||d[0]==='w')&&v>0?'+'+v+d[6]:v+d[6];
@@ -3014,7 +3035,7 @@ function adjReset(){adjCarry={};if(S&&S.lastOp){if(S.lastOp.fxAdd)adjSetFx('none
   ['pointerdown','click'].forEach(ev=>$('#adjust').addEventListener(ev,e=>e.stopPropagation()));})();
 function closeMix(){$('#mixer').hidden=true;mixPrev=null;if(phP==='mix'){phP=null;app.dataset.ph='';phSync();}}
 function mixAccept(){closeMix();buildPalette();toast('Mix on · picking another pencil turns Mix off');}
-function mixCancel(){const p=mixPrev;closeMix();if(!p)return;if(p.L){MIX.L=p.L;for(const [k,v] of Object.entries(p.spd||{})){if(v===undefined)delete settings[k];else settings[k]=v;}LS.set('settings',settings);applyFxs();for(const q of MXL)mixLayerLive(q[0]);mixSave();}const live=['finish','anim','part'].filter(k=>(MIX.amt[k]||1)!==((p.amt||{})[k]||1));MIX.finish=p.finish;MIX.anim=p.anim;MIX.part=p.part;if(p.amt){MIX.amt={...p.amt};live.forEach(mixAmtLive);}LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});
+function mixCancel(){const p=mixPrev;closeMix();if(!p)return;if(p.L){MIX.L=p.L;if(p.S)MIX.S=p.S;for(const [r,v] of p.rs||[]){if(v==null)delete r.spd;else r.spd=v;}for(const [k,v] of Object.entries(p.spd||{})){if(v===undefined)delete settings[k];else settings[k]=v;}LS.set('settings',settings);applyFxs();for(const q of MXL)mixLayerLive(q[0]);mixSave();}const live=['finish','anim','part'].filter(k=>(MIX.amt[k]||1)!==((p.amt||{})[k]||1));MIX.finish=p.finish;MIX.anim=p.anim;MIX.part=p.part;if(p.amt){MIX.amt={...p.amt};live.forEach(mixAmtLive);}LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});
   if(!p.on)setMix(false);else{mixInk();setInkPattern();markColor();}}
 $('#mixBtn').onclick=openMix;
 /* v20 phone (<=600px): slim top bar (Menu, Undo, Pen size) and a slim bottom strip of tabs. Each tab opens ONE small panel
