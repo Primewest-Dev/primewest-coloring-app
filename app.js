@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=32;
+const EP_BUILD=33;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -667,10 +667,10 @@ function ctxBar(t,anim){const g=toolGroup(t)||t,c=CTX[g]||CTX.pencil,prev=app.da
 /* v17: 2D and 3D have separate tool sets. 2D: Pencil, Fill, Eraser (+ brushes). 3D: Fill, Pop Fill, Pop Pencil, Pop Erase, Eraser.
    The 2D / 3D switch at the left of the pencil bar swaps the toolbar and pencils; each set remembers its own tool and colors. */
 let toolSet='2d';
-const SET_TOOLS={'2d':['pencil','fill','eraser'],'3d':['fill','pop','poppencil','eraser']};   /* b30: Pop Erase merged into the one Eraser */
+const SET_TOOLS={'2d':['pencil','fill','eraser'],'3d':['pop','poppencil','eraser']};   /* b33: no plain Fill in 3D: Pop Fill at height 0 is the flat color fill */   /* b30: Pop Erase merged into the one Eraser */
 const inToolSet=(t,s=toolSet)=>PREM[t]?true:SET_TOOLS[s].includes(t);   /* v24: brushes work over 3D too */
 const setOK=i=>true;   /* v24: every set (brushes too) is usable in 3D */   // brushes are 2D only (they can't color through Pop Fill)
-const drawTool=()=>toolSet==='3d'?'fill':'pencil';
+const drawTool=()=>toolSet==='3d'?'pop':'pencil';
 /* v18: the 2D / 3D buttons ONLY swap which tools are shown. They never touch the picture: the 3D relief, pops, colors, line
    shading and settings stay exactly as they are (the relief view simply stays on wherever the page has 3D). */
 /* b31: per-mode memory (2D and 3D each keep their own last tool, pencil set + pencil, pen size, eraser size, style), persisted across reloads */
@@ -683,17 +683,17 @@ addEventListener('pagehide',()=>{try{mmSave();}catch(e){}});document.addEventLis
 function setToolSet(s){setTimeout(()=>{try{psUI();setInkPattern();}catch(e){}},0);app.classList.toggle('set3d',s==='3d');if(s===toolSet){modeLabels();return;}
   const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool);if(g0&&MM_READY)TMEM[g0]={ink:{...ink},color,setIdx,tool};if(MM_READY)LASTT[toolSet]=tool;
   if(MM_READY)try{mmSave();}catch(e){}toolSet=s;TMEM=TMEMS[s];try{mmSizes(s);}catch(e){}
-  let t=LASTT[s]&&inToolSet(LASTT[s],s)?LASTT[s]:(s==='3d'?({pencil:'fill',eraser:'eraser',fill:'fill'}[tool]||'fill'):({pop:'fill',poppencil:'pencil',poperase:'eraser',fill:'fill',eraser:'eraser'}[tool]||'pencil'));
+  let t=LASTT[s]==='fill'&&s==='3d'?'pop':LASTT[s]&&inToolSet(LASTT[s],s)?LASTT[s]:(s==='3d'?({pencil:'pop',eraser:'eraser',fill:'pop'}[tool]||'pop'):({pop:'fill',poppencil:'pencil',poperase:'eraser',fill:'fill',eraser:'eraser'}[tool]||'pencil'));
   const g1=memG(t),m=g1&&TMEM[g1];if(m){ink={...m.ink};color=m.color;if(m.setIdx!==setIdx){setIdx=m.setIdx;settings.pset=SETS[setIdx].id;LS.set('settings',settings);}}
   if(!setOK(setIdx)){setIdx=0;settings.pset=SETS[0].id;LS.set('settings',settings);}
-  if(MIX.on&&s==='3d'&&t!=='fill'&&t!=='poppencil')t='fill';
+  if(MIX.on&&s==='3d'&&t!=='pop'&&t!=='poppencil')t='pop';
   tool=t;setTool(t);buildPalette();if(S)markColor();modeLabels();}
 /* v18: if the set bar can't fit on one line, stack it so the set selector gets its own row right above the pencils */
 function setbarFit(){const bar=$('#setbar');if(!bar)return;bar.classList.remove('stack');const k=[...bar.children].filter(e=>e.offsetParent&&e.offsetWidth);
   const tops=new Set(k.map(e=>Math.round(e.offsetTop/6)));if(tops.size>1)bar.classList.add('stack');}
 let fitRaf=0;const fitSoon=()=>{cancelAnimationFrame(fitRaf);fitRaf=requestAnimationFrame(setbarFit);};
 function grabToDraw(){let ch=false;if(settings.grab==='hand'){settings.grab='draw';LS.set('settings',settings);ch=true;}if(GRAB.auto!=='draw'){GRAB.auto='draw';ch=true;}if(ch)grabUI();}
-function setTool(t){if(t==='poperase')t='eraser';try{grabToDraw();}catch(e){}if(!inToolSet(t))t=t==='pop'||t==='poppencil'||t==='poperase'?'fill':drawTool();const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool),g1=memG(t);let rebuild=false;   /* v16: Pop Fill shares Fill's color */
+function setTool(t){if(t==='poperase')t='eraser';if(t==='fill'&&toolSet==='3d')t='pop';try{grabToDraw();}catch(e){}if(!inToolSet(t))t=drawTool();const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool),g1=memG(t);let rebuild=false;   /* v16: Pop Fill shares Fill's color */
   if(g0)TMEM[g0]={ink:{...ink},color,setIdx,tool};
   if(false&&g1&&g1!==g0&&TMEM[g1]){const m=TMEM[g1];if(g1==='pencil'&&t==='pencil'&&PREM[m.tool])t=m.tool;
     if(!sameInk(m.ink,ink)){ink={...m.ink};color=m.color;if(m.setIdx!==setIdx){setIdx=m.setIdx;settings.pset=SETS[setIdx].id;LS.set('settings',settings);}rebuild=true;}}
@@ -711,7 +711,7 @@ async function showScene(n){
   {const cs=SETS[SETI.ccycle];if(cs){cs.items=ccItems(n);if(setIdx===SETI.ccycle)buildPalette();}}if(typeof scBtnSync==='function')scBtnSync();
   $$('.scene').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
   storyStrip();
-  lineImg.src=S.d.line; lineImg.onload=()=>{scheduleLineTint();linesApply();linesDoneGlow();}; layers.innerHTML=''; layers.appendChild(S.cbn.c); layers.appendChild(S.free.c); if(S.pulse)layers.appendChild(S.pulse.c);
+  lineImg.src=S.d.line; lineImg.onload=()=>{scheduleLineTint();linesApply();linesDoneGlow();lineBackDraw();}; layers.innerHTML=''; layers.appendChild(S.cbn.c); layers.appendChild(S.free.c); if(S.pulse)layers.appendChild(S.pulse.c);
   renderPops(); ppAttach(S); fxAttach(); fxStart(); LTS=null; ltRender(); if($('#idea3d').classList.contains('on'))idea3d(false); loadVectorLines(n);
   selNum=firstOpen()||1; buildColors(); setMode(mode,true);
   needDepth(n).then(()=>{if(S.n!==n)return;cleanPops(S);apply3D(true);});
@@ -791,10 +791,10 @@ function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.cl
 let toastT=0;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),1600);}
 
 /* ---------- free color ---------- */
-function snap(){if(S)S.lastOp=null;const f=S.free,er=(tool==='eraser'||tool==='poperase')&&mode==='free';S.useq=(S.useq||0)+1;f.undo.push({id:S.useq,t:Date.now(),f:f.ctx.getImageData(0,0,W,H),p:S.pulseUsed?S.pulse.ctx.getImageData(0,0,W,H):null,
+function snap(){if(S){S.lastOp=null;if(!REDOING&&S.redo&&S.redo.length){S.redo=[];redoUI();}}const f=S.free,er=(tool==='eraser'||tool==='poperase')&&mode==='free';S.useq=(S.useq||0)+1;f.undo.push({id:S.useq,t:Date.now(),f:f.ctx.getImageData(0,0,W,H),p:S.pulseUsed?S.pulse.ctx.getImageData(0,0,W,H):null,
     x:er?{l:S.ltr?S.ltr.getContext('2d').getImageData(0,0,W,H):null,rx:S.pp&&S.pp.any?S.pp.rx.getImageData(0,0,W,H):null,ix:S.pp&&S.pp.any?S.pp.ix.getImageData(0,0,W,H):null,pops:JSON.stringify((S.pops||[]).map(({k,anim,...p})=>p))}:null});if(f.undo.length>15){f.undo.shift();const lo=f.undo[0].id;S.fxUndo=(S.fxUndo||[]).filter(e=>e.n>=lo);}}
 const undoKey=()=>{const u=S&&S.free&&S.free.undo[S.free.undo.length-1];return u?u.id:0;};
-function unsnap(u){S.free.ctx.putImageData(u.f,0,0);if(u.x){const X=u.x;if(X.l&&S.ltr){S.ltr.getContext('2d').putImageData(X.l,0,0);dirty('ltr');if(typeof ltRender==='function')ltRender();}if(X.rx&&S.pp){S.pp.rx.putImageData(X.rx,0,0);S.pp.ix.putImageData(X.ix,0,0);ppRender(S);dirty('pp');}const ps=JSON.parse(X.pops||'[]');if(ps.length!==(S.pops||[]).length){S.pops=ps;renderPops();dirty('pop');}}if(S.pulse){if(u.p)S.pulse.ctx.putImageData(u.p,0,0);else S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}}
+function unsnap(u){if(u.full){fullRestore(u.full);return;}S.free.ctx.putImageData(u.f,0,0);if(u.x){const X=u.x;if(X.l&&S.ltr){S.ltr.getContext('2d').putImageData(X.l,0,0);dirty('ltr');if(typeof ltRender==='function')ltRender();}if(X.rx&&S.pp){S.pp.rx.putImageData(X.rx,0,0);S.pp.ix.putImageData(X.ix,0,0);ppRender(S);dirty('pp');}const ps=JSON.parse(X.pops||'[]');if(ps.length!==(S.pops||[]).length){S.pops=ps;renderPops();dirty('pop');}}if(S.pulse){if(u.p)S.pulse.ctx.putImageData(u.p,0,0);else S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}}
 /* glow inks: soft light halo spilling around the colour (committed with blurred shadows in 'screen') */
 function haloDraw(c,src,hex){c.save();c.shadowColor=hex;c.shadowBlur=34;c.globalAlpha=.9;c.drawImage(src,0,0);c.shadowBlur=14;c.globalAlpha=1;c.drawImage(src,0,0);
   c.globalCompositeOperation='screen';c.shadowBlur=0;c.globalAlpha=.35;c.drawImage(src,0,0);c.restore();}
@@ -850,10 +850,10 @@ function beginStroke(x,y,pr,ptype){
   if(onInk){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q){r=labAt(q[0],q[1]);x=q[0]+.5;y=q[1]+.5;}}  // started on a line: snap
   strokeC.style.opacity=tool==='eraser'?'':String(adjOp());stroke={last:[x,y],path:[[x,y]],region:locked?r:0,er:tool==='eraser',st:strokeStyle(),neon:(ink.kind==='neon'||ink.kind==='glow'||(ink.kind==='mix'&&ink.mix.finish==='neon'))&&!strokeStyle(),pulse:ink.kind==='pulse'&&!strokeStyle()&&tool!=='eraser',dirty:null,
     pen:ptype==='pen',inPt:[x,y],exit:null,brace:null};
+  if(tool==='poppencil')stroke.ps=psParams(25);   /* b33: the Style slider never softens Pop Pencil: its color pass is always a crisp Pen */
   lastStroke={snapped:onInk,start:r,regions:locked&&r?[r]:[],breaks:0,locked};
   strokeC.style.filter=stroke.neon?(ink.kind==='glow'?`drop-shadow(0 0 8px ${ink.hex}) drop-shadow(0 0 18px ${ink.hex})`:`drop-shadow(0 0 3px ${ink.hex}) drop-shadow(0 0 9px ${ink.hex})`):'';
   if(stroke.region)setMask(r);
-  if(stroke.er&&mode==='free')fxEraseBegin();
   if(ink.kind==='ramp'&&!stroke.er&&!stroke.st){rampC=rampC||mk();rampT=rampT||mk();rampC.getContext('2d').clearRect(0,0,W,H);rampT.getContext('2d').clearRect(0,0,W,H);stroke.ramp={k:ink.ramp,d:0,last:[x,y]};}
   if(inkKind()==='fur'&&!stroke.er&&!stroke.st){furC=furC||mk();furC.getContext('2d').clearRect(0,0,W,H);stroke.fur={dx:0,dy:1,has:false,s:0,lx:x,ly:y,lanes:null};}
   if(!stroke.er)showTry(r||labAt(x,y));
@@ -861,12 +861,11 @@ function beginStroke(x,y,pr,ptype){
 }
 function stamp(x,y,pr){
   const p=(pr>0&&pr!==.5)?pr:.5;
-  if(stroke.er){const R=eraR()/zoomSizeDiv(),P=S.pp;   /* v24: one eraser for everything under it: color, Pulse, tracing, Pop Pencil heights (and Pop Fill shapes, at the end) */
-    const cs=[S.free.ctx];if(S.pulse)cs.push(S.pulse.ctx);if(S.ltr&&mode==='free')cs.push(S.ltr.getContext('2d'));if(P&&P.any&&mode==='free'){cs.push(P.rx,P.ix);stroke.ppEr=true;}
-    for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.globalAlpha=1;c.beginPath();c.arc(x,y,R,0,6.2832);c.fill();c.restore();}   /* b30: one pass erases 100% under the brush (hard round tip, full strength) */
-    if(mode==='free')fxEraseAt(x,y,R);
+  if(stroke.er){const R=eraR()/zoomSizeDiv();   /* b33: the eraser runs the pencil's fast path: stamps only build coverage; flush() clears the layers once per move, in the dirty rect */
+    cov.save();cov.globalAlpha=1;cov.globalCompositeOperation='source-over';cov.fillStyle='#000';cov.beginPath();cov.arc(x,y,R,0,6.2832);cov.fill();cov.restore();
     {const r=S.lab[(y|0)*W+(x|0)];if(r)(stroke.erR||(stroke.erR=new Set())).add(r);}
-    if(S.pulse)dirty('pulse');if(S.ltr&&mode==='free'){dirty('ltr');stroke.ltEr=true;}return;}
+    const d=stroke.dirty,a=[x-R-2,y-R-2,x+R+2,y+R+2];stroke.dirty=d?[Math.min(d[0],a[0]),Math.min(d[1],a[1]),Math.max(d[2],a[2]),Math.max(d[3],a[3])]:a;
+    {const q=stroke.bbx;stroke.bbx=q?[Math.min(q[0],a[0]),Math.min(q[1],a[1]),Math.max(q[2],a[2]),Math.max(q[3],a[3])]:a.slice();}return;}
   let R=penR()*(.65+.7*p)/zoomSizeDiv();
   if(stroke.st==='air'){R*=2.4;cov.globalAlpha=.16;for(let k=0;k<16;k++){const a=Math.random()*6.283,d=R*Math.sqrt(-2*Math.log(Math.random()+1e-6))*.42,rr=1+Math.random()*1.8;
       cov.drawImage(tip,x+Math.cos(a)*d-rr,y+Math.sin(a)*d-rr,2*rr,2*rr);}}
@@ -923,9 +922,19 @@ function breakThrough(r,x,y,pr){
   d.className='llpulse';d.style.left=(cx-sr.left)+'px';d.style.top=(cy-sr.top)+'px';stage.appendChild(d);setTimeout(()=>d.remove(),600);
   stamp(x,y,pr);
 }
+function eraseFlush(x,y,w,h){if(!S)return;const cs=[S.free.ctx];if(S.pulse)cs.push(S.pulse.ctx);if(S.ltr&&mode==='free'){cs.push(S.ltr.getContext('2d'));stroke.ltEr=true;}
+  const P=S.pp;if(P&&P.any&&mode==='free'){cs.push(P.rx,P.ix);stroke.ppEr=true;}
+  for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.drawImage(covC,x,y,w,h,x,y,w,h);c.restore();}
+  if(mode==='free'&&S.fx&&S.fx.length){let u=stroke.fxu;for(const r of S.fx){const b=r.bb;if(!b||x>b[0]+b[2]||y>b[1]+b[3]||x+w<b[0]||y+h<b[1])continue;
+      if(!stroke.fxT)stroke.fxT=new Set();if(!stroke.fxT.has(r)){stroke.fxT.add(r);if(!u){u=stroke.fxu={n:undoKey(),m:[]};S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);}
+        const c=document.createElement('canvas');c.width=b[2];c.height=b[3];c.getContext('2d').drawImage(r.mask,b[0],b[1],b[2],b[3],0,0,b[2],b[3]);u.m.push([r,c,undefined,b[0],b[1]]);r.scanLim=b.slice();}
+      r.mx.save();r.mx.globalCompositeOperation='destination-out';r.mx.drawImage(covC,x,y,w,h,x,y,w,h);r.mx.restore();r.erD=true;}}
+  for(const el of [S.fxC,S.dpC])if(el&&el.isConnected){const g=el.getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(covC,x,y,w,h,x,y,w,h);g.restore();}   /* instant visual: effects vanish under the eraser right away */
+  if(S.pulse)dirty('pulse');if(stroke.ltEr)dirty('ltr');}
 function flush(){
   const d=stroke.dirty; if(!d)return; stroke.dirty=null;
   const x=Math.max(0,Math.floor(d[0])),y=Math.max(0,Math.floor(d[1])),w=Math.min(W,Math.ceil(d[2]))-x,h=Math.min(H,Math.ceil(d[3]))-y; if(w<=0||h<=0)return;
+  if(stroke.er){eraseFlush(x,y,w,h);return;}
   // NB: source-in / destination-in clear everything outside the drawn shape, so confine them with a clip rect
   if(stroke.region){cov.save();cov.beginPath();cov.rect(x,y,w,h);cov.clip();cov.globalAlpha=1;cov.globalCompositeOperation='destination-in';
     cov.drawImage(maskC,x,y,w,h,x,y,w,h);cov.restore();}
@@ -951,10 +960,10 @@ function eraseRegionAt(x,y){const r=labAt(x,y);if(!r||!S)return false;const b=r*
   cx.filter='blur(1.2px)';cx.drawImage(c,0,0);cx.drawImage(c,0,0);cx.filter='none';
   const cs=[S.free.ctx];if(S.pulse)cs.push(S.pulse.ctx);for(const q of cs){q.save();q.globalCompositeOperation='destination-out';q.drawImage(c,bx,by);q.restore();}if(S.pulse)dirty('pulse');
   try{fxEraseRegion(r);}catch(e){}try{ppEraseAt(r);}catch(e){}if(stroke)(stroke.erR||(stroke.erR=new Set())).add(r);dirty('free');return true;}
-function eraserEnd(st){if(!S||mode!=='free')return;for(const r of (S.fx||[]))if(r.erD){r.erD=false;r.dirty=true;}   /* v25: rescan erased masks once, when the stroke ends */
+function eraserEnd(st){if(!S||mode!=='free')return;for(const r of (S.fx||[]))if(r.erD){r.erD=false;r.dirty=true;}else r.scanLim=null;   /* v25: rescan erased masks once, when the stroke ends */
   if(st.ppEr)ppRender(S);if(st.ltEr&&typeof ltRender==='function')ltRender();
   if(st.erR&&S.pops&&S.pops.length){const n0=S.pops.length;S.pops=S.pops.filter(p=>!(p.rs||[p.r]).some(r=>st.erR.has(r)));if(S.pops.length!==n0){renderPops();dirty('pop');}}}
-function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er){setTimeout(fxClip,0);eraserEnd(stroke);}else if(stroke.bbx){const b=stroke.bbx;lastOpCapture(stroke.pulse?S.pulse.ctx:S.free.ctx,b[0],b[1],b[2]-b[0],b[3]-b[1],'stroke');}
+function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er){eraserEnd(stroke);fxRedrawSoon();}else if(stroke.bbx){const b=stroke.bbx;lastOpCapture(stroke.pulse?S.pulse.ctx:S.free.ctx,b[0],b[1],b[2]-b[0],b[3]-b[1],'stroke');}
   dirty('free'); strokeC.style.filter='';strokeC.style.opacity='';
   cov.clearRect(0,0,W,H);sctx.clearRect(0,0,W,H);stroke=null;}
 function cancelStroke(){ if(!stroke)return; cov.clearRect(0,0,W,H);sctx.clearRect(0,0,W,H);strokeC.style.filter='';
@@ -1030,7 +1039,7 @@ function applyZoom(){const [sw,sh]=stageSize();const fo=typeof FOC!=='undefined'
   if(!fo){Z.x=Math.min(vl,Math.max(vr-sw*Z.z,Z.x));Z.y=Math.min(vt,Math.max(vb-sh*Z.z,Z.y));}
   zoomer.style.transform=`translate(${Z.x}px,${Z.y}px) scale(${Z.z})`;{const lv=$('#ltrV');if(lv)lv.style.transform=zoomer.style.transform;}if(GRAB.lastZ!==Z.z){grabAutoZoom(GRAB.lastZ,Z.z);GRAB.lastZ=Z.z;}
   $('#zoomPct').textContent=Math.round(Z.z*100)+'%';$('#zoomOut').disabled=Z.z<=1.001;$('#zoomIn').disabled=Z.z>=MAXZ-.001;
-  const k=sw/W*Z.z; vline.setAttribute('viewBox',`${(-Z.x/k).toFixed(2)} ${(-Z.y/k).toFixed(2)} ${(W/Z.z).toFixed(2)} ${(H/Z.z).toFixed(2)}`);
+  const k=sw/W*Z.z; vline.setAttribute('viewBox',`${(-Z.x/k).toFixed(2)} ${(-Z.y/k).toFixed(2)} ${(W/Z.z).toFixed(2)} ${(H/Z.z).toFixed(2)}`);{const vb=$('#vlineBack');if(vb)vb.setAttribute('viewBox',vline.getAttribute('viewBox'));}
   const vec=Z.z>=VEC_FROM&&vline.dataset.n==(S&&S.n); app.classList.toggle('vec',vec);
   app.classList.toggle('zoomnums',Z.z>=NUM_FROM); scheduleNums(); popParallax();}
 function resetZoom(){Z={z:1,x:0,y:0};GRAB.lastZ=1;GRAB.auto='draw';applyZoom();grabUI();}   /* scene change / Fit: whole page, so Auto goes back to drawing */
@@ -1058,9 +1067,9 @@ document.addEventListener('keydown',e=>{if(e.code==='Space'&&!/INPUT|TEXTAREA/.t
   if(!e.ctrlKey&&!e.metaKey&&!/INPUT|TEXTAREA/.test(document.activeElement.tagName)){if(e.key==='+'||e.key==='=')zoomAt(Z.z*1.6);else if(e.key==='-')zoomAt(Z.z/1.6);else if(e.key==='0')resetZoom();}});
 document.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;stage.classList.remove('panready');grabUI();}});
 /* vector line overlay, lazy-loaded per scene */
-function loadVectorLines(n){const c=CHM[n];vline.dataset.n='';vline.innerHTML='';if(!c||!c.lines)return applyZoom();
+function loadVectorLines(n){const c=CHM[n];vline.dataset.n='';vline.innerHTML='';{const vb=$('#vlineBack');if(vb)vb.innerHTML='';}if(!c||!c.lines)return applyZoom();
   const done=()=>{const L=(window.EP_LINES||{})[n];if(!L||!S||S.n!==n)return;
-    vline.innerHTML=`<path fill="#141414" fill-rule="evenodd" d="${L.d}"/>`;vline.dataset.n=n;lineTintSVG();if(S&&S.n==n)linesApply();applyZoom();};
+    vline.innerHTML=`<path fill="#141414" fill-rule="evenodd" d="${L.d}"/>`;{const vb=$('#vlineBack');if(vb)vb.innerHTML=`<path fill="#fffdf8" stroke="#fffdf8" stroke-width="1.4" stroke-linejoin="round" fill-rule="evenodd" d="${L.d}"/>`;}vline.dataset.n=n;lineTintSVG();if(S&&S.n==n)linesApply();applyZoom();};
   if((window.EP_LINES||{})[n])return done();
   const sc=document.createElement('script');sc.src=c.lines;sc.onload=done;sc.onerror=()=>{};document.head.appendChild(sc);}
 /* screen-resolution numbers when zoomed in */
@@ -1260,7 +1269,7 @@ function deepRender(st=S,force){if(!st)return;const P=(st.pops||[]).filter(p=>p.
     x.globalAlpha=k;x.drawImage(T,f.x0,f.y0);x.globalAlpha=1;if(did)c.fms=performance.now()-tf0;}
   dpAttach(st);if(st===S&&P.some(dpAnimated)&&!dpRaf)dpRaf=requestAnimationFrame(dpTick);}
 function dpTick(now){dpRaf=0;if(!S||document.hidden){return;}const P=(S.pops||[]).filter(p=>p.deep&&dpAnimated(p));if(!P.length)return;
-  if(now-dpLast>=33){dpLast=now;const t0=performance.now();deepRender(S);DP.fms=DP.fms*.9+(performance.now()-t0)*.1;DP.frames++;}if(!dpRaf)dpRaf=requestAnimationFrame(dpTick);}
+  if(!perfBusy()&&now-dpLast>=Math.min(2000,Math.max(33,(DP.fms+fxMs)*4))){dpLast=now;const t0=performance.now();deepRender(S);DP.fms=DP.fms*.9+(performance.now()-t0)*.1;DP.frames++;}if(!dpRaf)dpRaf=requestAnimationFrame(dpTick);}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S&&!dpRaf)deepRender(S);});
 const DP={fms:0,frames:0};
 let dpColT=0;function dpRecolorSoon(){if(!S||!(S.pops||[]).some(p=>p.deep))return;clearTimeout(dpColT);dpColT=setTimeout(()=>{if(!S)return;let ch=false;for(const p of S.pops||[]){if(!p.deep)continue;const c=dpCache.get(p),f=c&&c.field;if(!f)continue;const n=dpBaseColor(S,p,f);if(!c.col||n.some((v,i)=>Math.abs(v-c.col[i])>3)){c.col=n;ch=true;}}if(ch)deepRender(S,true);},250);}
@@ -1271,8 +1280,8 @@ function dpChanged(p){if(p){const c=dpCache.get(p);deepRender(S,true);dirty('pop
 function dpOpen(){const el=$('#deep');if(!el)return;adjClose();setTimeout(sheetSync,0);if(!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();el.hidden=false;$('#dpBtn')&&$('#dpBtn').classList.add('on');dpBuildUI();}
 function dpClose(){const el=$('#deep');if(el)el.hidden=true;$('#dpBtn')&&$('#dpBtn').classList.remove('on');sheetSync();}
 /* v27: Deep Pop and Adjust open as a bottom sheet (picture stays visible above, changes preview live). Close: big X, Done, Esc, or tap above the sheet */
-const SHEETS=['#deep','#adjust','#mixer','#ccEd'];let sheetCur='';
-function sheetClose(){if(typeof dpClose==='function')dpClose();adjClose();if($('#mixer')&&!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();if(typeof ccEdClose==='function')ccEdClose();}
+const SHEETS=['#deep','#adjust','#mixer','#ccEd','#linesPop'];let sheetCur='';
+function sheetClose(){if(typeof dpClose==='function')dpClose();adjClose();if($('#mixer')&&!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();if(typeof ccEdClose==='function')ccEdClose();{const lp=$('#linesPop');if(lp&&!lp.hidden){lp.hidden=true;const lb=$('#linesBtn');lb&&lb.setAttribute('aria-expanded','false');}}}
 function sheetSync(){let bg=$('#sheetBg');const cur=SHEETS.find(q=>$(q)&&!$(q).hidden)||'';if(!bg){bg=document.createElement('div');bg.id='sheetBg';bg.className='sheetbg';bg.onclick=sheetClose;document.body.appendChild(bg);}bg.hidden=!cur;document.body.classList.toggle('sheet-open',!!cur);
   if(cur!==sheetCur){sheetCur=cur;if(typeof focusOn==='function'){if(cur)requestAnimationFrame(()=>focusOn(cur));else focusOff();}}}
 (()=>{const mo=new MutationObserver(()=>setTimeout(sheetSync,0));for(const q of SHEETS){const el=$(q);if(el)mo.observe(el,{attributes:true,attributeFilter:['hidden']});}})();
@@ -1339,8 +1348,8 @@ function popAnim(p,from,to,done,ms=240){const t0=performance.now();p.k=from;
 /* v16: Pop Fill (was 3D Pop) works like Fill: one tap raises (or, with Inset, presses in) the line-enclosed area at the slider height;
    tapping it again re-applies the current direction / height; the slider then drives that last-tapped area. With Color while popping
    on, the same tap also fills the area with the current pencil or effect (Free Color) or its numbered color (Color by Number). */
-function popTap(x,y,noColor){const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];S.popNext={};const i=S.pops.findIndex(p=>(p.rs||[p.r]).includes(r));
-  if(POP.flat){if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');toast('Flattened');}else toast('Flat: set the slider to Raise or Inset, then tap an area');S.popSel={k:'pop',r};return;}
+function popTap(x,y,noColor){try{redoClear();}catch(e){}const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];S.popNext={};const i=S.pops.findIndex(p=>(p.rs||[p.r]).includes(r));
+  if(POP.flat){if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');}S.popSel={k:'pop',r};if(!noColor)popColor(x,y,r);return;}   /* b33: height 0 = a flat color fill */
   const T=depthOf(S),pressed=(T&&T.lv[r]<0)?true:!!POP.pressed,depth=Math.max(10,Math.round(POP.depth)),fin=()=>{renderPops();dirty('pop');if(S&&S.popSel&&S.popSel.r===r)popSelect('pop',r);};
   S.popSel={k:'pop',r};
   if(i>=0){const p=S.pops[i];if(p.anim)return;if(settings.deepOn&&!p.deep){p.deep=dpNew();p.deep.carved=pressed;}else if(!settings.deepOn&&p.deep){delete p.deep;}const same=p.pressed===pressed&&p.depth===depth;p.pressed=pressed;p.depth=depth;if(same)fin();else{p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}}
@@ -1661,14 +1670,19 @@ function fxEraseRegion(r){if(!S||!S.fx||!S.fx.length)return false;const b=r*4,bx
     f.mx.save();f.mx.globalCompositeOperation='destination-out';f.mx.drawImage(c,bx,by);f.mx.restore();f.dirty=true;hit=true;}
   if(hit){fxClip();dirty('fx');}return hit;}
 function fxScan(r){ // bbox + sample points of a mask (for particles and sheen extents)
-  const d=r.mx.getImageData(0,0,W,H).data;let x0=W,y0=H,x1=-1,y1=-1;const pts=[];
-  for(let y=0;y<H;y+=3)for(let x=0;x<W;x+=3){if(d[(y*W+x)*4+3]>60){if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;pts.push(x,y);}}
+  const L=r.scanLim;r.scanLim=null;const LX=L?Math.max(0,L[0]):0,LY=L?Math.max(0,L[1]):0,LW=L?Math.min(W-LX,L[2]):W,LH=L?Math.min(H-LY,L[3]):H;   /* b33: after an erase only the old box is read back */
+  if(LW<=0||LH<=0){r.bb=null;r.pts=[];r.parts=[];r.dirty=false;r.mv=(r.mv||0)+1;return;}
+  const dd=r.mx.getImageData(LX,LY,LW,LH).data,A=(x,y)=>(x<LX||y<LY||x>=LX+LW||y>=LY+LH)?0:dd[((y-LY)*LW+(x-LX))*4+3];let x0=W,y0=H,x1=-1,y1=-1;const pts=[];
+  for(let y=Math.ceil(LY/3)*3;y<LY+LH;y+=3)for(let x=Math.ceil(LX/3)*3;x<LX+LW;x+=3){if(A(x,y)>60){if(x<x0)x0=x;if(y<y0)y0=y;if(x>x1)x1=x;if(y>y1)y1=y;pts.push(x,y);}}
   r.bb=x1<0?null:[x0,y0,x1-x0+1,y1-y0+1];const n=pts.length/2,keep=[];let sd=((r.seed||1)*2654435761)>>>0;const rnd=()=>{sd=(sd+0x6D2B79F5)>>>0;let z=sd;z=Math.imul(z^(z>>>15),z|1);z^=z+Math.imul(z^(z>>>7),z|61);return((z^(z>>>14))>>>0)/4294967296;};/* v24: deterministic sampling, so an undone mask draws exactly as before */for(let i=0;i<Math.min(n,500);i++){const j=(rnd()*n)|0;keep.push([pts[j*2],pts[j*2+1]]);}
-  if(r.parts&&r.parts.length)r.parts=r.parts.filter(p=>{const px=(p.sx!=null?p.sx:p.x)|0,py=(p.sy!=null?p.sy:p.y)|0;return px>=0&&py>=0&&px<W&&py<H&&d[(py*W+px)*4+3]>20;});   /* v25: no particle outlives the mask under it */
+  if(r.parts&&r.parts.length)r.parts=r.parts.filter(p=>{const px=(p.sx!=null?p.sx:p.x)|0,py=(p.sy!=null?p.sy:p.y)|0;return px>=0&&py>=0&&px<W&&py<H&&A(px,py)>20;});   /* v25: no particle outlives the mask under it */
   r.pts=keep;r.dirty=false;r.sf=null;r.loose=null;r.tint=null;r.nm=null;r.cf=null;r.shade=null;r.td=null;r.dq=null;r.bolt=null;r.texC=null;r.mv=(r.mv||0)+1;if(!r.bb)r.parts=[];}
 function fxLoose(r,blur,n=2){ // soft, spread mask so wisps / puffs can hover just around the colour
   const c=mk(),x=c.getContext('2d');x.filter=`blur(${blur}px)`;for(let i=0;i<n;i++)x.drawImage(r.mask,0,0);x.filter='none';return c;}
 function fxShade(r){if(r.shade)return r.shade;const c=mk(),x=c.getContext('2d');x.drawImage(r.mask,0,0);x.globalCompositeOperation='source-in';x.fillStyle='rgba(20,10,30,1)';x.fillRect(0,0,W,H);return r.shade=c;}
+/* b33: glow = the tint plus a pre-blurred halo, made once per mask version (replaces per-frame shadowBlur, the costliest canvas op) */
+function fxGlow(r,b){const gk=r.mv+'|'+r.hex;if(r.glcMv!==gk||!r.glc){r.glc={};r.glcMv=gk;}if(r.glc[b])return r.glc[b];const T=fxTint(r),c=mk(),x=c.getContext('2d'),q=r.bb||[0,0,W,H],P=b*2,X0=Math.max(0,q[0]-P),Y0=Math.max(0,q[1]-P),X1=Math.min(W,q[0]+q[2]+P),Y1=Math.min(H,q[1]+q[3]+P);
+  x.filter=`blur(${b/2}px)`;x.drawImage(T,X0,Y0,X1-X0,Y1-Y0,X0,Y0,X1-X0,Y1-Y0);x.filter='none';x.drawImage(T,X0,Y0,X1-X0,Y1-Y0,X0,Y0,X1-X0,Y1-Y0);return r.glc[b]=c;}
 function fxTint(r){if(r.tint)return r.tint;const c=mk(),x=c.getContext('2d');x.drawImage(r.mask,0,0);x.globalCompositeOperation='source-in';x.fillStyle=r.hex;x.fillRect(0,0,W,H);return r.tint=c;}
 function fxClip(){ // after erase / undo / clear: keep effects only where colour remains
   if(!S||!S.fx||!S.fx.length)return;const d=(mode==='cbn'?S.cbn.ctx:S.free.ctx).getImageData(0,0,W,H),pd=S.pulse&&mode!=='cbn'?S.pulse.ctx.getImageData(0,0,W,H).data:null,m=new ImageData(W,H);for(let i=3;i<d.data.length;i+=4)if(d.data[i]>8||(pd&&pd[i]>8))m.data[i]=255;
@@ -1684,7 +1698,7 @@ function star(x,cx,cy,R,a){x.globalAlpha=a;x.beginPath();for(let i=0;i<8;i++){co
    (randomised +/-7..20%) from its own start phase, and each effect kind runs at a non-integer period ratio (golden-ratio based), so
    a page full of Glowing / Pulse / Neon strokes never breathes or resets in step. */
 const KPER={glowfx:1,pulsefx:1.1459,neonfx:.8541,shimmer:1.0902};
-function fxCells(r){if(r.cells&&r.cellsMv===r.mv)return r.cells;const [bx,by,bw,bh]=r.bb,K=Math.max(1,Math.min(8,Math.round(Math.sqrt(bw*bh)/150))),P=r.pts.length?r.pts:[[bx+bw/2,by+bh/2]],sd=r.seed||7,C=[];
+function fxCells(r){if(r.cells&&r.cellsMv===r.mv)return r.cells;const [bx,by,bw,bh]=r.bb,K=Math.max(1,Math.min(3,Math.round(Math.sqrt(bw*bh)/220))),P=r.pts.length?r.pts:[[bx+bw/2,by+bh/2]],sd=r.seed||7,C=[];
   for(let k=0;k<K;k++){let best=P[0],bd=-1;for(let n=0;n<10;n++){const q=P[(hash2(k*11+n,sd)*P.length)|0];let m=1e12;for(const c of C)m=Math.min(m,(c.x-q[0])**2+(c.y-q[1])**2);if(m>bd){bd=m;best=q;}}
     const v=.05+.05*hash2(k,sd+5);C.push({x:best[0],y:best[1],sp:1+(hash2(k,sd+7)<.5?-v:v),ph:hash2(k,sd+9)*97});}
   const R=Math.sqrt(bw*bh/K)*1.25;C.forEach((c,k)=>c.R=R*(.85+.35*hash2(k,sd+13)));r.cellsMv=r.mv;return r.cells=C;}
@@ -1740,7 +1754,7 @@ function fxDrawRec(x,r,t){ // t in seconds
   if(r.ph!=null&&r.kind!=='twinkle'&&r.kind!=='boltfx'&&!RM.matches)t=t*(r.sp||1)+r.ph;   /* v16: own phase + speed per stroke */
   if(r.dirty)fxScan(r);if(!r.bb)return;const [bx,by,bw,bh]=r.bb,s=.5+.5*Math.sin(t*2*Math.PI/3.2);
   if(r.kind==='shimmer'){ // sheen band sweeping diagonally + soft glow pulse + a few glints
-    {const T=fxTint(r);cellPass(x,r,t,KPER.shimmer,'source-over',(c,tl,R)=>{const s=.5+.5*Math.sin(tl*2*Math.PI/3.2);c.save();c.globalAlpha=.16+.16*s;c.shadowColor=r.hex;c.shadowBlur=16+10*s;subDraw(c,T,R);c.restore();});}
+    {const T=fxTint(r);cellPass(x,r,t,KPER.shimmer,'source-over',(c,tl,R)=>{const s=.5+.5*Math.sin(tl*2*Math.PI/3.2);c.save();c.globalAlpha=.16+.16*s;subDraw(c,fxGlow(r,20),R);c.restore();});}
     scx.clearRect(bx-2,by-2,bw+4,bh+4);scx.globalCompositeOperation='source-over';flowBand(scx,bx,by,bw,bh,flowSweep(r,t*(r.sp||1)+(r.ph||0),3.4,2),.12,.62);
     scx.globalCompositeOperation='destination-in';scx.drawImage(r.mask,bx,by,bw,bh,bx,by,bw,bh);scx.globalCompositeOperation='source-over';
     x.save();x.globalCompositeOperation='lighter';x.globalAlpha=motionLvl('shimmer')>0?.35+.6*motionLvl('shimmer'):0;x.drawImage(scratch,bx,by,bw,bh,bx,by,bw,bh);x.restore();
@@ -1753,15 +1767,15 @@ function fxDrawRec(x,r,t){ // t in seconds
       r.oc.getContext('2d').putImageData(r.out,0,0);}
     x.drawImage(r.oc,bx,by);return;}
   if(r.kind==='glowfx'){const gs=motionLvl('glowStr'),T=fxTint(r);cellPass(x,r,t,KPER.glowfx,'lighter',(c,tl,R)=>{const s=.5+.5*Math.sin(tl*2*Math.PI/3.2);c.save();c.globalCompositeOperation='lighter';
-    c.globalAlpha=Math.min(1,(.10+.22*s)*gs);c.shadowColor=r.hex;c.shadowBlur=(22+18*s)*Math.sqrt(gs);if(gs>1.2)subDraw(c,T,R);subDraw(c,T,R);c.restore();});return;}
+    c.globalAlpha=Math.min(1,(.10+.22*s)*gs);const G=fxGlow(r,Math.max(10,Math.round(3*Math.sqrt(gs))*10));if(gs>1.2)subDraw(c,G,R);subDraw(c,G,R);c.restore();});return;}
   if(r.kind==='pulsefx'||r.kind==='glowfx')drawPulseBands(x,r,t,r.kind==='pulsefx'?{sp:.55,n:2,dir:'forward',a:.85}:{sp:.3,n:1,dir:'bounce',a:.5});
   if(r.kind==='pulsefx'){ // the colour itself breathes: dims on the out-breath, brightens + glows on the in-breath
     const Sh=fxShade(r),T=fxTint(r);cellPass(x,r,t,KPER.pulsefx,'source-over',(c,tl,R)=>{const b=.5+.5*Math.sin(tl*2*Math.PI/2.4);if(b<.5){c.globalAlpha=(.5-b)*.7;subDraw(c,Sh,R);}});
-    cellPass(x,r,t,KPER.pulsefx,'lighter',(c,tl,R)=>{const b=.5+.5*Math.sin(tl*2*Math.PI/2.4);c.globalCompositeOperation='lighter';c.globalAlpha=.06+.5*b*b;c.shadowColor=r.hex;c.shadowBlur=4+16*b;subDraw(c,T,R);});return;}
+    cellPass(x,r,t,KPER.pulsefx,'lighter',(c,tl,R)=>{const b=.5+.5*Math.sin(tl*2*Math.PI/2.4);c.globalCompositeOperation='lighter';c.globalAlpha=.06+.5*b*b;subDraw(c,fxGlow(r,12),R);});return;}
   if(r.kind==='boltfx'){drawBolt(x,r);return;}
   if(r.kind.startsWith('texfx')){if(!r.texC){const [,k,v]=r.kind.split('|'),c=mk(),cx=c.getContext('2d');cx.fillStyle=cx.createPattern(texShadeTile(k,v),'repeat');cx.fillRect(0,0,W,H);cx.globalCompositeOperation='destination-in';cx.drawImage(r.mask,0,0);r.texC=c;}x.drawImage(r.texC,0,0);return;}   /* v14: texture on a Color by Number colour */
   if(r.kind==='neonfx'){ // neon hum: a steady glow with a soft flicker now and then
-    const T=fxTint(r);cellPass(x,r,t,KPER.neonfx,'lighter',(c,tl,R)=>{const f=hash2((tl*14)|0,7+(r.seed||0))<.06?.35:1,b=(.75+.25*Math.sin(tl*5.3))*f;c.globalCompositeOperation='lighter';c.globalAlpha=.14+.3*b;c.shadowColor=r.hex;c.shadowBlur=10+14*b;subDraw(c,T,R);});return;}
+    const T=fxTint(r);cellPass(x,r,t,KPER.neonfx,'lighter',(c,tl,R)=>{const f=hash2((tl*14)|0,7+(r.seed||0))<.06?.35:1,b=(.75+.25*Math.sin(tl*5.3))*f;c.globalCompositeOperation='lighter';c.globalAlpha=.14+.3*b;subDraw(c,fxGlow(r,16),R);});return;}
   if(r.kind==='twinkle'){ // glitter: a field of sparkle points that pop on and off all over the glitter, plus drifting 4-point glints
     const lv=motionLvl('sparkle'),still=lv<=0,sd=r.seed||0;t=still?1.2:(CLK.twinkleSpeed||0)*(r.sp||1)+(r.ph||0);
     if(!r.sf){const n=Math.min(r.pts.length,Math.max(24,Math.round(bw*bh/650*Math.min(2,r.amt||1))));r.sf=[];for(let i=0;i<n;i++){const q=r.pts[(i*97+sd)%r.pts.length];r.sf.push([q[0]+(hash2(i+sd,3)-.5)*3,q[1]+(hash2(i+sd,5)-.5)*3,hash2(i+sd,7)*6.283,.7+hash2(i+sd,11)*2.2,hash2(i+sd,13)<.22]);}}
@@ -2019,23 +2033,24 @@ const BILLOW={};function cloudSprite(hex,seed=1){const k=hex+seed;if(BILLOW[k])r
     hg.addColorStop(0,'rgba(255,255,255,.55)');hg.addColorStop(.55,'rgba(255,255,255,.08)');hg.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=hg;x.fillRect(0,0,s,H2);}
   const sh=x.createLinearGradient(0,H2*.55,0,H2);sh.addColorStop(0,'rgba(30,34,70,0)');sh.addColorStop(1,'rgba(30,34,70,.34)');x.fillStyle=sh;x.fillRect(0,0,s,H2);   // shaded bottoms
   x.globalCompositeOperation='source-over';return BILLOW[k]=c;}
+let SMKC=null;const smkCtx=()=>(SMKC||(SMKC=Object.assign(document.createElement('canvas'),{width:W/2,height:H/2}))).getContext('2d');   /* b33: smoke puffs drawn at half resolution (soft anyway, 4x less fill) */
 function drawSmoke(x,r,t){if(!RM.matches)t=CLK.smokeSpeed||0;   // v22: smoke has its own Speed slider clock
   const [bx,by,bw,bh]=r.bb,dt=RM.matches?0:Math.min(.05,Math.max(0,t-(r.lt||t)));r.lt=t;
-  const cap=Math.min(90,30+Math.round(Math.sqrt(bw*bh)/6)),s0=Math.max(30,Math.min(64,Math.sqrt(bw*bh)/6))*(r.amt||1);r.acc=(r.acc||0)+dt*22;
-  if(!r.parts.length)r.acc+=Math.min(cap,24);
+  const cap=Math.min(34,12+Math.round(Math.sqrt(bw*bh)/14)),s0=Math.max(26,Math.min(56,Math.sqrt(bw*bh)/6))*(r.amt||1);r.acc=(r.acc||0)+dt*9;   /* b33: lighter smoke (fewer, softer puffs) */
+  if(!r.parts.length)r.acc+=Math.min(cap,12);
   while(r.acc>=1&&r.pts.length){r.acc-=1;if(r.parts.length>=cap){r.acc=0;break;}const q=r.pts[(Math.random()*r.pts.length)|0];
     r.parts.push({x:q[0],y:q[1],sx:q[0],sy:q[1],vx:(Math.random()-.5)*14,vy:-(4+Math.random()*8),age:RM.matches?1.2:0,life:3+Math.random()*3.5,s0:s0*(.6+Math.random()*.7),rot:Math.random()*6.28,vr:(Math.random()-.5)*.9,seed:Math.random(),lay:Math.random()<.35?1:0});}
   if(!r.loose)r.loose=fxLoose(r,26,5);
   const ex=70,X0=Math.max(0,bx-ex),Y0=Math.max(0,by-ex),X1=Math.min(W,bx+bw+ex),Y1=Math.min(H,by+bh+ex);
-  scx.clearRect(X0,Y0,X1-X0,Y1-Y0);scx.globalCompositeOperation='source-over';const spr=wispSprite(r.hex),spr2=wispSprite(mixHex(r.hex,.3));
+  const sc=smkCtx(),HW=X1-X0,HH=Y1-Y0;sc.setTransform(1,0,0,1,0,0);sc.globalAlpha=1;sc.globalCompositeOperation='source-over';sc.clearRect(X0/2-1,Y0/2-1,HW/2+2,HH/2+2);const spr=wispSprite(r.hex),spr2=wispSprite(mixHex(r.hex,.3));
   for(let k=r.parts.length-1;k>=0;k--){const q=r.parts[k];q.age+=dt;if(q.age>=q.life){r.parts.splice(k,1);continue;}
     const sd=r.seed||1,fd=flowDir(r)+(runDir(Math.floor(t/5.5+(sd%97)/31),sd)<0?Math.PI:0),fx=(vnoise3(q.x*.011,q.y*.011,t*.22+q.seed*3,sd)-.5)*3.2+Math.cos(fd)*.35,fy=(vnoise3(q.x*.011,q.y*.011,t*.22+q.seed*3,sd+97)-.5)*3.2+Math.sin(fd)*.25;   // v22: curling air from seeded noise, drifting along the stroke
     q.vx+=(fx*40+(q.sx-q.x)*.06)*dt;q.vy+=(fy*26-5+(q.sy-q.y)*.05)*dt;q.vx*=1-.8*dt;q.vy*=1-.7*dt;q.x+=q.vx*dt;q.y+=q.vy*dt;q.rot+=(q.vr+fx*.3)*dt;   // hover: a soft pull back to where it rose
-    const u=q.age/q.life,a=Math.min(1,u/.15)*Math.pow(1-u,1.2)*(q.lay?.55:.8),sz=q.s0*(.8+u*1.9),ang=Math.atan2(q.vy,q.vx);
-    scx.globalAlpha=a;scx.setTransform(1,0,0,1,q.x,q.y);scx.rotate(ang+q.rot*.3);scx.scale(1.45,.8);scx.drawImage(q.lay?spr2:spr,-sz,-sz,sz*2,sz*2);}
-  scx.setTransform(1,0,0,1,0,0);scx.globalAlpha=1;
-  scx.globalCompositeOperation='destination-in';scx.drawImage(r.loose,X0,Y0,X1-X0,Y1-Y0,X0,Y0,X1-X0,Y1-Y0);scx.globalCompositeOperation='source-over';
-  x.drawImage(scratch,X0,Y0,X1-X0,Y1-Y0,X0,Y0,X1-X0,Y1-Y0);}
+    const u=q.age/q.life,a=Math.min(1,u/.15)*Math.pow(1-u,1.2)*(q.lay?.55:.8),sz=q.s0*(.8+u*1.3),ang=Math.atan2(q.vy,q.vx);
+    sc.globalAlpha=a;sc.setTransform(.5,0,0,.5,q.x*.5,q.y*.5);sc.rotate(ang+q.rot*.3);sc.scale(1.45,.8);sc.drawImage(q.lay?spr2:spr,-sz,-sz,sz*2,sz*2);}
+  sc.setTransform(1,0,0,1,0,0);sc.globalAlpha=1;
+  sc.globalCompositeOperation='destination-in';sc.drawImage(r.loose,X0,Y0,HW,HH,X0/2,Y0/2,HW/2,HH/2);sc.globalCompositeOperation='source-over';
+  x.drawImage(sc.canvas,X0/2,Y0/2,HW/2,HH/2,X0,Y0,HW,HH);}
 const CLOUDSH=(()=>{let c=null;return ()=>{if(c)return c;c=document.createElement('canvas');c.width=128;c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(64,32,4,64,32,62);g.addColorStop(0,'rgba(40,40,70,1)');g.addColorStop(1,'rgba(40,40,70,0)');x.setTransform(1,0,0,.5,0,16);x.fillStyle=g;x.fillRect(0,0,128,128);return c;};})();
 function drawCloud(x,r,t){const [bx,by,bw,bh]=r.bb,cap=Math.max(6,Math.min(26,Math.round(Math.sqrt(bw*bh)/22))),big=Math.max(26,Math.min(120,Math.sqrt(bw*bh)/2.6));
   while(r.parts.length<cap&&r.pts.length){const q=r.pts[(Math.random()*r.pts.length)|0];r.parts.push({x:q[0],y:q[1],ph:Math.random()*6.28,sp:.35+Math.random()*.35,sz:big*(.55+Math.random()*.55),seed:1+(r.parts.length%5)});}
@@ -2073,16 +2088,22 @@ let PPLV=null;function ppPulse(x,t){ // light pulses travel up through raised Po
 let fxTotal=0,fxRaf=0,fxLast=0;
 function fxDraw(now){if(!S||!S.fxC)return;const x=S.fxC.getContext('2d');if(x.reset)x.reset();else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.shadowBlur=0;x.shadowColor='rgba(0,0,0,0)';x.filter='none';}x.clearRect(0,0,W,H);const t=RM.matches?1.2:now/1000;fxNow=now/1000;{const d=Math.min(.4,Math.max(0,fxNow-pclkLast));pclkLast=fxNow;PCLK+=d*motionLvl('pulseSpeed');if(!CFIX)CCLK+=d*motionLvl('shimmerSpeed');for(const k of ['twinkleSpeed','neonSpeed','glowSpeed','boltSpeed','smokeSpeed','partSpeed'])if(!(BFIX&&k==='boltSpeed'))CLK[k]=(CLK[k]||0)+d*motionLvl(k);}
   const t0=performance.now();fxTotal=(S.fx||[]).reduce((a,r)=>a+r.parts.length,0);{const mir=(S.fx||[]).filter(r=>r.kind==='mirror');let mDone=false;for(const r of S.fx||[]){const q=performance.now();if(r.kind!=='mirror'&&r.dirty)fxScan(r);if(r.kind!=='mirror'&&r!==S.fx[0]){if(r.bb){const [ex,ey,ew,eh]=r.bb;x.save();x.globalCompositeOperation='destination-out';x.drawImage(r.mask,ex,ey,ew,eh,ex,ey,ew,eh);x.restore();}}if(r.kind==='cover'||(r.kind!=='mirror'&&!r.bb))continue;   /* v24: newer paint hides the older effects' glow under it */
-    if(r.kind==='mirror'){if(!mDone){mDone=true;drawMirrors(x,mir);}}else if(r.amt&&Math.abs(r.amt-1)>.02&&!PARTK(r.kind)){const A=AMTC||(AMTC=mk()),ax=A.getContext('2d');ax.clearRect(0,0,W,H);fxDrawRec(ax,r,t);if(LIGHTK.has(r.kind))drawLight(ax,r);x.save();x.globalAlpha=Math.min(1,r.amt);x.drawImage(A,0,0);if(r.amt>1){x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,r.amt-1);x.drawImage(A,0,0);}x.restore();r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;continue;}   /* v23: Mix intensity */
+    if(r.kind==='mirror'){if(!mDone){mDone=true;drawMirrors(x,mir);}}else if(r.amt&&Math.abs(r.amt-1)>.02&&!PARTK(r.kind)){const A=AMTC||(AMTC=mk()),ax=A.getContext('2d'),bq=r.bb,PD=90,qx=Math.max(0,bq[0]-PD),qy=Math.max(0,bq[1]-PD),qw=Math.min(W,bq[0]+bq[2]+PD)-qx,qh=Math.min(H,bq[1]+bq[3]+PD)-qy;ax.clearRect(qx,qy,qw,qh);ax.save();ax.beginPath();ax.rect(qx,qy,qw,qh);ax.clip();fxDrawRec(ax,r,t);if(LIGHTK.has(r.kind))drawLight(ax,r);ax.restore();x.save();x.globalAlpha=Math.min(1,r.amt);x.drawImage(A,qx,qy,qw,qh,qx,qy,qw,qh);if(r.amt>1){x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,r.amt-1);x.drawImage(A,qx,qy,qw,qh,qx,qy,qw,qh);}x.restore();ax.clearRect(qx,qy,qw,qh);r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;continue;}   /* v23: Mix intensity */
     else fxDrawRec(x,r,t);if(LIGHTK.has(r.kind))drawLight(x,r);r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;}}ppPulse(x,t);fxMs=fxMs*.8+(performance.now()-t0)*.2;}
-let fxMs=0,AMTC=null;const PARTK=k=>k==='twinkle'||k==='smoke'||k==='cloud'||k.startsWith('pt');
+let fxMs=0,AMTC=null;
+/* b33 CPU budget: effects and Deep Pop animate at most 30 fps, back off further on slow machines (frame cost x3, up to ~8 fps),
+   and pause completely while a stroke / erase / push is in progress, so input always wins. */
+const perfBusy=()=>!!(typeof stroke!=='undefined'&&stroke)||!!(typeof down!=='undefined'&&down&&!down.pan);
+const fxGap=()=>Math.min(2000,Math.max(33,(fxMs+(typeof DP!=='undefined'&&DP.fms?DP.fms:0))*4));   /* effects get at most ~25% of the CPU */
+let fxRS=0;function fxRedrawSoon(){if(fxRS)return;fxRS=requestAnimationFrame(()=>{fxRS=0;if(S&&S.fxC&&fxLive())fxDraw(performance.now());if(S&&typeof deepRender==='function'&&(S.pops||[]).some(p=>p.deep))try{deepRender(S);}catch(e){}fxStart();});}const PARTK=k=>k==='twinkle'||k==='smoke'||k==='cloud'||k.startsWith('pt');
 function mixSlotOf(k){return PARTK(k)?'part':(k==='pulsefx'||k==='glowfx'||k==='boltfx'||(k==='shimmer'&&ink.mix&&ink.mix.anim==='shimmer'))?'anim':'finish';}
 const fxLive=()=>S&&((S.fx&&S.fx.length)||(S.pp&&S.pp.any));
 const fxNeedsLoop=()=>!RM.matches||(S&&(S.fx||[]).some(r=>(motionLvl('shimmer')>0&&['mirror','shine','jshine','shimmer'].includes(r.kind))||(motionLvl('sparkle')>0&&r.kind==='twinkle')));
 function fxStart(){if(fxRaf||!fxLive())return;fxAttach();if(!fxNeedsLoop()||document.hidden){fxDraw(performance.now());return;}
-  const step=now=>{fxRaf=0;if(!fxLive()||document.hidden)return;if(!fxNeedsLoop()){fxDraw(now);return;}if(now-fxLast>=Math.max(32,fxMs*2.2)){fxLast=now;fxDraw(now);}/* adaptive: slow machines draw effects less often so taps and strokes stay responsive */fxRaf=requestAnimationFrame(step);};fxRaf=requestAnimationFrame(step);}
+  const step=now=>{fxRaf=0;if(!fxLive()||document.hidden)return;if(!fxNeedsLoop()){fxDraw(now);return;}if(!perfBusy()&&now-fxLast>=fxGap()){fxLast=now;fxDraw(now);}/* adaptive: slow machines draw effects less often so taps and strokes stay responsive */fxRaf=requestAnimationFrame(step);};fxRaf=requestAnimationFrame(step);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(fxRaf);fxRaf=0;cancelAnimationFrame(pvRaf);pvRaf=0;}else{fxStart();pvStart();}});
-function saveFx(st){const L=st.fxL||{free:st.fx||[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){const a=(L[md]||[]).filter(r=>r.bb||r.dirty).map(r=>Object.assign({kind:r.kind,hex:r.hex,m:r.mask.toDataURL('image/png')},r.phC?{ph:r.phC.toDataURL('image/png')}:{},r.seed?{P:{seed:r.seed,ph:r.ph,dir:r.dir,light:r.light,sp:r.sp,amt:r.amt||1,mixO:r.mixO||null}}:{}));a.length?LS.set(key+st.n,a):LS.del(key+st.n);}}
+function fxUrl(r){if(r.dirty)fxScan(r);if(r._url&&r._urlV===r.mv)return r._url;r._urlV=r.mv;return r._url=r.mask.toDataURL('image/png');}   /* b33: re-encode a mask only when it changed */
+function saveFx(st){const L=st.fxL||{free:st.fx||[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){const a=(L[md]||[]).filter(r=>r.bb||r.dirty).map(r=>Object.assign({kind:r.kind,hex:r.hex,m:fxUrl(r)},r.phC?{ph:r.phC.toDataURL('image/png')}:{},r.seed?{P:{seed:r.seed,ph:r.ph,dir:r.dir,light:r.light,sp:r.sp,amt:r.amt||1,mixO:r.mixO||null}}:{}));a.length?LS.set(key+st.n,a):LS.del(key+st.n);}}
 async function loadFx(st){st.fxL={free:[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){st.fx=st.fxL[md];const a=LS.get(key+st.n,[]);for(const q of a){try{const im=await loadImg(q.m);const m=mk();const mx=m.getContext('2d',{willReadFrequently:true});mx.drawImage(im,0,0);
   const rr=Object.assign({kind:q.kind,hex:q.hex,mask:m,mx,bb:null,pts:[],parts:[],dirty:true},q.P||{});if(q.ph){try{phCanvas(rr);rr.phX.drawImage(await loadImg(q.ph),0,0);rr.phV=1;}catch(e){}}st.fx.push(rr);}catch(e){}}}st.fx=st.fxL[mode];}
 function fxSetList(st){if(!st)return;st.fxL=st.fxL||{free:st.fx||[],cbn:[]};st.fxL[mode==='cbn'?'free':'cbn']=st.fxL[mode==='cbn'?'free':'cbn']||[];st.fx=st.fxL[mode]=st.fxL[mode]||[];}
@@ -2194,7 +2215,7 @@ function buildMixer(){const el=$('#mixer');if(!el)return;
     MIX[slot]=o;MIX.sel=slot;LS.set('mix',{finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:MIX.amt,sel:MIX.sel});if(MIX.on)mixInk();buildMixer();if(MIX.on)buildPalette();
     if(set&&!owned(set))toast(`${set.name}: ${Trials.left(set.id)} free ${Trials.left(set.id)===1?'try':'tries'} left in the mix`);});
   const cv=el.querySelector('canvas.mxpv');if(cv&&!cv._pv)cv._pv=pvAdd(cv,t=>drawFxPreview(cv,specOfMix([color,MIX.finish==='plain'?'#ff7b2e':'#d4af37','#3a6ad6']),t));}
-function setMix(on){const was=MIX.on;MIX.on=on;if(was!==on)setTimeout(buildPalette,0);$('#mixBtn')&&$('#mixBtn').classList.toggle('on',on);$('#mixer').hidden=!on||!mixPrev;if(on){if(tool!=='pencil'&&tool!=='fill'&&!(toolSet==='3d'&&tool==='poppencil'))setTool(drawTool());mixInk();buildMixer();}
+function setMix(on){const was=MIX.on;MIX.on=on;if(was!==on)setTimeout(buildPalette,0);$('#mixBtn')&&$('#mixBtn').classList.toggle('on',on);$('#mixer').hidden=!on||!mixPrev;if(on){if(tool!=='pencil'&&tool!=='fill'&&!(toolSet==='3d'&&(tool==='poppencil'||tool==='pop')))setTool(drawTool());mixInk();buildMixer();}
   else if(ink.kind==='mix'){ink={kind:'plain',hex:color,id:null};setInkPattern();}buildPalette();}
 
 /* ---------- owner test controls: only with ?owner=primewest, or after the owner code was used on this device ---------- */
@@ -2218,7 +2239,7 @@ function isBackdrop(st,r){const T=depthOf(st);if(T&&T.lv[r]!==0)return false;con
 function ppRegions(r,x,y){ // outline boundary = the region under the first touch; where the template knows the object (hand), use the object
   return [r];}   // v12: strictly the one line-enclosed area where the stroke starts (every line is a wall), like Fill
 function ppMaskFor(rs){const c=mk(),x=c.getContext('2d'),m=x.createImageData(W,H),D=m.data;for(const q of rs)for(let p=S.off[q];p<S.off[q+1];p++)D[S.pix[p]*4+3]=255;x.putImageData(m,0,0);return c;}
-function ppBegin(x,y){
+function ppBegin(x,y){try{redoClear();}catch(e){}
   if(!Effects3D.unlocked()&&S.n!==FREE_3D_SCENE){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
     const l=Trials.popsLeft();toast(l?`Pop Pencil · free tries: ${l} left`:'That was your last free 3D try ✦');}
   let r=labAt(x,y);if(!r)return;if(isInk(x,y)){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q)r=labAt(q[0],q[1]);}
@@ -2331,8 +2352,13 @@ function lineAdj(){ // colour of the nearest fill for every line pixel (breadth-
 function autoShade(c){const g=(c[0]+c[1]+c[2])/3,k=.42;return c.map(v=>Math.max(0,Math.min(255,(g+(v-g)*1.25)*k)));}   // darker, slightly richer shade
 /* v18: Lines fader also lives in the tool box (same setting as the Lines panel's Fade slider) */
 function tbFadeSync(){const i=$('#tbFade');if(!i||!S)return;const L=linesOf(S);if(document.activeElement!==i)i.value=Math.round((L.f||0)*100);$('#tbFadeV').textContent=L.h?'hidden':(L.f?Math.round(L.f*100)+'%':'black');}
+/* b33: the original line art is off-limits to effects. A paper-colored backing sits right under the lines (raster and vector), so
+   glow, shimmer, particles, Deep Pop and relief light/shadow can never show through thin or anti-aliased line pixels and tint them.
+   It follows the Lines panel (fade / hide) exactly, so faded lines still let your color through as before. */
+function lineBackDraw(){const c=$('#lineBack');if(!c||!lineImg.complete||!lineImg.naturalWidth)return;const x=c.getContext('2d');x.clearRect(0,0,W,H);x.drawImage(lineImg,0,0,W,H);
+  const d=x.getImageData(0,0,W,H),a=d.data;for(let i=0;i<a.length;i+=4){const lum=(a[i]+a[i+1]+a[i+2])/3,al=a[i+3]*(1-lum/255);const v=Math.min(255,al*1.3);a[i]=255;a[i+1]=253;a[i+2]=248;a[i+3]=v;}x.putImageData(d,0,0);}
 function linesApply(){try{tbFadeSync();}catch(e){}if(!S)return;const L=linesOf(S),def=linesDefault(L),op=L.h?0:1-(L.f||0),under=$('#lineUnder'),lc=$('#lineCol');
-  app.classList.toggle('lcol',!def&&L.c!=='ink');[lineImg,lc,$('#lineTint'),vline].forEach(e=>{if(e)e.style.opacity=def?'':op;});
+  app.classList.toggle('lcol',!def&&L.c!=='ink');[lineImg,lc,$('#lineTint'),vline,$('#lineBack'),$('#vlineBack')].forEach(e=>{if(e)e.style.opacity=def?'':op;});
   const va=vline.querySelector('#vauto');if(va)va.remove();const vp=vline.querySelector('path');
   $('#linesBtn')&&$('#linesBtn').classList.toggle('set',!def);
   if(def){under.hidden=true;lc.hidden=true;if(vp)vp.setAttribute('fill','#141414');S.linesC=null;return;}
@@ -2358,7 +2384,7 @@ function drawLinesTo(x){const L=linesOf(S),def=linesDefault(L),op=def?1:L.h?0:1-
   if(!def&&op<1&&!$('#lineUnder').hidden)x.drawImage($('#lineUnder'),0,0);
   x.save();x.globalAlpha=op;if(S.linesC&&!def)x.drawImage(S.linesC,0,0);else x.drawImage(lineImg,0,0,W,H);
   const lt=$('#lineTint');if(S.ltAny&&lt)x.drawImage(lt,0,0);x.restore();}
-function setLines(p,noUndo){if(!S)return;const prev={...linesOf(S)},L={...prev,...p};if(JSON.stringify(prev)===JSON.stringify(L))return;
+function setLines(p,noUndo){try{redoClear();}catch(e){}if(!S)return;const prev={...linesOf(S)},L={...prev,...p};if(JSON.stringify(prev)===JSON.stringify(L))return;
   if(!noUndo){S.linesHist=S.linesHist||[];const top=S.linesHist[S.linesHist.length-1];
     if(!(top&&top.slide&&p.f!=null&&Object.keys(p).length===1&&Date.now()-top.t<900))S.linesHist.push({l:prev,t:Date.now(),slide:p.f!=null&&Object.keys(p).length===1});else top.t=Date.now();}
   S.lines=L;linesDefault(L)?LS.del('lines.'+S.n):LS.set('lines.'+S.n,L);dirty('lines');linesApply();linesUI();}
@@ -2809,7 +2835,30 @@ $('#ideasPrev').onclick=()=>{IDEAS.set--;renderIdeas();ideasSave();};$('#ideasNe
 $('#idea').onclick=previewIdea;$('#tryrow .tx').onclick=()=>$('#tryrow').hidden=true;$('#nudge .nx').onclick=()=>$('#nudge').hidden=true;
 $('#saveLoop').onclick=saveLoop;
 $('#setPrev').onclick=()=>flipSet(-1);$('#setNext').onclick=()=>flipSet(1);
-$('#undo').onclick=undo;$('#clear').onclick=clearAll;
+$('#undo').onclick=undoR;$('#redo')&&($('#redo').onclick=redo);setTimeout(redoUI,0);
+/* b33 Redo: every Undo first records the whole picture state it is about to change (color, Pulse, tracing, Pop Pencil heights,
+   pops + Deep Pop, effect masks, lines); Redo puts it back and leaves an Undo step for itself. Any new action clears Redo. */
+let REDOING=false,UNDOING=false;function redoClear(){if(!UNDOING&&!REDOING&&S&&S.redo&&S.redo.length){S.redo=[];redoUI();}}
+function cvCopy(c,b){const q=b||[0,0,c.width,c.height],k=document.createElement('canvas');k.width=Math.max(1,q[2]);k.height=Math.max(1,q[3]);k.getContext('2d').drawImage(c,q[0],q[1],q[2],q[3],0,0,q[2],q[3]);return [k,q];}
+function fullSnap(){if(!S)return null;const P=S.pp;return {mode,f:S.free.ctx.getImageData(0,0,W,H),p:S.pulse?S.pulse.ctx.getImageData(0,0,W,H):null,pu:!!S.pulseUsed,l:S.ltr?S.ltr.getContext('2d').getImageData(0,0,W,H):null,
+  rx:P&&P.any?P.rx.getImageData(0,0,W,H):null,ix:P&&P.any?P.ix.getImageData(0,0,W,H):null,ppAny:!!(P&&P.any),pops:JSON.stringify((S.pops||[]).map(({k,anim,...q})=>q)),
+  fx:(S.fx||[]).map(r=>{if(r.dirty)fxScan(r);return [r,r.bb?cvCopy(r.mask,r.bb):null];}),lines:S.lines?JSON.stringify(S.lines):null,
+  cbn:S.cbn&&S.cbn.filled?{filled:Array.from(S.cbn.filled),done:S.cbn.done,doneT:S.cbn.doneT?Array.from(S.cbn.doneT):null}:null,lastOp:null};}
+function fullRestore(z){if(!S||!z)return;S.free.ctx.putImageData(z.f,0,0);if(S.pulse){if(z.p)S.pulse.ctx.putImageData(z.p,0,0);else S.pulse.ctx.clearRect(0,0,W,H);S.pulseUsed=z.pu;dirty('pulse');}
+  if(S.ltr){const c=S.ltr.getContext('2d');if(z.l)c.putImageData(z.l,0,0);else c.clearRect(0,0,W,H);dirty('ltr');if(typeof ltRender==='function')ltRender();}
+  const P=S.pp;if(P){if(z.rx){P.rx.putImageData(z.rx,0,0);P.ix.putImageData(z.ix,0,0);}else if(P.any){P.rx.clearRect(0,0,W,H);P.ix.clearRect(0,0,W,H);}P.any=z.ppAny||P.any;try{ppRender(S);}catch(e){}dirty('pp');}
+  S.pops=JSON.parse(z.pops||'[]');try{renderPops();}catch(e){}dirty('pop');
+  const keep=[];for(const [r,cq] of z.fx){r.mx.clearRect(0,0,W,H);if(cq)r.mx.drawImage(cq[0],cq[1][0],cq[1][1]);r.dirty=true;keep.push(r);}S.fx=keep;if(S.fxL)S.fxL[mode]=S.fx;dirty('fx');
+  if(z.lines&&typeof setLines==='function'){try{S.lines=JSON.parse(z.lines);linesApply&&linesApply();linesUI&&linesUI();}catch(e){}}
+  if(z.cbn&&S.cbn&&mode==='cbn'){const c=S.cbn;for(let r=1;r<c.filled.length;r++){const want=z.cbn.filled[r];if(!!c.filled[r]!==!!want){if(want){c.filled[r]=want;try{paintRegion(r,S.cols?S.cols[S.num[r]]:[0,0,0],1);}catch(e){}}else{c.filled[r]=0;paintRegion(r,[0,0,0],0);}}}
+    c.done=z.cbn.done;if(z.cbn.doneT)c.doneT=z.cbn.doneT.slice();try{highlight();drawNums();progress();}catch(e){}dirty('cbn');}
+  S.lastOp=null;dirty('free');try{fxRedrawSoon();}catch(e){}try{dpTileSoon();}catch(e){}}
+function undoSig(){return [S.free.undo.length,S.fxUndo?S.fxUndo.length:0,S.linesHist?S.linesHist.length:0,S.ltrUndo?S.ltrUndo.length:0,S.cbn&&S.cbn.hist?S.cbn.hist.length:0].join(',');}
+function undoR(){if(!S)return;const before=fullSnap(),s0=undoSig();UNDOING=true;try{undo();}finally{UNDOING=false;}if(undoSig()!==s0&&before){S.redo=(S.redo||[]).concat([before]).slice(-10);}redoUI();}
+function redo(){if(!S||!S.redo||!S.redo.length){toast('Nothing to redo');return;}const z=S.redo.pop(),cur=fullSnap();REDOING=true;try{S.useq=(S.useq||0)+1;S.free.undo.push({id:S.useq,t:Date.now(),full:cur});if(S.free.undo.length>15)S.free.undo.shift();fullRestore(z);}finally{REDOING=false;}redoUI();toast('Redo');}
+function redoUI(){const b=$('#redo');if(!b)return;const n=S&&S.redo?S.redo.length:0;b.disabled=!n;b.classList.toggle('dis',!n);b.title=n?'Redo (Ctrl+Y / Ctrl+Shift+Z)':'Nothing to redo';}
+
+$('#clear').onclick=clearAll;
 /* v12: Start over = the whole page back to blank (both modes, effects, pops, Pop Pencil, 3D flattening, line settings) and its autosaves removed */
 $('#startOver').onclick=()=>{if(!S)return;$('#soDlg').hidden=false;$('#soCancel').focus();};
 $('#soCancel').onclick=()=>{$('#soDlg').hidden=true;};
@@ -2822,7 +2871,7 @@ async function startOver(){if(!S)return;const n=S.n;clearTimeout(saveT);delete p
   buildScenes();toast('Started over · this page is blank again');return true;}$('#save').onclick=save;
 $('#celebrate').onclick=()=>{$('#celebrate').hidden=true;};
 window.addEventListener('resize',applyZoom);
-document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();undo();}});
+document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')&&document.activeElement.type!=='range')return;const k=(e.key||'').toLowerCase();if((e.ctrlKey||e.metaKey)&&((k==='z'&&e.shiftKey)||k==='y')){e.preventDefault();redo();}else if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();undoR();}});
 
 /* ---------- saving each scene's coloring ---------- */
 const pend={};let saveT=0;
