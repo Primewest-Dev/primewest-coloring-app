@@ -2867,6 +2867,13 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const ap=docu
 (()=>{const add=(host,id,fn)=>{if(!host||document.getElementById(id))return;const b=document.createElement('button');b.className='up-x sheetx2';b.id=id;b.title='Close (Esc)';b.setAttribute('aria-label','Close');b.textContent='✕';b.onclick=fn;host.prepend(b);};
  add($('#settings .set-card'),'setX',()=>{$('#settings').hidden=true;});add($('#map .map-head'),'mapX',closeMap);
  $('#map').addEventListener('click',e=>{if(e.target.id==='map')closeMap();});})();
+/* b28: Example showcase viewer · plays a finished version of the page in a dialog; never touches the user's saved coloring */
+const SHOWCASE={4:{v:'data/showcase/sc_04.mp4',p:'data/showcase/sc_04.jpg',t:'The Ember Seal · example',d:'Made in the app: Free Color by-number colors, Deep Pop moving layers on the two flaps in the page\'s own Ember glow / Wax & gold colors (breathing toward the light), a glowing ember seal, a metallic gold wax ring, small gold glitter stars, a soft shimmer on the envelope and 3D pops on the envelope and hands.'}};
+function scBtnSync(){const b=$('#scBtn');if(b)b.hidden=!(S&&SHOWCASE[S.n]);}
+function scOpen(){const c=S&&SHOWCASE[S.n];if(!c)return;const v=$('#scVid');$('#scTitle').textContent=c.t;$('#scDesc').textContent=c.d;v.poster=c.p;if(v.getAttribute('src')!==c.v)v.src=c.v;$('#scView').hidden=false;const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{});}
+function scClose(){const v=$('#scVid');if(v)v.pause();$('#scView').hidden=true;}
+(()=>{const b=$('#scBtn');if(!b)return;b.onclick=e=>{e.stopPropagation();scOpen();};$('#scClose').onclick=scClose;$('#scDone').onclick=scClose;$('#scView').addEventListener('click',e=>{if(e.target.id==='scView')scClose();});
+  new MutationObserver(()=>{if($('#scView').hidden){const v=$('#scVid');v&&v.pause();}}).observe($('#scView'),{attributes:true,attributeFilter:['hidden']});scBtnSync();})();
 /* b27 audit: explain dimmed Mix / Chrome instead of ignoring the click */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#mixBtn,#chromeBtn');if(!b)return;const ctx=(document.getElementById('app')||{}).dataset?.ctx||'';
   const off=b.id==='mixBtn'?['eraser','poperase']:['eraser','poperase','pop','poppencil'];if(!off.includes(ctx))return;e.stopImmediatePropagation();e.preventDefault();
@@ -2982,6 +2989,7 @@ clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   pops:()=>S.pops,
   paintByNumbers:(skip=[])=>{if(mode==='cbn')return 0;const keep=color;let n=0;for(let r=1;r<S.N;r++){if(skip.includes(r)||!S.num[r]||!(S.off[r+1]>S.off[r]))continue;const c=S.d.palette[S.num[r]-1];if(!c)continue;pickColor(c);const i=S.pix[S.off[r]];fillFree(i%W,(i/W)|0);n++;}pickColor(keep);return n;},
   picKeys:(n)=>picKeys(n==null?S.n:n),
+  showcase:()=>({btn:!$('#scBtn').hidden,open:!$('#scView').hidden,src:$('#scVid').currentSrc,t:$('#scVid').currentTime,paused:$('#scVid').paused}),
   deepInfo:()=>({fms:DP.fms,frames:DP.frames,pops:(S.pops||[]).filter(p=>p.deep).map(p=>{const c=dpCache.get(p);return {r:p.r,n:p.deep.n,carved:p.deep.carved,layers:c&&c.layers?c.layers.length:0,ms:c&&c.ms||0};}),canvas:!!(S.dpC&&S.dpC.isConnected)}),
   deepSetAll:(o)=>{for(const p of S.pops||[])if(p.deep){Object.assign(p.deep,JSON.parse(JSON.stringify(o)));}deepRender(S,true);dirty('pop');},
   d3:()=>({on:D3.on,want:D3.want,band:D3.band,relief:!!(S&&S.relief)}), depth:()=>depthOf(S), tilt:(x,y)=>{tilt={x,y};D3.lastMove=performance.now();popParallax();},

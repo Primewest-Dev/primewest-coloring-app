@@ -113,6 +113,16 @@
       <div class="show-btns"><button class="big accent" id="showPop">Try Pop Fill</button><button class="big" id="showSets">See pencil sets</button></div>
     </div>
   </div>
+  <div id="scView" class="sheet small" hidden role="dialog" aria-modal="true" aria-labelledby="scTitle">
+    <div class="up-card sc-card">
+      <button class="up-x" id="scClose" title="Close (Esc)" aria-label="Close">✕</button>
+      <div class="up-kicker">✦ Example · just to look at, your page is untouched</div>
+      <h2 id="scTitle">The Ember Seal</h2>
+      <video id="scVid" muted loop playsinline preload="none"></video>
+      <p class="up-sub" id="scDesc"></p>
+      <div class="show-btns"><button class="big accent" id="scDone">Back to my page</button></div>
+    </div>
+  </div>
   <div id="cutscene" hidden>
     <canvas id="cutC"></canvas>
     <div id="cutSub" class="cut-sub"></div>
@@ -151,7 +161,7 @@
           <button class="chip" id="popWhole" hidden>Whole object</button>
           <button class="chip ppcol" id="ppColor" aria-pressed="true" title="Color while popping: Pop Pencil also paints with the pencil / effect you picked">🎨 Color while popping</button><button class="chip" id="idea3d" title="3D idea: preview a 3D look for this page">✦ 3D idea</button><button class="chip accent" id="idea3dApply" hidden>Apply</button><span id="popTries" class="poptries"></span></span>
       </div>
-      <div class="grp free-only"><button class="big" id="idea" title="Preview idea: briefly shows suggested colors on the empty areas"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><span>Idea</span></button></div>
+      <div class="grp free-only"><button class="big" id="idea" title="Preview idea: briefly shows suggested colors on the empty areas"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"/></svg><span>Idea</span></button><button class="big" id="scBtn" hidden title="Example: watch a finished, animated version of this page · your own coloring is not touched"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span>Example</span></button></div>
       <div class="grp free-only story-only"><button class="big accent" id="done" title="Finish this picture and reveal the story"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span>Done</span></button></div>
       <div class="grp cbn-only"><div id="progress"><b id="pdone">0</b><span>/</span><span id="ptotal">0</span><small>filled</small></div></div>
       <div class="grp right">

@@ -1137,3 +1137,8 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .dpwrap{display:none;align-items:center;flex:none;gap:0}#app.set3d .dpwrap{display:inline-flex}
 #app.set3d:not(.tool-pop) #setbar{display:flex!important}#app.set3d:not(.tool-pop) #setbar>:not(#toolopts){display:none!important}
 #app.set3d:not(.tool-pop) #toolopts>:not(.dpwrap){display:none!important}
+/* b28: Example showcase */
+.sc-card{width:min(980px,96vw)}
+#scVid{width:100%;height:auto;aspect-ratio:900/506;border-radius:14px;border:1px solid rgba(255,200,120,.35);display:block;margin:8px 0 10px;background:#050a14}
+#scBtn svg{fill:currentColor;stroke:none}
+#scView,#settings,#upgrade,#map,#soDlg,#showcase{z-index:1100}
