@@ -146,7 +146,7 @@ const DPAL={sunset:{n:'Sunset',h:[50,30,15,350,330,310,290,270,250,230],s:70},oc
   electric:{n:'Electric',h:[270,250,230,210,190,170,290,310,330,350],s:90}};
 /* v26 Color Cycle: Miles's palettes as closed colour loops (cc-<palette>[-<lightness 2..8>]); strokes and Adjust Hue cycle flow through them */
 function ccEnsure(k){if(typeof k!=='string'||!k.startsWith('cc-')||RAMPS[k])return;const [,p,l]=k.split('-'),P=DPAL[p];if(!P)return;const L=l?(+l)/10:P.c?P.L:.55;
-  if(P.c){const o=[],n=P.h.length;for(let i=0;i<n;i++){const j=(i+1)%n;let d=P.h[j]-P.h[i];if(d>180)d-=360;if(d<-180)d+=360;for(let s=0;s<6;s++){const f=ease(s/6);o.push(hsl2hex(P.h[i]+d*f,P.ss[i]+(P.ss[j]-P.ss[i])*f,L));}}o.push(o[0]);RAMPS[k]=o;RAMP_WAVE[k]='sawtooth';return;}
+  if(P.c){const o=[],n=P.h.length,Ls=P.own&&!l?P.ll:null;for(let i=0;i<n;i++){const j=(i+1)%n;let d=P.h[j]-P.h[i];if(d>180)d-=360;if(d<-180)d+=360;for(let s=0;s<6;s++){const f=ease(s/6);o.push(hsl2hex(P.h[i]+d*f,P.ss[i]+(P.ss[j]-P.ss[i])*f,Ls?Ls[i]+(Ls[j]-Ls[i])*f:L));}}o.push(o[0]);RAMPS[k]=o;RAMP_WAVE[k]='sawtooth';return;}
   RAMPS[k]=P.h.concat([P.h[0]]).map(h=>hsl2hex(h,P.s/100,L));RAMP_WAVE[k]='sawtooth';}
 /* v27 Picture colors: moving-colour presets drawn from each page's own colours (hand-picked per page, or derived from the page's
    colour guide). Cycles are subtle shifts between harmonious neighbours, keep the stroke / area lightness, and ease smoothly. */
@@ -170,8 +170,21 @@ const RAMP_LEN=320;   // px of stroke per full run through the ramp
 for(const [k,n] of [['rainbow','Rainbow'],['tropical','Tropical'],['ocean','Ocean'],['fire','Fire'],['sunset','Sunset'],['aurora','Aurora'],['cyber','Cyber'],['vaporwave','Vaporwave'],
   ['miami','Miami'],['gold','Gold ramp'],['chrome','Chrome ramp'],['copper','Copper ramp']])PREMIUM.splice(PREMIUM.length-2,0,{id:'r-'+k,kind:'ramp',ramp:k,hex:RAMPS[k][Math.floor(RAMPS[k].length/2)],name:n});
 for(const k of Object.keys(DPAL))PREMIUM.splice(PREMIUM.length-2,0,DPAL[k].pic?{id:'pc-'+k,kind:'ramp',ramp:'cc-'+k,cc:true,page:DPAL[k].pic,hex:DPAL[k].c[2],name:DPAL[k].n+' cycle'}:{id:'cc-'+k,kind:'ramp',ramp:'cc-'+k,cc:true,hex:RAMPS['cc-'+k][3],name:DPAL[k].n+' cycle'});
-function ccItems(n){return PREMIUM.filter(p=>p.cc&&p.page===n).concat(PREMIUM.filter(p=>p.cc&&!p.page));}
+function ccItems(n){const P=PREMIUM.filter(p=>p.cc&&!p.my);return (typeof MYPEN!=='undefined'?[MYPEN]:[]).concat(P.filter(p=>p.page===n),P.filter(p=>!p.page));}
 const PREM={};PREMIUM.forEach(p=>PREM[p.id]=p);
+/* b28 My color cycle: the user's own 2-6 colour loop. Each version gets a stable key (u<hash>) kept in ep.v1.myccAll, so pictures
+   that used an older version still replay it after a reload; the pencil / Deep Pop / Adjust always use the current one. */
+const MYCC_PRESETS=[['sunw','Sunset warm',['#f6c56b','#f2a05a','#e9784b','#d4544c','#b4456a']],['ocean','Ocean cool',['#1d4e6b','#2a6f97','#3f8fba','#62b4ca','#93cfd2']],
+  ['forest','Forest',['#2f4a2c','#40693a','#5a8a4a','#86a85c','#4d7a56']],['berry','Berry',['#5b1a3a','#7d2650','#a33a6b','#c45b88','#8e2f5e']],
+  ['pastel','Pastel',['#f4c3c6','#f7d9c2','#f8ecc2','#cfe6d6','#c8d6ef']],['earth','Earth',['#5c4033','#8b5e3c','#b07d4f','#c9a36b','#7a6a4f']]];
+const myLS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem('ep.v1.'+k)||'null');localStorage.setItem('ep.v1.'+k,JSON.stringify(v));}catch(e){return null;}};
+function myHash(cs){let h=7;for(const ch of cs.join(',').toLowerCase())h=(h*31+ch.charCodeAt(0))|0;return 'u'+(h>>>0).toString(36);}
+function myReg(cs,save=true){const k=myHash(cs);if(!DPAL[k]){const hsl=cs.map(c=>rgb2hsl(hex2rgb(c)));DPAL[k]={n:'My color cycle',c:cs.slice(),pic:'my',own:1,h:hsl.map(q=>q[0]),ss:hsl.map(q=>q[1]),ll:hsl.map(q=>q[2]),s:Math.round(hsl.reduce((a,q)=>a+q[1],0)/hsl.length*100),L:hsl.reduce((a,q)=>a+q[2],0)/hsl.length};}
+  if(save){const all=myLS('myccAll')||{};if(!all[k]){all[k]=cs.slice();myLS('myccAll',all);}}ccEnsure('cc-'+k);return k;}
+for(const cs of Object.values(myLS('myccAll')||{}))if(Array.isArray(cs)&&cs.length>1)myReg(cs,false);
+const MYCC={cols:(Array.isArray(myLS('mycc'))&&myLS('mycc').length>1)?myLS('mycc'):MYCC_PRESETS[0][2].slice(0,4),work:null,from:'pencil'};
+const MYPEN={id:'my-cycle',kind:'ramp',cc:true,my:true,name:'My color cycle',ramp:'cc-'+myReg(MYCC.cols,false),hex:MYCC.cols[0]};MYPEN.key=MYPEN.ramp.slice(3);
+PREMIUM.push(MYPEN);PREM[MYPEN.id]=MYPEN;
 PREM['c-any']={id:'c-any',kind:'chrome',hex:'#d9dde3',name:'Chrome finish'};
 const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',lightning:'Lightning',wood:'Wood',brick:'Brick',stone:'Stone',flower:'Flowers',fur:'Fur & Hair',glow:'Glowing',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
 for(const k in ANY_KINDS)if(k!=='chrome')PREM['any-'+k]={id:'any-'+k,kind:k,hex:'#ffffff',name:ANY_KINDS[k]+' finish'};
@@ -553,6 +566,7 @@ function buildPalette(){
   /* v18: no separate 'Any color' button; the one color wheel at the end of the row does it for effect sets */
   {const m=$('#moreSets');if(m){m.hidden=set.id!=='book';m.onclick=()=>flipSet(1);}}
   {const sf=$('#setfx');if(sf){sf.innerHTML='';let lab=fr.querySelector('.plabel');const ks=fxKeysFor(set);if(!lab&&ks){lab=document.createElement('div');lab.className='plabel';ks.forEach(q=>lab.appendChild(fxSlider(q)));}if(lab)sf.appendChild(lab);const pb=$('#palbox');pb&&pb.classList.toggle('hasfx',!!(lab&&lab.querySelector('.fxw')));}}   /* v22: in Mix the sliders for the mixed effects show on any set */   /* v20: the set's effect preview + sliders (Shimmer, Speed, Glow…) sit in the pencil box header beside ‹ set ›   /* v20: More sets is a small link in the pencil box header */
+  if(set.id==='ccycle'&&typeof host!=='undefined'&&host){const eb=document.createElement('button');eb.type='button';eb.className='myccedit';eb.id='myccEdit';eb.title='My color cycle: build your own 2-6 color loop';eb.innerHTML='<b>✎</b><span>My color cycle</span>';eb.onclick=e=>{e.stopPropagation();ccEdOpen('pencil');};host.prepend(eb);}
   markColor();fitSoon();}
 function anyColors(set){ // this page's colour guide first, then the book palette and the full colour range (deduped)
   /* v16: groups from a palette pack you don't own come back locked (padlock, dimmed, tap = upgrade). Free groups go first, so a color that is also free stays free */
@@ -570,13 +584,13 @@ function anyPicker(set,show=true){let d=$('#anyPop');if(d)d.remove();if(!show)re
   d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;if(b.dataset.lk){anyPicker(set,false);openUpgrade(null,'palettes');return;}const base=PREM[anyId(set.id)],p={...base,hex:b.dataset.c,name:base.name};anyPicker(set,false);usePremium(set,p,true);buildPalette();};
   document.body.appendChild(d);const r=$('#wheelBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
   setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected||d.contains(e.target)){if(!d.isConnected)document.removeEventListener('pointerdown',f,true);return;}document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#wheelBtn'))d.remove();},true),0);}
-function wheelPicker(show=true){let d=$('#anyPop');if(d)d.remove();if(!show)return;
+function wheelPicker(show=true,cb=null,anchor=null){let d=$('#anyPop');if(d)d.remove();if(!show)return;
   d=document.createElement('div');d.id='anyPop';d.className='anypop';d.setAttribute('role','dialog');d.setAttribute('aria-label','Color wheel');
   d.innerHTML=`<header><b>Any color · every color</b><button class="x" aria-label="Close">×</button></header>`+anyGroupsHTML(anyColors(),true);
   d.querySelector('.x').onclick=()=>wheelPicker(false);
-  d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;wheelPicker(false);if(b.dataset.lk){openUpgrade(null,'palettes');return;}pickColor(b.dataset.c);toast(mode==='cbn'?`${tcase(colorName(b.dataset.c))} · ready for Free Color (in Color by Number the numbers choose the colors)`:tcase(colorName(b.dataset.c)));};
+  d.onclick=e=>{const b=e.target.closest('.asw');if(!b)return;wheelPicker(false);if(b.dataset.lk){openUpgrade(null,'palettes');return;}if(cb){cb(b.dataset.c);return;}pickColor(b.dataset.c);toast(mode==='cbn'?`${tcase(colorName(b.dataset.c))} · ready for Free Color (in Color by Number the numbers choose the colors)`:tcase(colorName(b.dataset.c)));};
   d.addEventListener('pointerover',e=>{const b=e.target.closest('.asw');if(b)b.title=colorName(b.dataset.c)+(b.dataset.lk?' · locked':'');});
-  document.body.appendChild(d);const r=$('#wheelBtn').getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
+  if(cb){d.classList.add('forcc');d.querySelector('header b').textContent='Pick a color for My color cycle';}document.body.appendChild(d);const r=(anchor||$('#wheelBtn')).getBoundingClientRect();d.style.left=Math.max(8,Math.min(innerWidth-d.offsetWidth-8,r.left+r.width/2-d.offsetWidth/2))+'px';d.style.top=Math.max(8,r.top-d.offsetHeight-10)+'px';
   setTimeout(()=>document.addEventListener('pointerdown',function f(e){if(!d.isConnected){document.removeEventListener('pointerdown',f,true);return;}if(d.contains(e.target))return;document.removeEventListener('pointerdown',f,true);if(!e.target.closest('#wheelBtn'))d.remove();},true),0);}
 function flipSet(d){anyPicker(null,false);setIdx=(setIdx+d+SETS.length)%SETS.length;for(let k=0;k<SETS.length&&!setOK(setIdx);k++)setIdx=(setIdx+(d||1)+SETS.length)%SETS.length;settings.pset=SETS[setIdx].id;LS.set('settings',settings);buildPalette();$('#colors').scrollLeft=mode==='free'?0:$('#numrow').offsetWidth;}   /* v16: in Free Color the guide row is gone (wheel sits at the end), so show the set from its start */
 /* v24: grabbing a pencil means a pencil stroke: 3D -> Pop Pencil, 2D -> Pencil (from Fill, Pop Fill, Eraser or Pop Erase). The picked color
@@ -1006,8 +1020,8 @@ function stageSize(){return [stage.clientWidth||1,stage.clientHeight||1];}
 function zoomSizeDiv(){return settings.sizeZoom===false?1:Z.z;}
 function visWin(sw,sh){if(!app.classList.contains('phfill'))return [0,sw,0,sh];const w=$('#stagewrap').getBoundingClientRect(),r=stage.getBoundingClientRect();   /* v21: the part of the stage you can see (phone fill: the page is wider than the screen) */
   return [Math.max(0,w.left-r.left),Math.min(sw,w.right-r.left),Math.max(0,w.top-r.top),Math.min(sh,w.bottom-r.top)];}
-function applyZoom(){const [sw,sh]=stageSize();Z.z=Math.min(MAXZ,Math.max(1,Z.z));const [vl,vr,vt,vb]=visWin(sw,sh);
-  Z.x=Math.min(vl,Math.max(vr-sw*Z.z,Z.x));Z.y=Math.min(vt,Math.max(vb-sh*Z.z,Z.y));
+function applyZoom(){const [sw,sh]=stageSize();const fo=typeof FOC!=='undefined'&&FOC.on;Z.z=Math.min(MAXZ,Math.max(fo?.2:1,Z.z));const [vl,vr,vt,vb]=visWin(sw,sh);
+  if(!fo){Z.x=Math.min(vl,Math.max(vr-sw*Z.z,Z.x));Z.y=Math.min(vt,Math.max(vb-sh*Z.z,Z.y));}
   zoomer.style.transform=`translate(${Z.x}px,${Z.y}px) scale(${Z.z})`;{const lv=$('#ltrV');if(lv)lv.style.transform=zoomer.style.transform;}if(GRAB.lastZ!==Z.z){grabAutoZoom(GRAB.lastZ,Z.z);GRAB.lastZ=Z.z;}
   $('#zoomPct').textContent=Math.round(Z.z*100)+'%';$('#zoomOut').disabled=Z.z<=1.001;$('#zoomIn').disabled=Z.z>=MAXZ-.001;
   const k=sw/W*Z.z; vline.setAttribute('viewBox',`${(-Z.x/k).toFixed(2)} ${(-Z.y/k).toFixed(2)} ${(W/Z.z).toFixed(2)} ${(H/Z.z).toFixed(2)}`);
@@ -1251,8 +1265,12 @@ function dpChanged(p){if(p){const c=dpCache.get(p);deepRender(S,true);dirty('pop
 function dpOpen(){const el=$('#deep');if(!el)return;adjClose();setTimeout(sheetSync,0);if(!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();el.hidden=false;$('#dpBtn')&&$('#dpBtn').classList.add('on');dpBuildUI();}
 function dpClose(){const el=$('#deep');if(el)el.hidden=true;$('#dpBtn')&&$('#dpBtn').classList.remove('on');sheetSync();}
 /* v27: Deep Pop and Adjust open as a bottom sheet (picture stays visible above, changes preview live). Close: big X, Done, Esc, or tap above the sheet */
-function sheetSync(){let bg=$('#sheetBg');const open=['#deep','#adjust'].some(q=>$(q)&&!$(q).hidden);if(!bg){bg=document.createElement('div');bg.id='sheetBg';bg.className='sheetbg';bg.onclick=()=>{dpClose();adjClose();};document.body.appendChild(bg);}bg.hidden=!open;document.body.classList.toggle('sheet-open',open);}
-addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('sheet-open')){dpClose();adjClose();e.preventDefault();}});
+const SHEETS=['#deep','#adjust','#mixer','#ccEd'];let sheetCur='';
+function sheetClose(){if(typeof dpClose==='function')dpClose();adjClose();if($('#mixer')&&!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();if(typeof ccEdClose==='function')ccEdClose();}
+function sheetSync(){let bg=$('#sheetBg');const cur=SHEETS.find(q=>$(q)&&!$(q).hidden)||'';if(!bg){bg=document.createElement('div');bg.id='sheetBg';bg.className='sheetbg';bg.onclick=sheetClose;document.body.appendChild(bg);}bg.hidden=!cur;document.body.classList.toggle('sheet-open',!!cur);
+  if(cur!==sheetCur){sheetCur=cur;if(typeof focusOn==='function'){if(cur)requestAnimationFrame(()=>focusOn(cur));else focusOff();}}}
+(()=>{const mo=new MutationObserver(()=>setTimeout(sheetSync,0));for(const q of SHEETS){const el=$(q);if(el)mo.observe(el,{attributes:true,attributeFilter:['hidden']});}})();
+addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('sheet-open')){if(e.defaultPrevented||$('#anyPop'))return;sheetClose();e.preventDefault();}});
 function dpFmt(k,v){const d=DPK.find(q=>q[0]===k);return k==='l1'||k==='l2'?Math.round(v*100)+'%':k==='bl'?(+v).toFixed(1)+'×':k==='hs'?Math.round(v)+'°':String(Math.round(v));}
 function dpBuildUI(){const el=$('#dpRows');if(!el)return;const {D,p}=dpTarget();D.au=D.au||{};
   $('#dpName').innerHTML=p?`<b>Editing:</b> ${S.popSel&&S.popSel.k==='pop'&&(p.rs||[p.r]).includes(S.popSel.r)?'the area you last tapped':'your most recent Deep Pop area'} · changes show live on the picture`:`<b>Editing:</b> Next Deep Pop · ${settings.deepOn?'tap an area with Pop Fill to apply these':'turn Deep Pop on, then tap an area with Pop Fill'}`;
@@ -1260,7 +1278,7 @@ function dpBuildUI(){const el=$('#dpRows');if(!el)return;const {D,p}=dpTarget();
   $('#dpMode').querySelectorAll('i').forEach(b=>b.classList.toggle('on',(b.dataset.v==='carved')===!!D.carved));
   el.innerHTML=DPK.map(([k,lab,mn,mx,stp])=>{const v=D[k]!=null?D[k]:DPDEF[k],a=D.au[k]||{};return `<div class="dpr" data-k="${k}"><label class="adjr"><span>${lab}</span><input type="range" class="dpv" min="${mn}" max="${mx}" step="${stp}" value="${v}" aria-label="${lab}"><em>${dpFmt(k,v)}</em></label>
     <div class="dpa"><button type="button" class="chip dpauto${a.on?' on':''}" aria-pressed="${!!a.on}" title="AUTO: let ${lab} move by itself">AUTO</button><select class="dpc" aria-label="${lab} AUTO curve">${Object.keys(DCURVE).map(c=>`<option value="${c}"${(a.c||'random')===c?' selected':''}>${c[0].toUpperCase()+c.slice(1)}</option>`).join('')}</select><span class="dpsl">Speed</span><input type="range" class="dps" min="0.05" max="2" step="0.05" value="${a.sp||.4}" aria-label="${lab} AUTO speed" title="AUTO speed"></div></div>`;}).join('')
-    +`<div class="dpr dpopts"><span class="dplab">Picture colors</span><div class="adjfxb">${[['','Own color']].concat(picKeys(S&&S.n).map(k=>[k,DPAL[k].n])).map(([k,n])=>`<button type="button" class="chip dppal pic${(D.pal||'')===k?' on':''}" data-pal="${k}">${n}</button>`).join('')}</div><span class="dplab dpmore">More palettes</span><div class="adjfxb">${Object.keys(DPAL).filter(k=>!DPAL[k].pic).map(k=>[k,DPAL[k].n]).map(([k,n])=>`<button type="button" class="chip dppal${(D.pal||'')===k?' on':''}" data-pal="${k}">${n}</button>`).join('')}</div>
+    +`<div class="dpr dpopts"><span class="dplab">Picture colors</span><div class="adjfxb">${[['','Own color']].concat(picKeys(S&&S.n).map(k=>[k,DPAL[k].n]),[[MYPEN.key,'My color cycle']]).map(([k,n])=>`<button type="button" class="chip dppal pic${(D.pal||'')===k||(k===MYPEN.key&&DPAL[D.pal||'']&&DPAL[D.pal].own)?' on':''}" data-pal="${k}">${n}</button>`).join('')}<button type="button" class="chip myccopen" title="Build your own 2-6 color cycle">✎ Edit my color cycle…</button></div><span class="dplab dpmore">More palettes</span><div class="adjfxb">${Object.keys(DPAL).filter(k=>!DPAL[k].pic).map(k=>[k,DPAL[k].n]).map(([k,n])=>`<button type="button" class="chip dppal${(D.pal||'')===k?' on':''}" data-pal="${k}">${n}</button>`).join('')}</div>
     <div class="adjfxb"><button type="button" class="chip dpopt${D.cyc?' on':''}" data-o="cyc" title="Color cycle: hues flow through the layers">Color cycle</button><button type="button" class="chip dpopt${D.drift?' on':''}" data-o="drift" title="Layers breathe and drift toward the light">Breathe</button><button type="button" class="chip dpopt${D.rot?' on':''}" data-o="rot" title="Slow rotation of the layers">Rotate</button></div></div>`;
   el.querySelectorAll('.dpr[data-k]').forEach(row=>{const k=row.dataset.k,i=row.querySelector('.dpv'),em=row.querySelector('em');
     i.oninput=()=>{const {D,p}=dpTarget();D[k]=+i.value;em.textContent=dpFmt(k,+i.value);dpChanged(p);};
@@ -1268,6 +1286,7 @@ function dpBuildUI(){const el=$('#dpRows');if(!el)return;const {D,p}=dpTarget();
     const au=()=>{const {D}=dpTarget();D.au=D.au||{};return D.au[k]=D.au[k]||{on:false,c:'random',sp:.4};};
     row.querySelector('.dpauto').onclick=e=>{e.stopPropagation();const a=au();a.on=!a.on;e.currentTarget.classList.toggle('on',a.on);e.currentTarget.setAttribute('aria-pressed',String(a.on));dpChanged(dpTarget().p);};
     row.querySelector('.dpc').onchange=e=>{au().c=e.target.value;dpChanged(dpTarget().p);};row.querySelector('.dps').oninput=e=>{au().sp=+e.target.value;dpChanged(dpTarget().p);};});
+  {const mb=el.querySelector('.myccopen');if(mb)mb.onclick=e=>{e.stopPropagation();ccEdOpen('dp');};}
   el.querySelectorAll('.dppal').forEach(b=>b.onclick=e=>{e.stopPropagation();const {D,p}=dpTarget();D.pal=b.dataset.pal||null;dpChanged(p);dpBuildUI();});
   el.querySelectorAll('.dpopt').forEach(b=>b.onclick=e=>{e.stopPropagation();const {D,p}=dpTarget();D[b.dataset.o]=!D[b.dataset.o];dpChanged(p);dpBuildUI();});}
 function dpResetAll(){const {D,p}=dpTarget();const ph=D.ph;for(const k in DPDEF)D[k]=DPDEF[k];D.au={};if(ph!=null)D.ph=ph;dpChanged(p);dpBuildUI();}
@@ -2699,8 +2718,8 @@ function adjSetSpeed(v){const L=S&&S.lastOp;if(!L)return;L.spd=v;for(const r of 
 function adjFxRow(el,L){const cur=L&&L.fxAdd?L.fxAdd.id:'none',has=L&&adjFxRecs(L).length,v=L&&L.spd||1;
   const w=document.createElement('div');w.className='adjfx';w.innerHTML=`<span>Effect</span><div class="adjfxb">${ADJFX.map(d=>`<button type="button" class="chip${d[0]===cur?' on':''}" data-fx="${d[0]}">${d[1]}</button>`).join('')}</div>`;
   w.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!(S&&S.lastOp)){toast('Draw or fill something first · the effect is added to that stroke');return;}adjSetFx(b.dataset.fx);});el.appendChild(w);
-  {const hc=L&&L.hueAdd?L.hueAdd.pal:'';const h=document.createElement('div');h.className='adjfx adjhue';const hb=([k,n])=>`<button type="button" class="chip${k===hc?' on':''}" data-hue="${k}">${n}</button>`;h.innerHTML=`<span>Hue Shift AUTO · Picture colors</span><div class="adjfxb">${[['','Off']].concat(picKeys(S&&S.n).map(k=>[k,DPAL[k].n])).map(hb).join('')}</div><span>More palettes</span><div class="adjfxb">${Object.keys(DPAL).filter(k=>!DPAL[k].pic).map(k=>[k,DPAL[k].n]).map(hb).join('')}</div>`;
-  h.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!(S&&S.lastOp)){toast('Draw or fill something first · then its color cycles here');return;}adjSetHue(b.dataset.hue||null);});el.appendChild(h);}
+  {const hc=L&&L.hueAdd?L.hueAdd.pal:'';const h=document.createElement('div');h.className='adjfx adjhue';const hb=([k,n])=>`<button type="button" class="chip${k===hc?' on':''}" data-hue="${k}">${n}</button>`;h.innerHTML=`<span>Hue Shift AUTO · Picture colors</span><div class="adjfxb">${[['','Off']].concat(picKeys(S&&S.n).map(k=>[k,DPAL[k].n]),[[MYPEN.key,'My color cycle']]).map(hb).join('')}<button type="button" class="chip myccopen" title="Build your own 2-6 color cycle">✎ Edit my color cycle…</button></div><span>More palettes</span><div class="adjfxb">${Object.keys(DPAL).filter(k=>!DPAL[k].pic).map(k=>[k,DPAL[k].n]).map(hb).join('')}</div>`;
+  h.querySelectorAll('button:not(.myccopen)').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!(S&&S.lastOp)){toast('Draw or fill something first · then its color cycles here');return;}adjSetHue(b.dataset.hue||null);});{const mb=h.querySelector('.myccopen');if(mb)mb.onclick=e=>{e.stopPropagation();ccEdOpen('adj');};}el.appendChild(h);}
   const l=document.createElement('label');l.className='adjr';l.title='Effect speed for this stroke only';l.innerHTML=`<span>Effect speed</span><input class="adjsp" type="range" min="0.1" max="3" step="0.05" value="${v}" aria-label="Effect speed for this stroke"><em${has?'':' class="long"'}>${has?v.toFixed(2)+'×':'pick an effect'}</em>`;
   const i=l.querySelector('input');i.oninput=()=>{if(!has){toast('Pick an effect above first · then set its speed here');i.value=v;return;}adjSetSpeed(+i.value);l.querySelector('em').textContent=(+i.value).toFixed(2)+'×';l.querySelector('em').classList.remove('long');};el.appendChild(l);}
 function adjReset(){adjCarry={};if(S&&S.lastOp){if(S.lastOp.fxAdd)adjSetFx('none');if(S.lastOp.hueAdd)adjSetHue(null);if(S.lastOp.spd)adjSetSpeed(1);S.lastOp.spd=null;}LS.set('adjCarry',adjCarry);if(S&&S.lastOp){S.lastOp.a={};lastOpRender();}adjBuild();adjFlash();}
@@ -2913,6 +2932,51 @@ function scOpen(){const c=S&&SHOWCASE[S.n];if(!c)return;const v=$('#scVid');$('#
 function scClose(){const v=$('#scVid');if(v)v.pause();$('#scView').hidden=true;}
 (()=>{const b=$('#scBtn');if(!b)return;b.onclick=e=>{e.stopPropagation();scOpen();};$('#scClose').onclick=scClose;$('#scDone').onclick=scClose;$('#scView').addEventListener('click',e=>{if(e.target.id==='scView')scClose();});
   new MutationObserver(()=>{if($('#scView').hidden){const v=$('#scVid');v&&v.pause();}}).observe($('#scView'),{attributes:true,attributeFilter:['hidden']});scBtnSync();})();
+/* b28 My color cycle editor (bottom sheet): 2-6 swatches, reorder / remove, + Add color (Any-color wheel), Start from palette, live preview */
+function ccRampOf(cs){const hsl=cs.map(c=>rgb2hsl(hex2rgb(c))),o=[],n=hsl.length;for(let i=0;i<n;i++){const j=(i+1)%n;let d=hsl[j][0]-hsl[i][0];if(d>180)d-=360;if(d<-180)d+=360;for(let s=0;s<6;s++){const f=ease(s/6);o.push(hex2rgb(hsl2hex(hsl[i][0]+d*f,hsl[i][1]+(hsl[j][1]-hsl[i][1])*f,hsl[i][2]+(hsl[j][2]-hsl[i][2])*f)));}}o.push(o[0]);return o;}
+const CCP={raf:0,ramp:null,t0:0};
+function ccPrevDraw(){const c=$('#ccPrev');if(!c||$('#ccEd').hidden){CCP.raf=0;return;}const x=c.getContext('2d'),w=c.width,h=c.height,R=CCP.ramp;if(!R)return;const t=(performance.now()-CCP.t0)/1000*.12;
+  const at=u=>{u=((u%1)+1)%1;const p=u*(R.length-1),j=p|0,f=p-j,a=R[j],b=R[Math.min(R.length-1,j+1)];return `rgb(${a[0]+(b[0]-a[0])*f|0},${a[1]+(b[1]-a[1])*f|0},${a[2]+(b[2]-a[2])*f|0})`;};
+  for(let i=0;i<w;i+=4){x.fillStyle=at(i/w+t);x.fillRect(i,0,4,h);}const d=$('#ccDot');if(d)d.style.background=at(t);
+  CCP.raf=setTimeout(()=>requestAnimationFrame(ccPrevDraw),40);}
+function ccEdBuild(){const W0=MYCC.work;CCP.ramp=W0.length>1?ccRampOf(W0):ccRampOf(W0.concat(W0));const forTxt={pencil:'the Color Cycle pencil',dp:'the Deep Pop area',adj:'your last stroke'}[MYCC.from]||'the Color Cycle pencil';
+  $('#ccFor').innerHTML=`<b>Editing:</b> My color cycle · Done uses it for ${forTxt} · saved on this device`;$('#ccCount').textContent=`${W0.length} of 6 · 2 to 6 colors`;
+  $('#ccSw').innerHTML=W0.map((c,i)=>`<div class="ccs" data-i="${i}"><button type="button" class="ccmv" data-mv="-1" aria-label="Move color ${i+1} left" title="Move left"${i===0?' disabled':''}>‹</button><button type="button" class="ccchip" style="background:${c}" aria-label="Change color ${i+1}" title="Tap to change this color"></button><button type="button" class="ccmv" data-mv="1" aria-label="Move color ${i+1} right" title="Move right"${i===W0.length-1?' disabled':''}>›</button><button type="button" class="ccx" aria-label="Remove color ${i+1}" title="Remove this color">✕</button></div>`).join('')
+    +`<button type="button" class="chip ccadd" id="ccAdd"${W0.length>=6?' aria-disabled="true"':''}>+ Add color</button>`;
+  const pics=(S?picKeys(S.n):[]).map(k=>[k,DPAL[k].n,DPAL[k].c]);
+  $('#ccPal').innerHTML=pics.concat(MYCC_PRESETS).map(([k,n,cs])=>`<button type="button" class="chip ccpal" data-k="${k}" title="Start from ${n}"><i style="background:linear-gradient(90deg,${cs.join(',')})"></i>${n}</button>`).join('');
+  $('#ccSw').querySelectorAll('.ccs').forEach(el=>{const i=+el.dataset.i;el.querySelectorAll('.ccmv').forEach(b=>b.onclick=e=>{e.stopPropagation();const j=i+(+b.dataset.mv);if(j<0||j>=W0.length)return;[W0[i],W0[j]]=[W0[j],W0[i]];ccEdBuild();});
+    el.querySelector('.ccx').onclick=e=>{e.stopPropagation();if(W0.length<=2){toast('A color cycle needs at least 2 colors · add another before removing this one');return;}W0.splice(i,1);ccEdBuild();};
+    el.querySelector('.ccchip').onclick=e=>{e.stopPropagation();wheelPicker(true,c=>{W0[i]=c;ccEdBuild();},el);};});
+  $('#ccAdd').onclick=e=>{e.stopPropagation();if(W0.length>=6){toast('Up to 6 colors · remove one (✕) to add another');return;}wheelPicker(true,c=>{W0.push(c);ccEdBuild();},$('#ccAdd'));};
+  $('#ccPal').querySelectorAll('.ccpal').forEach(b=>b.onclick=e=>{e.stopPropagation();const q=pics.concat(MYCC_PRESETS).find(z=>z[0]===b.dataset.k);if(!q)return;MYCC.work=q[2].slice(0,6);ccEdBuild();toast(`Started from ${q[1]} · change, reorder or remove any color`);});
+  if(!CCP.raf){CCP.t0=CCP.t0||performance.now();ccPrevDraw();}}
+function ccEdOpen(from){MYCC.from=from||'pencil';MYCC.work=MYCC.cols.slice(0,6);if(typeof dpClose==='function')dpClose();adjClose();if(!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();$('#ccEd').hidden=false;ccEdBuild();}
+function ccEdClose(){const d=$('#anyPop');if(d&&d.classList.contains('forcc'))d.remove();$('#ccEd').hidden=true;}
+function ccEdSave(){const cs=MYCC.work;if(!cs||cs.length<2){toast('Add at least 2 colors first');return null;}MYCC.cols=cs.slice(0,6);myLS('mycc',MYCC.cols);const k=myReg(MYCC.cols);MYPEN.ramp='cc-'+k;MYPEN.key=k;MYPEN.hex=MYCC.cols[0];return k;}
+function ccUse(where){const k=ccEdSave();if(!k)return;ccEdClose();
+  if(where==='dp'){const {D,p}=dpTarget();D.pal=k;D.cyc=true;dpChanged(p);dpOpen();toast(p?'My color cycle is on this Deep Pop area':'My color cycle is set for your next Deep Pop');return;}
+  if(where==='adj'){adjOpen();if(S&&S.lastOp){adjSetHue(k);adjBuild();toast('Your last stroke now cycles through My color cycle');}else toast('Draw or fill something first · then pick My color cycle in Hue Shift AUTO');return;}
+  const ci=SETI.ccycle;if(ci!=null){setIdx=ci;buildPalette();}setTimeout(()=>{const b=$('#freerow .pencil[data-p="my-cycle"]');if(b)b.click();toast('My color cycle pencil is ready · draw or fill');},30);}
+(()=>{if(!$('#ccEd'))return;$('#ccX').onclick=ccEdClose;$('#ccDone').onclick=()=>ccUse(MYCC.from);$('#ccReset').onclick=()=>{MYCC.work=MYCC_PRESETS[0][2].slice(0,4);ccEdBuild();};
+  $('#ccUse').querySelectorAll('[data-use]').forEach(b=>b.onclick=e=>{e.stopPropagation();ccUse(b.dataset.use);});})();
+
+/* b28 Focus view: while a bottom-half sheet is open, the part being edited is zoomed and centred in the space above the sheet; closing restores the view */
+const FOC={on:false,prev:null,key:'',t:0};
+function regionsBox(rs){let x0=1e9,y0=1e9,x1=-1,y1=-1;for(const r of rs){for(let k=S.off[r];k<S.off[r+1];k+=3){const i=S.pix[k],x=i%W,y=(i/W)|0;if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}}return x1<0?null:[x0,y0,x1-x0+1,y1-y0+1];}
+function focusTarget(which){if(!S)return null;const lo=S.lastOp&&S.lastOp.bw?[S.lastOp.bx,S.lastOp.by,S.lastOp.bw,S.lastOp.bh]:null;
+  if(which==='#deep'||(which==='#ccEd'&&MYCC.from==='dp')){try{const {p}=dpTarget();if(p)return regionsBox(p.rs||[p.r]);}catch(e){}return null;}
+  return lo;}
+function focusAnim(){for(const el of [zoomer,$('#ltrV')])if(el){el.style.transition='transform .42s cubic-bezier(.2,.7,.2,1)';}clearTimeout(FOC.t);FOC.t=setTimeout(()=>{for(const el of [zoomer,$('#ltrV')])if(el)el.style.transition='';},460);}
+function focusOn(which){const sh=$(which);if(!sh||!S)return;const box=focusTarget(which)||[0,0,W,H];
+  if(!FOC.on){FOC.prev={z:Z.z,x:Z.x,y:Z.y,auto:GRAB.auto,lastZ:GRAB.lastZ};FOC.on=true;}
+  const sr=stage.getBoundingClientRect(),[sw,shh]=stageSize(),[vl,vr]=visWin(sw,shh);const sheetTop=innerHeight-sh.offsetHeight;
+  let top=Math.max(sr.top,0);const tb=$('#menuBtn');if(tb&&tb.offsetParent&&tb.getBoundingClientRect().bottom<innerHeight*.25)top=Math.max(top,tb.getBoundingClientRect().bottom+4);
+  const vy0=top-sr.top+8,vy1=Math.min(sr.bottom,sheetTop)-sr.top-10,vx0=vl+10,vx1=vr-10;if(vy1-vy0<60)return;
+  const k1=sw/W,pad=1.12,bw=Math.max(box[2],40)*pad,bh=Math.max(box[3],40)*pad;let z=Math.min((vx1-vx0)/(bw*k1),(vy1-vy0)/(bh*k1));z=Math.max(.2,Math.min(5,z));
+  Z.z=z;Z.x=(vx0+vx1)/2-(box[0]+box[2]/2)*k1*z;Z.y=(vy0+vy1)/2-(box[1]+box[3]/2)*k1*z;focusAnim();applyZoom();}
+function focusOff(){if(!FOC.on)return;const p=FOC.prev;FOC.prev=null;focusAnim();Z.z=p.z;Z.x=p.x;Z.y=p.y;applyZoom();FOC.on=false;applyZoom();GRAB.auto=p.auto;GRAB.lastZ=Z.z;grabUI();}
+
 /* b27 audit: explain dimmed Mix / Chrome instead of ignoring the click */
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#mixBtn,#chromeBtn');if(!b)return;const ctx=(document.getElementById('app')||{}).dataset?.ctx||'';
   const off=b.id==='mixBtn'?['eraser','poperase']:['eraser','poperase','pop','poppencil'];if(!off.includes(ctx))return;e.stopImmediatePropagation();e.preventDefault();
@@ -3028,6 +3092,8 @@ clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   pops:()=>S.pops,
   paintByNumbers:(skip=[])=>{if(mode==='cbn')return 0;const keep=color;let n=0;for(let r=1;r<S.N;r++){if(skip.includes(r)||!S.num[r]||!(S.off[r+1]>S.off[r]))continue;const c=S.d.palette[S.num[r]-1];if(!c)continue;pickColor(c);const i=S.pix[S.off[r]];fillFree(i%W,(i/W)|0);n++;}pickColor(keep);return n;},
   picKeys:(n)=>picKeys(n==null?S.n:n),
+  zoom:()=>({z:Z.z,x:Z.x,y:Z.y,foc:typeof FOC!=='undefined'&&FOC.on}),
+  mycc:()=>({cols:MYCC.cols,key:MYPEN.key,ramp:MYPEN.ramp,has:!!RAMPS[MYPEN.ramp]}),
   showcase:()=>({btn:!$('#scBtn').hidden,open:!$('#scView').hidden,src:$('#scVid').currentSrc,t:$('#scVid').currentTime,paused:$('#scVid').paused}),
   deepInfo:()=>({fms:DP.fms,frames:DP.frames,pops:(S.pops||[]).filter(p=>p.deep).map(p=>{const c=dpCache.get(p);return {r:p.r,n:p.deep.n,carved:p.deep.carved,layers:c&&c.layers?c.layers.length:0,ms:c&&c.ms||0};}),canvas:!!(S.dpC&&S.dpC.isConnected)}),
   deepSetAll:(o)=>{for(const p of S.pops||[])if(p.deep){Object.assign(p.deep,JSON.parse(JSON.stringify(o)));}deepRender(S,true);dirty('pop');},
