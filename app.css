@@ -1096,3 +1096,40 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .dpr .adjr{height:26px}.dpr .adjr .rstb{padding:0 6px;height:24px}.dpr .adjr .rstb span{display:none}.dpr .adjr em{flex:0 0 40px}
 .deep .dpsw .chip{height:28px;padding:0 10px;font-size:12px}.deep .dpsw .popsw i{padding:0 6px}
 @media (max-width:600px){.dpr .adjr{height:40px}}
+
+/* v27 bottom-sheet settings (Deep Pop, Adjust): big, readable, clear way out; the picture stays visible above */
+#colors>.mixer.sheet,.mixer.sheet{position:fixed!important;left:0!important;right:0!important;bottom:0!important;top:auto!important;height:46vh!important;max-height:46vh;margin:0!important;z-index:1000!important;
+  display:flex!important;flex-direction:column!important;gap:12px!important;padding:18px 24px 22px!important;border-radius:20px 20px 0 0!important;overflow-y:auto!important;overscroll-behavior:contain;
+  background:linear-gradient(180deg,#30241b,#1f1813)!important;border:1px solid rgba(255,179,92,.45)!important;box-shadow:0 -14px 44px rgba(0,0,0,.6)!important;box-sizing:border-box}
+#colors>.mixer.sheet[hidden],.mixer.sheet[hidden]{display:none!important}
+.sheet .mxside{display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:center;gap:12px 18px;flex:none!important;width:auto!important;padding-right:64px}
+.sheet .mxhead{height:auto!important;margin:0!important}.sheet .mxhead b{font:700 20px Poppins!important;letter-spacing:.06em}
+.sheet .sheetx{position:absolute!important;top:12px;right:16px;width:52px!important;height:52px!important;border-radius:50%!important;font-size:26px!important;line-height:1;display:grid;place-items:center;
+  background:#ffb35c!important;color:#1d130b!important;border:0!important;box-shadow:0 4px 14px rgba(0,0,0,.4);cursor:pointer;z-index:2}
+.sheet .mxfoot{display:flex;gap:10px;margin:0!important}.sheet .mxfoot .chip,.sheet .mxfoot .rstb{height:44px!important;font-size:15px!important;padding:0 18px!important}
+.sheet .dpsw .chip,.sheet .dpsw .popsw{height:44px!important;font-size:15px!important}.sheet .dpname,.sheet #adjName{font:500 14px Poppins!important;color:#ffe9cc}.sheet .dpname b,.sheet #adjName b{color:#ffb35c}
+.sheet .adjrows{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(380px,1fr))!important;gap:14px 32px!important;overflow:visible!important;flex:none!important;align-content:start}
+.sheet .adjr{height:48px!important;gap:12px}.sheet .adjr span{flex:0 0 130px!important;font:600 14px Poppins!important;letter-spacing:.04em}.sheet .adjr input[type=range]{height:36px!important}.sheet .adjr em{flex:0 0 64px!important;font-size:16px!important}
+.sheet .dpa{padding-left:142px!important;gap:10px}.sheet .dpa .chip,.sheet .dpa select{height:38px!important;font-size:14px!important;padding:0 12px}.sheet .dpa input{height:32px}
+.sheet .adjfx>span,.sheet .dplab{font:600 14px Poppins!important}.sheet .adjfxb .chip{height:40px!important;font-size:14px!important;padding:0 14px!important}
+.sheet .dpr .adjr .rstb{height:40px!important;padding:0 10px!important}
+.sheetbg{position:fixed;left:0;right:0;top:0;height:54vh;z-index:999;background:transparent;cursor:pointer}.sheetbg[hidden]{display:none}
+#adjust.empty .adjr{opacity:1!important}
+@media (max-width:600px){#colors>.mixer.sheet,.mixer.sheet{height:62vh!important;max-height:62vh;padding:14px 14px 18px!important}.sheetbg{height:38vh}
+  .sheet .adjrows{grid-template-columns:1fr!important}.sheet .adjr span{flex:0 0 96px!important}.sheet .dpa{padding-left:0!important;flex-wrap:wrap}.sheet .mxside{padding-right:60px}}
+.fxpop{padding:14px 16px}.fxpop .fxs span{font-size:14px}.fxpop .fxs input[type=range],.plabel .fxpop .fxs input[type=range]{width:240px;height:34px}
+/* b27 audit: always-visible close X on Settings / Map */
+.set-card{position:relative}
+.set-card .sheetx2{position:sticky;top:0;float:right;margin:-4px -4px 0 8px;z-index:3}
+.map-head{position:relative}
+.map-head .sheetx2{position:absolute;right:8px;top:8px;z-index:3}
+.anypop header .x{min-width:40px;min-height:40px;font-size:22px;border-radius:12px}
+/* b27 audit: locked set names were cut to "COLOR C…": drop the pencil count when a status is shown */
+#palbox .slabel:has(.sstate:not(:empty)) .scount{display:none}
+/* b27 audit: small desktop targets */
+@media (min-width:601px){#grabHand,#grabDraw{min-width:36px;min-height:34px}#grabAuto{min-height:34px}#moreSets{min-height:30px;padding:0 12px}.sarrow{min-width:36px;min-height:36px}}
+.adjr em.long{flex:0 0 auto!important;font-size:13px!important;color:#c9b190!important;white-space:nowrap}
+.dpsl{font:600 12px Poppins;color:#ffd9a6;letter-spacing:.04em;margin-left:4px}.sheet .dpsl{font-size:14px}
+/* b27 audit: dimmed Mix/Chrome were dead (pointer-events:none, no reason). Now they stay dimmed but explain on click. */
+#app[data-ctx=eraser] #optbox #mixBtn,#app[data-ctx=eraser] #optbox #chromeBtn,#app[data-ctx=poperase] #optbox #mixBtn,#app[data-ctx=poperase] #optbox #chromeBtn,#app[data-ctx=pop] #optbox #chromeBtn,#app[data-ctx=poppencil] #optbox #chromeBtn,#app[data-ctx=pop] .tgrid #chromeBtn,#app[data-ctx=poppencil] .tgrid #chromeBtn{pointer-events:auto!important;cursor:help}
+#app[data-ctx] .tgrid #mixBtn,#app[data-ctx] .tgrid #chromeBtn,#app[data-ctx] #optbox #mixBtn,#app[data-ctx] #optbox #chromeBtn{pointer-events:auto!important}

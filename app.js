@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=26;
+const EP_BUILD=27;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -137,8 +137,22 @@ const DPAL={sunset:{n:'Sunset',h:[50,30,15,350,330,310,290,270,250,230],s:70},oc
   toxic:{n:'Toxic',h:[80,90,100,70,60,50,40,30,20,10],s:90},rainbow:{n:'Rainbow',h:[0,30,60,120,180,210,270,300,330,360],s:75},
   electric:{n:'Electric',h:[270,250,230,210,190,170,290,310,330,350],s:90}};
 /* v26 Color Cycle: Miles's palettes as closed colour loops (cc-<palette>[-<lightness 2..8>]); strokes and Adjust Hue cycle flow through them */
-function ccEnsure(k){if(typeof k!=='string'||!k.startsWith('cc-')||RAMPS[k])return;const [,p,l]=k.split('-'),P=DPAL[p];if(!P)return;const L=l?(+l)/10:.55;
+function ccEnsure(k){if(typeof k!=='string'||!k.startsWith('cc-')||RAMPS[k])return;const [,p,l]=k.split('-'),P=DPAL[p];if(!P)return;const L=l?(+l)/10:P.c?P.L:.55;
+  if(P.c){const o=[],n=P.h.length;for(let i=0;i<n;i++){const j=(i+1)%n;let d=P.h[j]-P.h[i];if(d>180)d-=360;if(d<-180)d+=360;for(let s=0;s<6;s++){const f=ease(s/6);o.push(hsl2hex(P.h[i]+d*f,P.ss[i]+(P.ss[j]-P.ss[i])*f,L));}}o.push(o[0]);RAMPS[k]=o;RAMP_WAVE[k]='sawtooth';return;}
   RAMPS[k]=P.h.concat([P.h[0]]).map(h=>hsl2hex(h,P.s/100,L));RAMP_WAVE[k]='sawtooth';}
+/* v27 Picture colors: moving-colour presets drawn from each page's own colours (hand-picked per page, or derived from the page's
+   colour guide). Cycles are subtle shifts between harmonious neighbours, keep the stroke / area lightness, and ease smoothly. */
+const PICPAL={4:[['emb','Ember glow',['#952914','#a8361a','#b8481f','#c45a26','#ad3d1c']],['wax','Wax & gold',['#8a1c24','#9c2a1e','#a8541f','#b07d45','#9a4a28']],['parch','Parchment',['#cca161','#d4b07a','#dcc49a','#d1ad74','#c79a5c']]],
+  16:[['emb','Ember scales',['#79361c','#93421d','#b15521','#c4682a','#a04a20']],['storm','Storm violet',['#483966','#59468a','#6b5392','#7d64ad','#5a4a80']],['bolt','Lightning',['#c9b3ec','#d8c4f0','#e5cbf0','#d4bff2','#c4b0e8']]],
+  24:[['dusk','Twilight',['#37336a','#47407e','#575d86','#67509d','#4a4a7a']],['hatch','Hatchling warm',['#9e6a47','#b07d5a','#cb9a6f','#bd8a62','#a87454']],['moss','Mountain moss',['#64927f','#6f9c88','#7da58f','#5f8a78','#6a947f']]],
+  101:[['dusk','Sunset sky',['#f4978e','#f6a98f','#f7c59f','#fbc4ab','#f2b5c8']],['night','Night indigo',['#3d3b5c','#45436b','#4d4a78','#424a70','#3a3f63']],['lant','Lantern gold',['#e3b482','#e9a35a','#e98a3c','#eda64c','#e6b06a']],['moon','Moon silver',['#a9a3a0','#b8b4b8','#c8c4cc','#bcbac4','#aeaaae']]]};
+function picReg(n,id,name,cs){const k='p'+n+id;if(!DPAL[k]){const hsl=cs.map(c=>rgb2hsl(hex2rgb(c)));DPAL[k]={n:name,c:cs,pic:n,h:hsl.map(q=>q[0]),ss:hsl.map(q=>q[1]),s:Math.round(hsl.reduce((a,q)=>a+q[1],0)/hsl.length*100),L:hsl.reduce((a,q)=>a+q[2],0)/hsl.length};}return k;}
+function picKeys(n){if(n==null)return [];if(PICPAL[n])return PICPAL[n].map(([id,nm,cs])=>picReg(n,id,nm,cs));
+  const sc=self.EP_SCENES&&self.EP_SCENES[n],pal=sc&&sc.palette||[];if(pal.length<3)return [];   // derived: mid-tone colours sorted by hue, grouped into neighbours
+  const q=pal.map(c=>[c,rgb2hsl(hex2rgb(c))]).filter(([,h])=>h[2]>.18&&h[2]<.88&&h[1]>.12).sort((a,b)=>a[1][0]-b[1][0]);const out=[];
+  for(let i=0;i+2<q.length&&out.length<3;i+=3){const g=q.slice(i,i+4).map(z=>z[0]);out.push(picReg(n,'a'+out.length,'Picture '+(out.length+1),g.concat(g.slice(1,-1).reverse())));}return out;}
+for(const n of Object.keys(PICPAL))picKeys(+n);
+const ease=f=>f*f*(3-2*f);
 for(const k of Object.keys(DPAL))ccEnsure('cc-'+k);
 const RAMP_LUT={};function rampLUT(k){ccEnsure(k);if(RAMP_LUT[k])return RAMP_LUT[k];const cs=(RAMPS[k]||METAL[k]||RAMPS.rainbow).map(hex2rgb),L=new Uint8ClampedArray(256*3);
   for(let i=0;i<256;i++){const pos=Math.min(.9999,i/255)*(cs.length-1),j=pos|0,f=pos-j,a=cs[j],b=cs[j+1];for(let c=0;c<3;c++)L[i*3+c]=a[c]+(b[c]-a[c])*f;}return RAMP_LUT[k]=L;}
@@ -147,7 +161,8 @@ const pingpong=t=>{t-=Math.floor(t);return t<.5?t*2:2-t*2;};
 const RAMP_LEN=320;   // px of stroke per full run through the ramp
 for(const [k,n] of [['rainbow','Rainbow'],['tropical','Tropical'],['ocean','Ocean'],['fire','Fire'],['sunset','Sunset'],['aurora','Aurora'],['cyber','Cyber'],['vaporwave','Vaporwave'],
   ['miami','Miami'],['gold','Gold ramp'],['chrome','Chrome ramp'],['copper','Copper ramp']])PREMIUM.splice(PREMIUM.length-2,0,{id:'r-'+k,kind:'ramp',ramp:k,hex:RAMPS[k][Math.floor(RAMPS[k].length/2)],name:n});
-for(const k of Object.keys(DPAL))PREMIUM.splice(PREMIUM.length-2,0,{id:'cc-'+k,kind:'ramp',ramp:'cc-'+k,cc:true,hex:RAMPS['cc-'+k][3],name:DPAL[k].n+' cycle'});
+for(const k of Object.keys(DPAL))PREMIUM.splice(PREMIUM.length-2,0,DPAL[k].pic?{id:'pc-'+k,kind:'ramp',ramp:'cc-'+k,cc:true,page:DPAL[k].pic,hex:DPAL[k].c[2],name:DPAL[k].n+' cycle'}:{id:'cc-'+k,kind:'ramp',ramp:'cc-'+k,cc:true,hex:RAMPS['cc-'+k][3],name:DPAL[k].n+' cycle'});
+function ccItems(n){return PREMIUM.filter(p=>p.cc&&p.page===n).concat(PREMIUM.filter(p=>p.cc&&!p.page));}
 const PREM={};PREMIUM.forEach(p=>PREM[p.id]=p);
 PREM['c-any']={id:'c-any',kind:'chrome',hex:'#d9dde3',name:'Chrome finish'};
 const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',lightning:'Lightning',wood:'Wood',brick:'Brick',stone:'Stone',flower:'Flowers',fur:'Fur & Hair',glow:'Glowing',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
@@ -485,7 +500,7 @@ const SETS=[{id:'book',name:'Book palette',product:null,type:'plain',colors:EXTR
   .concat(THEMES.map(t=>({id:t.id,name:t.name,product:'palettes',type:'plain',colors:t.colors})))
   .concat([['metal','Metallic'],['chrome','Chrome'],['glitter','Glitter'],['jewel','Jewel'],['neon','Neon'],['lightning','Lightning'],['glow','Glowing'],['pulse','Pulse'],['ramp','Gradients','gradients'],['smoke','Smoke','smoke'],['cloud','Clouds','clouds'],['wood','Wood'],['brick','Brick'],['stone','Stone'],['flower','Flowers'],['fur','Fur & Hair'],['brush','Brushes']]
     .map(([k,n,pr])=>({id:k,name:n,product:pr||'pencils',type:'ink',items:PREMIUM.filter(p=>p.kind===k&&!p.cc)})))
-  .concat([{id:'ccycle',name:'Color Cycle',product:'gradients',type:'ink',items:PREMIUM.filter(p=>p.cc)}]);
+  .concat([{id:'ccycle',name:'Color Cycle',product:'gradients',type:'ink',items:ccItems(null)}]);
 const SETI={};SETS.forEach((t,i)=>SETI[t.id]=i);
 let setIdx=SETI[settings.pset];if(!(setIdx>=0&&setIdx<SETS.length)||!((SETS[setIdx].colors||SETS[setIdx].items||[]).length)){setIdx=0;settings.pset=SETS[0].id;}   // unknown / old saved set -> default
 /* free samples (kept outside ep.v1 so "Reset progress" doesn't refill them). Owner code bypasses everything. */
@@ -658,6 +673,7 @@ async function showScene(n){
   if(S&&S.n!==n)saveNow();
   if(!S||S.n!==n){mode='free';D3.want=true;D3.fresh=true;}   /* v18: a page opens in 3D Free Color (2D only where the page has no 3D) */
   S=await loadScene(n); resetZoom(); prog.current=n; saveProg(); fxsForScene(n);
+  {const cs=SETS[SETI.ccycle];if(cs){cs.items=ccItems(n);if(setIdx===SETI.ccycle)buildPalette();}}if(typeof scBtnSync==='function')scBtnSync();
   $$('.scene').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
   storyStrip();
   lineImg.src=S.d.line; lineImg.onload=()=>{scheduleLineTint();linesApply();linesDoneGlow();}; layers.innerHTML=''; layers.appendChild(S.cbn.c); layers.appendChild(S.free.c); if(S.pulse)layers.appendChild(S.pulse.c);
@@ -1119,6 +1135,7 @@ function savePops(st){(st.pops||[]).length?LS.set('pop.'+st.n,st.pops.map(({k,an
    Each area keeps its own Layers / Depth / Shadow L1 / Shadow L2 / Blur (+ AUTO curve and speed, own random phase), palette and hue.
    Layer stacks are cached per area (one small canvas per layer) and only rebuilt when that area's values change; motion (breathing drift
    toward the light, slow rotation) is composed from the cache at <=30 fps. */
+function dpHS(pal,i){const H=pal.h,n=H.length,c=((i%n)+n)%n,lo=Math.floor(c)%n,hi=(lo+1)%n,f=ease(c-Math.floor(c));let d=H[hi]-H[lo];if(d>180)d-=360;if(d<-180)d+=360;return [(H[lo]+d*f+360)%360,pal.ss?pal.ss[lo]+(pal.ss[hi]-pal.ss[lo])*f:Math.min(1,pal.s/100)];}
 function dpHue(pal,i){const H=pal.h,n=H.length,c=((i%n)+n)%n,lo=Math.floor(c)%n,hi=(lo+1)%n,f=c-Math.floor(c);let d=H[hi]-H[lo];if(d>180)d-=360;if(d<-180)d+=360;return (H[lo]+d*f+360)%360;}
 const DPRAND=n=>{const s=Math.sin(n*12.9898)*43758.5453;return s-Math.floor(s);};
 const DCURVE={smooth:x=>(Math.sin(x)+1)/2,bounce:x=>{const o=(x/Math.PI)%2;return o<1?o:2-o;},pulse:x=>Math.pow((Math.sin(x)+1)/2,4),
@@ -1133,7 +1150,7 @@ let dpRaf=0,dpLast=0,dpT0=performance.now();
 const dpTime=()=>RM.matches?0:(performance.now()-dpT0)/1000;
 function dpVal(p,k,t){const D=p.deep,a=D.au&&D.au[k],def=DPK.find(q=>q[0]===k);let v=D[k]!=null?D[k]:DPDEF[k];
   if(a&&a.on&&!RM.matches){const f=DCURVE[a.c]||DCURVE.smooth,ph=(D.ph||0)+DPK.findIndex(q=>q[0]===k)*17.3;const u=f(t*(a.sp||.5)+ph);
-    if(k==='hs')v=(v+u*360)%360;else{const lo=k==='n'?Math.max(def[2],Math.round(v*.5)):def[2],hi=k==='n'?Math.min(DPMAX,v):def[3];v=k==='n'?lo+u*(hi-lo):def[2]+u*(def[3]-def[2]);if(k!=='n'&&k!=='d'){v=Math.max(def[2],Math.min(def[3],v));}}}
+    if(k==='hs')v=(v+(u-.5)*40+360)%360;   /* v27: subtle ±20° drift around the colour, never a rainbow sweep */else{const lo=k==='n'?Math.max(def[2],Math.round(v*.5)):def[2],hi=k==='n'?Math.min(DPMAX,v):def[3];v=k==='n'?lo+u*(hi-lo):def[2]+u*(def[3]-def[2]);if(k!=='n'&&k!=='d'){v=Math.max(def[2],Math.min(def[3],v));}}}
   const q=a&&a.on&&!RM.matches;if(q&&k==='d')v=Math.round(v/4)*4;else if(q&&(k==='l1'||k==='l2'))v=Math.round(v*50)/50;else if(q&&k==='bl')v=Math.round(v*5)/5;else if(q&&k==='hs')v=Math.round(v/6)*6;
   return k==='n'?Math.round(Math.max(8,Math.min(DPMAX,v))):k==='d'||k==='hs'?Math.round(v):Math.round(v*100)/100;}
 function dpField(st,p){let c=dpCache.get(p);if(c&&c.field)return c.field;
@@ -1154,7 +1171,7 @@ function dpBuild(st,p,t){const f=dpField(st,p);if(!f||f.maxD<2)return null;const
   const N=dpVal(p,'n',t),dep=dpVal(p,'d',t),l1=dpVal(p,'l1',t),l2=dpVal(p,'l2',t),bl=dpVal(p,'bl',t),hs=dpVal(p,'hs',t),cyc=D.cyc&&!RM.matches?Math.floor(t*1.2+(D.ph||0))/12:0;
   if(!c.col)c.col=dpBaseColor(st,p,f);
   const key=[N,dep,l1,l2,bl,hs,D.carved,D.pal,cyc.toFixed(3),c.col.map(Math.round).join()].join('|');if(c.layers&&c.key===key)return c;
-  const t0=performance.now(),[bh,bs,bL]=dpHsl(...c.col),pal=D.pal&&DPAL[D.pal];
+  const t0=performance.now(),[bh,bs,bL]=dpHsl(...c.col),pk=D.pal||(D.cyc?picKeys(st.n)[0]:null),pal=pk&&DPAL[pk];
   const minIn=Math.max(1.5,f.maxD*.04),ratio=Math.pow(minIn/f.maxD,1/(N-1)),layers=[],amp=.06+.16*dep/100;
   for(let i=0;i<N;i++){const th=f.maxD*(1-Math.pow(ratio,i)),th2=i<N-1?f.maxD*(1-Math.pow(ratio,i+1)):1e9;
     let x0=f.w,y0=f.h,x1=-1,y1=-1;for(let y=0;y<f.h;y++){const o=y*f.w;for(let x=0;x<f.w;x++){if(f.d[o+x]>th){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}}}
@@ -1165,7 +1182,7 @@ function dpBuild(st,p,t){const f=dpField(st,p);if(!f||f.maxD<2)return null;const
     for(let y=0;y<lh;y++){const o=(y+y0)*f.w+x0;for(let x=0;x<lw;x++){const v=f.d[o+x];if(v>th&&!(D.carved&&v>th2+.5))sd8[(y*lw+x)*4+3]=v>th+1?255:Math.round((v-th)*255);}}
     sx.putImageData(si,0,0);
     let hue=bh,sat=bs,lit=bL;const ramp=(i/(N-1)-.5)*2;
-    if(pal){hue=dpHue(pal,i*pal.h.length/N+cyc*pal.h.length);sat=Math.min(1,pal.s/100);lit=.62;}
+    if(pal){[hue,sat]=dpHS(pal,(pal.pic?i*1.5/N:i*pal.h.length/N)+cyc*pal.h.length);lit=pal.pic?(bL>.85&&bs<.3?pal.L:bL):.62;}
     hue=(hue+hs)%360;lit=Math.max(.06,Math.min(.95,lit+(D.carved?-1:1)*ramp*amp));
     const fill=`hsl(${hue.toFixed(1)},${(sat*100).toFixed(1)}%,${(lit*100).toFixed(1)}%)`;
     sx.globalCompositeOperation='source-in';sx.fillStyle=fill;sx.fillRect(0,0,lw,lh);
@@ -1201,20 +1218,23 @@ function dpTick(now){dpRaf=0;if(!S||document.hidden){return;}const P=(S.pops||[]
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S&&!dpRaf)deepRender(S);});
 const DP={fms:0,frames:0};
 let dpColT=0;function dpRecolorSoon(){if(!S||!(S.pops||[]).some(p=>p.deep))return;clearTimeout(dpColT);dpColT=setTimeout(()=>{if(!S)return;let ch=false;for(const p of S.pops||[]){if(!p.deep)continue;const c=dpCache.get(p),f=c&&c.field;if(!f)continue;const n=dpBaseColor(S,p,f);if(!c.col||n.some((v,i)=>Math.abs(v-c.col[i])>3)){c.col=n;ch=true;}}if(ch)deepRender(S,true);},250);}
-function dpSel(){if(!S||!S.popSel||S.popSel.k!=='pop')return null;const r=S.popSel.r;return (S.pops||[]).find(q=>q.deep&&(q.rs||[q.r]).includes(r))||null;}
+function dpSel(){if(!S)return null;const P=(S.pops||[]).filter(q=>q.deep);if(!P.length)return null;if(S.popSel&&S.popSel.k==='pop'){const r=S.popSel.r,p=P.find(q=>(q.rs||[q.r]).includes(r));if(p)return p;}return P[P.length-1];}
 /* ---- Deep Pop panel: per-area sliders, each with Reset + AUTO (curve + speed) ---- */
 function dpTarget(){const p=dpSel();return p?{D:p.deep,p}:{D:(settings.dp=settings.dp||{...DPDEF,au:{}}),p:null};}
 function dpChanged(p){if(p){const c=dpCache.get(p);deepRender(S,true);dirty('pop');}else LS.set('settings',settings);}
-function dpOpen(){const el=$('#deep');if(!el)return;adjClose();if(!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();el.hidden=false;$('#dpBtn')&&$('#dpBtn').classList.add('on');dpBuildUI();}
-function dpClose(){const el=$('#deep');if(el)el.hidden=true;$('#dpBtn')&&$('#dpBtn').classList.remove('on');}
+function dpOpen(){const el=$('#deep');if(!el)return;adjClose();setTimeout(sheetSync,0);if(!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();el.hidden=false;$('#dpBtn')&&$('#dpBtn').classList.add('on');dpBuildUI();}
+function dpClose(){const el=$('#deep');if(el)el.hidden=true;$('#dpBtn')&&$('#dpBtn').classList.remove('on');sheetSync();}
+/* v27: Deep Pop and Adjust open as a bottom sheet (picture stays visible above, changes preview live). Close: big X, Done, Esc, or tap above the sheet */
+function sheetSync(){let bg=$('#sheetBg');const open=['#deep','#adjust'].some(q=>$(q)&&!$(q).hidden);if(!bg){bg=document.createElement('div');bg.id='sheetBg';bg.className='sheetbg';bg.onclick=()=>{dpClose();adjClose();};document.body.appendChild(bg);}bg.hidden=!open;document.body.classList.toggle('sheet-open',open);}
+addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('sheet-open')){dpClose();adjClose();e.preventDefault();}});
 function dpFmt(k,v){const d=DPK.find(q=>q[0]===k);return k==='l1'||k==='l2'?Math.round(v*100)+'%':k==='bl'?(+v).toFixed(1)+'×':k==='hs'?Math.round(v)+'°':String(Math.round(v));}
 function dpBuildUI(){const el=$('#dpRows');if(!el)return;const {D,p}=dpTarget();D.au=D.au||{};
-  $('#dpName').textContent=p?'This area · own settings':'Next Deep Pop tap · tap a Deep Pop area to edit it';
-  $('#dpOn').classList.toggle('on',!!settings.deepOn);$('#dpOn').setAttribute('aria-pressed',String(!!settings.deepOn));
+  $('#dpName').innerHTML=p?`<b>Editing:</b> ${S.popSel&&S.popSel.k==='pop'&&(p.rs||[p.r]).includes(S.popSel.r)?'the area you last tapped':'your most recent Deep Pop area'} · changes show live on the picture`:`<b>Editing:</b> Next Deep Pop · ${settings.deepOn?'tap an area with Pop Fill to apply these':'turn Deep Pop on, then tap an area with Pop Fill'}`;
+  $('#dpOn').classList.toggle('on',!!settings.deepOn);$('#dpOn').textContent=settings.deepOn?'Deep Pop: ON':'Deep Pop: OFF · tap to turn on';$('#dpOn').setAttribute('aria-pressed',String(!!settings.deepOn));
   $('#dpMode').querySelectorAll('i').forEach(b=>b.classList.toggle('on',(b.dataset.v==='carved')===!!D.carved));
   el.innerHTML=DPK.map(([k,lab,mn,mx,stp])=>{const v=D[k]!=null?D[k]:DPDEF[k],a=D.au[k]||{};return `<div class="dpr" data-k="${k}"><label class="adjr"><span>${lab}</span><input type="range" class="dpv" min="${mn}" max="${mx}" step="${stp}" value="${v}" aria-label="${lab}"><em>${dpFmt(k,v)}</em></label>
-    <div class="dpa"><button type="button" class="chip dpauto${a.on?' on':''}" aria-pressed="${!!a.on}" title="AUTO: let ${lab} move by itself">AUTO</button><select class="dpc" aria-label="${lab} AUTO curve">${Object.keys(DCURVE).map(c=>`<option value="${c}"${(a.c||'random')===c?' selected':''}>${c[0].toUpperCase()+c.slice(1)}</option>`).join('')}</select><input type="range" class="dps" min="0.05" max="2" step="0.05" value="${a.sp||.4}" aria-label="${lab} AUTO speed" title="AUTO speed"></div></div>`;}).join('')
-    +`<div class="dpr dpopts"><span class="dplab">Palette</span><div class="adjfxb">${[['','Own color']].concat(Object.keys(DPAL).map(k=>[k,DPAL[k].n])).map(([k,n])=>`<button type="button" class="chip dppal${(D.pal||'')===k?' on':''}" data-pal="${k}">${n}</button>`).join('')}</div>
+    <div class="dpa"><button type="button" class="chip dpauto${a.on?' on':''}" aria-pressed="${!!a.on}" title="AUTO: let ${lab} move by itself">AUTO</button><select class="dpc" aria-label="${lab} AUTO curve">${Object.keys(DCURVE).map(c=>`<option value="${c}"${(a.c||'random')===c?' selected':''}>${c[0].toUpperCase()+c.slice(1)}</option>`).join('')}</select><span class="dpsl">Speed</span><input type="range" class="dps" min="0.05" max="2" step="0.05" value="${a.sp||.4}" aria-label="${lab} AUTO speed" title="AUTO speed"></div></div>`;}).join('')
+    +`<div class="dpr dpopts"><span class="dplab">Picture colors</span><div class="adjfxb">${[['','Own color']].concat(picKeys(S&&S.n).map(k=>[k,DPAL[k].n])).map(([k,n])=>`<button type="button" class="chip dppal pic${(D.pal||'')===k?' on':''}" data-pal="${k}">${n}</button>`).join('')}</div><span class="dplab dpmore">More palettes</span><div class="adjfxb">${Object.keys(DPAL).filter(k=>!DPAL[k].pic).map(k=>[k,DPAL[k].n]).map(([k,n])=>`<button type="button" class="chip dppal${(D.pal||'')===k?' on':''}" data-pal="${k}">${n}</button>`).join('')}</div>
     <div class="adjfxb"><button type="button" class="chip dpopt${D.cyc?' on':''}" data-o="cyc" title="Color cycle: hues flow through the layers">Color cycle</button><button type="button" class="chip dpopt${D.drift?' on':''}" data-o="drift" title="Layers breathe and drift toward the light">Breathe</button><button type="button" class="chip dpopt${D.rot?' on':''}" data-o="rot" title="Slow rotation of the layers">Rotate</button></div></div>`;
   el.querySelectorAll('.dpr[data-k]').forEach(row=>{const k=row.dataset.k,i=row.querySelector('.dpv'),em=row.querySelector('em');
     i.oninput=()=>{const {D,p}=dpTarget();D[k]=+i.value;em.textContent=dpFmt(k,+i.value);dpChanged(p);};
@@ -1652,7 +1672,7 @@ function fxDrawRec(x,r,t){ // t in seconds
   if(r.kind==='mirror'){drawMirror(x,r,t);return;}if(r.kind==='shine'){drawShine(x,r,t,'metal');return;}if(r.kind==='jshine'){drawShine(x,r,t,'jewel');return;}
   if(r.kind==='rampfx'){ // colour shift: the gradient flows through the stroke (ping-pong), ~12 fps is plenty for this slow drift
     if(!r.td){r.td=r.mx.getImageData(bx,by,bw,bh).data;r.out=new ImageData(bw,bh);r.oc=Object.assign(document.createElement('canvas'),{width:bw,height:bh});r.ft=-1;}
-    if(r.ft<0||Math.abs(t-r.ft)>=.08){r.ft=t;const L=rampLUT(r.hex),wv=WAVES[RAMP_WAVE[r.hex]||'sine'],ph=RM.matches?0:(String(r.hex).startsWith('cc-')?t/9*(r.sp||1)+(r.ph||0)*.05:RAMP_WAVE[r.hex]==='sawtooth'?t/9:.5+.5*wv(t,.35)),td=r.td,o=r.out.data;
+    if(r.ft<0||Math.abs(t-r.ft)>=.08){r.ft=t;const L=rampLUT(r.hex),wv=WAVES[RAMP_WAVE[r.hex]||'sine'],ph=RM.matches?0:(String(r.hex).startsWith('cc-')?t/((DPAL[String(r.hex).split('-')[1]]||{}).pic?20:9)*(r.sp||1)+(r.ph||0)*.05:RAMP_WAVE[r.hex]==='sawtooth'?t/9:.5+.5*wv(t,.35)),td=r.td,o=r.out.data;
       for(let i=0;i<td.length;i+=4){const a=td[i+3];if(!a){o[i+3]=0;continue;}const v=td[i]/255+ph,q=v-Math.floor(v),k=Math.round((q<.5?q*2:2-q*2)*255)*3;o[i]=L[k];o[i+1]=L[k+1];o[i+2]=L[k+2];o[i+3]=a;}
       r.oc.getContext('2d').putImageData(r.out,0,0);}
     x.drawImage(r.oc,bx,by);return;}
@@ -2606,16 +2626,16 @@ $('#idea3d').onclick=()=>idea3d();$('#idea3dApply').onclick=idea3dApply;
    Accept keeps the mix and returns to the bar; Cancel puts everything back as it was */
 let mixPrev=null;
 function openMix(){adjClose();if(typeof dpClose==='function')dpClose();mixPrev={on:MIX.on,finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:{...MIX.amt}};$('#mxOff').hidden=!MIX.on;if(MIX.on){buildMixer();$('#mixer').hidden=false;}else setMix(true);}
-function adjOpen(){const el=$('#adjust');if(!el)return;if(typeof dpClose==='function')dpClose();if(!$('#mixer').hidden)mixCancel&&mixCancel();el.hidden=false;$('#adjBtn')&&$('#adjBtn').classList.add('on');adjBuild();adjFlash();}
-function adjClose(){const el=$('#adjust');if(el)el.hidden=true;$('#adjBtn')&&$('#adjBtn').classList.remove('on');if(phP==='adjust'){phP=null;app.dataset.ph='';phSync();}}
+function adjOpen(){const el=$('#adjust');if(!el)return;if(typeof dpClose==='function')dpClose();setTimeout(()=>typeof sheetSync==='function'&&sheetSync(),0);if(!$('#mixer').hidden)mixCancel&&mixCancel();el.hidden=false;$('#adjBtn')&&$('#adjBtn').classList.add('on');adjBuild();adjFlash();}
+function adjClose(){const el=$('#adjust');if(el)el.hidden=true;if(typeof sheetSync==='function'&&$('#sheetBg'))setTimeout(sheetSync,0);$('#adjBtn')&&$('#adjBtn').classList.remove('on');if(phP==='adjust'){phP=null;app.dataset.ph='';phSync();}}
 function adjBuild(){const el=$('#adjRows');if(!el)return;const L=S&&S.lastOp,a=L?L.a:{},fmt=(d,v)=>(d[0]==='h'||d[0]==='b'||d[0]==='w')&&v>0?'+'+v+d[6]:v+d[6];
-  el.innerHTML=ADJDEF.map(d=>{const v=adjVal(a,d[0]);return `<label class="adjr" title="${esc(d[7])}"><span>${d[1]}</span><input type="range" data-k="${d[0]}" min="${d[2]}" max="${d[3]}" step="${d[5]}" value="${v}" aria-label="${esc(d[1])}"${L?'':' disabled'}><em>${fmt(d,v)}</em></label>`;}).join('');
-  $('#adjust').classList.toggle('empty',!L);$('#adjReset').disabled=!L;
-  const sw=()=>{const A=$('#adjAfter'),Bf=$('#adjBefore');if(!L){Bf.style.background='transparent';A.style.background='transparent';A.style.opacity=1;A.style.boxShadow='';$('#adjName').textContent='Draw a stroke or fill first, then adjust it here';return;}
+  el.innerHTML=ADJDEF.map(d=>{const v=adjVal(L?a:adjCarry,d[0]);return `<label class="adjr" title="${esc(d[7])}"><span>${d[1]}</span><input type="range" data-k="${d[0]}" min="${d[2]}" max="${d[3]}" step="${d[5]}" value="${v}" aria-label="${esc(d[1])}"><em>${fmt(d,v)}</em></label>`;}).join('');
+  $('#adjust').classList.toggle('empty',!L);$('#adjReset').disabled=false;
+  const sw=()=>{const A=$('#adjAfter'),Bf=$('#adjBefore');if(!L){Bf.style.background='transparent';A.style.background='transparent';A.style.opacity=1;A.style.boxShadow='';$('#adjName').innerHTML='<b>Editing:</b> your next stroke · draw or fill something, then fine-tune that stroke here';return;}
     const oa=opAdj(),hx=opHex(L,oa);Bf.style.background=L.hex;A.style.background=hx;A.style.opacity=adjVal(L.a,'o')/100;A.style.boxShadow=adjVal(L.a,'g')>0?`0 0 ${4+adjVal(L.a,'g')*.14}px ${hx}`:'';
     $('#adjName').textContent=L.name+(L.kind==='fill'?' · fill':' · stroke')+(oa?' · adjusted':'');};sw();
   adjFxRow(el,L);
-  el.querySelectorAll('input:not(.adjsp)').forEach(i=>i.oninput=()=>{if(!S.lastOp)return;S.lastOp.a[i.dataset.k]=+i.value;adjCarry={...S.lastOp.a};LS.set('adjCarry',adjCarry);const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);sw();lastOpRenderSoon();});}
+  el.querySelectorAll('input:not(.adjsp)').forEach(i=>i.oninput=()=>{if(!S.lastOp){adjCarry[i.dataset.k]=+i.value;LS.set('adjCarry',adjCarry);const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);return;}S.lastOp.a[i.dataset.k]=+i.value;adjCarry={...S.lastOp.a};LS.set('adjCarry',adjCarry);const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);sw();lastOpRenderSoon();});}
 /* v25: add a live effect to the last stroke only (its own record: own direction, phase and speed), or change that stroke's effect speed.
    Other strokes and the rest of the picture are not touched. Undo of the stroke removes the added effect too. */
 const ADJFX=[['none','None',null],['shimmer','Shimmer','shimmer'],['glitter','Glitter','twinkle'],['glowing','Glowing','glowfx'],['metallic','Metallic','shine'],['pulse','Pulse','pulsefx'],['neon','Neon','neonfx']];
@@ -2638,12 +2658,12 @@ function adjSetHue(pal){const L=S&&S.lastOp;if(!L)return;
   dirty('fx');fxDraw(performance.now());adjBuild();}
 function adjSetSpeed(v){const L=S&&S.lastOp;if(!L)return;L.spd=v;for(const r of adjFxRecs(L)){if(r.sp0==null)r.sp0=r.sp||1;r.sp=r.sp0*v;}dirty('fx');}
 function adjFxRow(el,L){const cur=L&&L.fxAdd?L.fxAdd.id:'none',has=L&&adjFxRecs(L).length,v=L&&L.spd||1;
-  const w=document.createElement('div');w.className='adjfx';w.innerHTML=`<span>Effect</span><div class="adjfxb">${ADJFX.map(d=>`<button type="button" class="chip${d[0]===cur?' on':''}" data-fx="${d[0]}"${L?'':' disabled'}>${d[1]}</button>`).join('')}</div>`;
-  w.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();adjSetFx(b.dataset.fx);});el.appendChild(w);
-  {const hc=L&&L.hueAdd?L.hueAdd.pal:'';const h=document.createElement('div');h.className='adjfx adjhue';h.innerHTML=`<span>Hue Shift AUTO · cycle through</span><div class="adjfxb">${[['','Off']].concat(Object.keys(DPAL).map(k=>[k,DPAL[k].n])).map(([k,n])=>`<button type="button" class="chip${k===hc?' on':''}" data-hue="${k}"${L?'':' disabled'}>${n}</button>`).join('')}</div>`;
-  h.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();adjSetHue(b.dataset.hue||null);});el.appendChild(h);}
-  const l=document.createElement('label');l.className='adjr';l.title='Effect speed for this stroke only';l.innerHTML=`<span>Effect speed</span><input class="adjsp" type="range" min="0.1" max="3" step="0.05" value="${v}"${has?'':' disabled'} aria-label="Effect speed for this stroke"><em>${v.toFixed(2)}×</em>`;
-  const i=l.querySelector('input');i.oninput=()=>{adjSetSpeed(+i.value);l.querySelector('em').textContent=(+i.value).toFixed(2)+'×';};el.appendChild(l);}
+  const w=document.createElement('div');w.className='adjfx';w.innerHTML=`<span>Effect</span><div class="adjfxb">${ADJFX.map(d=>`<button type="button" class="chip${d[0]===cur?' on':''}" data-fx="${d[0]}">${d[1]}</button>`).join('')}</div>`;
+  w.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!(S&&S.lastOp)){toast('Draw or fill something first · the effect is added to that stroke');return;}adjSetFx(b.dataset.fx);});el.appendChild(w);
+  {const hc=L&&L.hueAdd?L.hueAdd.pal:'';const h=document.createElement('div');h.className='adjfx adjhue';const hb=([k,n])=>`<button type="button" class="chip${k===hc?' on':''}" data-hue="${k}">${n}</button>`;h.innerHTML=`<span>Hue Shift AUTO · Picture colors</span><div class="adjfxb">${[['','Off']].concat(picKeys(S&&S.n).map(k=>[k,DPAL[k].n])).map(hb).join('')}</div><span>More palettes</span><div class="adjfxb">${Object.keys(DPAL).filter(k=>!DPAL[k].pic).map(k=>[k,DPAL[k].n]).map(hb).join('')}</div>`;
+  h.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();if(!(S&&S.lastOp)){toast('Draw or fill something first · then its color cycles here');return;}adjSetHue(b.dataset.hue||null);});el.appendChild(h);}
+  const l=document.createElement('label');l.className='adjr';l.title='Effect speed for this stroke only';l.innerHTML=`<span>Effect speed</span><input class="adjsp" type="range" min="0.1" max="3" step="0.05" value="${v}" aria-label="Effect speed for this stroke"><em${has?'':' class="long"'}>${has?v.toFixed(2)+'×':'pick an effect'}</em>`;
+  const i=l.querySelector('input');i.oninput=()=>{if(!has){toast('Pick an effect above first · then set its speed here');i.value=v;return;}adjSetSpeed(+i.value);l.querySelector('em').textContent=(+i.value).toFixed(2)+'×';l.querySelector('em').classList.remove('long');};el.appendChild(l);}
 function adjReset(){adjCarry={};if(S&&S.lastOp){if(S.lastOp.fxAdd)adjSetFx('none');if(S.lastOp.hueAdd)adjSetHue(null);if(S.lastOp.spd)adjSetSpeed(1);S.lastOp.spd=null;}LS.set('adjCarry',adjCarry);if(S&&S.lastOp){S.lastOp.a={};lastOpRender();}adjBuild();adjFlash();}
 (function(){const b=$('#adjBtn');if(!b)return;b.onclick=e=>{e.stopPropagation();$('#adjust').hidden?adjOpen():adjClose();};$('#adjX').onclick=adjClose;$('#adjDone').onclick=adjClose;$('#adjReset').onclick=adjReset;
   ['pointerdown','click'].forEach(ev=>$('#adjust').addEventListener(ev,e=>e.stopPropagation()));})();
@@ -2842,6 +2862,15 @@ function applySettingsUI(){$('#setStory').classList.toggle('on',!!settings.story
 $('#setBtn').onclick=()=>{$('#settings').hidden=false;};
 $('#setClose').onclick=()=>{$('#settings').hidden=true;};
 $('#settings').onclick=e=>{if(e.target.id==='settings')$('#settings').hidden=true;};
+/* b27 audit: Esc closes whichever dialog is on top; every dialog gets a visible X */
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const ap=document.getElementById('anyPop');if(ap){ap.remove();e.preventDefault();return;}const lp=document.getElementById('linesPop');if(lp&&!lp.hidden&&!document.body.classList.contains('sheet-open')){lp.hidden=true;const lb=$('#linesBtn');lb&&lb.setAttribute('aria-expanded','false');e.preventDefault();return;}for(const id of ['soDlg','upgrade','showcase','settings','map','scView','reveal']){const el=document.getElementById(id);if(el&&!el.hidden){if(id==='soDlg'){const c=$('#soCancel');c&&c.click();}else if(id==='reveal'){closeReveal();}else el.hidden=true;e.preventDefault();return;}}});
+(()=>{const add=(host,id,fn)=>{if(!host||document.getElementById(id))return;const b=document.createElement('button');b.className='up-x sheetx2';b.id=id;b.title='Close (Esc)';b.setAttribute('aria-label','Close');b.textContent='✕';b.onclick=fn;host.prepend(b);};
+ add($('#settings .set-card'),'setX',()=>{$('#settings').hidden=true;});add($('#map .map-head'),'mapX',closeMap);
+ $('#map').addEventListener('click',e=>{if(e.target.id==='map')closeMap();});})();
+/* b27 audit: explain dimmed Mix / Chrome instead of ignoring the click */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#mixBtn,#chromeBtn');if(!b)return;const ctx=(document.getElementById('app')||{}).dataset?.ctx||'';
+  const off=b.id==='mixBtn'?['eraser','poperase']:['eraser','poperase','pop','poppencil'];if(!off.includes(ctx))return;e.stopImmediatePropagation();e.preventDefault();
+  const tn={eraser:'Eraser',poperase:'Pop Erase',pop:'Pop Fill',poppencil:'Pop Pencil'}[ctx];toast(`${b.id==='mixBtn'?'Mix':'Chrome'} isn't used by ${tn} · pick Pencil or Fill first, then tap ${b.id==='mixBtn'?'Mix':'Chrome'}`);},true);
 $('#setStory').onclick=()=>{settings.story=!settings.story;LS.set('settings',settings);applySettingsUI();buildScenes();if(S)storyStrip();};
 for(const [id,k] of [['#setCut','cutscenes'],['#setHints','hints'],['#setZoomSize','sizeZoom']])
   $(id).onclick=()=>{settings[k]=settings[k]===false;LS.set('settings',settings);applySettingsUI();if(k==='hints'&&!hintsOn()){$('#tryrow').hidden=true;$('#nudge').hidden=true;}};
@@ -2988,13 +3017,14 @@ window.EP_OK=true;try{sessionStorage.removeItem('ep.heal');}catch(e){}
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
   const hadCtl=!!navigator.serviceWorker.controller;let reloaded=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!hadCtl||reloaded)return;reloaded=true;   // a new release took over: reload once so page + scripts match
-    if(!S||!(S.free&&S.free.undo&&S.free.undo.length))location.reload();else toast('App updated · it will use the new version next time you open it');});
+    try{saveNow();}catch(e){}try{sessionStorage.setItem('ep.upd','1');}catch(e){}setTimeout(()=>location.reload(),300);});   /* v27: always move onto the new build (work is autosaved first) */
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update().catch(()=>0)).catch(err=>console.warn('SW not registered',err)));
   /* v22: an app left open (phone tab, home-screen app) checks for a newer build whenever it comes back to the front and every 20 min;
      work is autosaved first, then the page reloads onto the new build */
   let lastChk=0,ptrDown=false;addEventListener('pointerdown',()=>ptrDown=true,true);addEventListener('pointerup',()=>ptrDown=false,true);addEventListener('pointercancel',()=>ptrDown=false,true);const chk=()=>{if(document.hidden||Date.now()-lastChk<60000)return;lastChk=Date.now();navigator.serviceWorker.getRegistration().then(r=>r&&r.update().catch(()=>0)).catch(()=>0);
-    fetch('index.html?bc='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=/EP_BUILD_HTML=(\d+)/.exec(t||'');if(m&&+m[1]>EP_BUILD&&!ptrDown){try{saveNow();}catch(e){}const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));setTimeout(()=>location.replace(u.toString()),300);}}).catch(()=>0);};
-  document.addEventListener('visibilitychange',chk);setInterval(chk,20*60000);}
+    fetch('index.html?bc='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=/EP_BUILD_HTML=(\d+)/.exec(t||'');if(m&&+m[1]>EP_BUILD&&!ptrDown){try{saveNow();}catch(e){}try{sessionStorage.setItem('ep.upd','1');}catch(e){}const u=new URL(location.href);u.searchParams.set('_r',Date.now().toString(36));setTimeout(()=>location.replace(u.toString()),300);}}).catch(()=>0);};
+  document.addEventListener('visibilitychange',chk);addEventListener('focus',chk);setTimeout(chk,4000);setInterval(chk,5*60000);   /* v27: check right after opening, on focus, and every 5 min */
+  try{if(sessionStorage.getItem('ep.upd')){sessionStorage.removeItem('ep.upd');setTimeout(()=>toast('Updated to Build '+EP_BUILD),1500);}}catch(e){}}
 /* v24: on desktop / tablet every pencil in a set fits the box evenly (big sets shrink slightly instead of scrolling); phone keeps its swipe row */
 function fitPencils(){const r=$('#freerow');if(!r)return;r.style.removeProperty('--pz');r.classList.remove('pfit');
   if(innerWidth<=600||!r.querySelector('.pencil'))return;let z=1;
