@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=29;
+const EP_BUILD=30;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -39,7 +39,7 @@ const EXTRA=['#1f1d22','#2b2320','#5a3a2a','#8b5a3c','#c47f4a','#e3b36b','#f2d38
              '#6b2a4f','#a0579a','#6c5ba7','#3b3f8f','#2f6db5','#5aa7d6','#9fd3e0','#2f8a7e','#4c9a5b','#9cc36b','#3e5b34','#7d8c96'];
 const PENCIL_R=[3,6.5,12], ERASER_R=[8,16,30];
 /* v20: one smooth pen-tip size (1 = hair-thin ... 60 = very thick), shared by Pencil, brushes, Eraser, Pop Pencil and the Line pencil */
-const penR=()=>Math.max(.5,penSize/2), eraR=()=>Math.max(2,penSize*1.25), ppR=()=>Math.max(3,penSize*1.25);
+const penR=()=>Math.max(.5,penSize/2), eraR=()=>Math.max(2,erSize*1.25), ppR=()=>Math.max(3,penSize*1.25);
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const app=$('#app'), stage=$('#stage'), zoomer=$('#zoomer'), layers=$('#layers'), lineImg=$('#line');
 const strokeC=$('#stroke'), dimC=$('#dim'), glowC=$('#glow'), numC=$('#nums');
@@ -47,7 +47,7 @@ const mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;retu
 [strokeC,dimC,glowC,numC].forEach(c=>{c.width=W;c.height=H});
 const sctx=strokeC.getContext('2d'), dctx=dimC.getContext('2d'), gctx=glowC.getContext('2d'), nctx=numC.getContext('2d');
 const covC=mk(), cov=covC.getContext('2d'), maskC=mk(), mctx=maskC.getContext('2d');
-let mode='free', tool='pencil', penSize=Math.max(1,Math.min(60,+settings.penSize||13)), clip=settings.lineLock!==false, color=EXTRA[10], S=null, selNum=1;
+let erSize=Math.max(1,Math.min(60,+settings.erSize||+settings.penSize||13));let mode='free', tool='pencil', penSize=Math.max(1,Math.min(60,+settings.penSize||13)), clip=settings.lineLock!==false, color=EXTRA[10], S=null, selNum=1;
 const cache={};
 const hex2rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 
@@ -248,7 +248,7 @@ function inkTile(k,hex,style,big){if(big&&((k==='plain'&&!style)||style==='air')
 function inkTile0(k,hex,style,big){
   const n=256,w=big?W:n,h=big?H:n,c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');const rgb=hex2rgb(hex);
   if(TEXK.has(k)&&!style){x.putImageData(texTile(k,texVariant(k,hex),rgb,big),0,0);return c;}
-  if(k==='plain'&&!style){x.fillStyle=hex;x.fillRect(0,0,n,n);x.globalCompositeOperation='destination-in';x.drawImage(grain,0,0);return c;}
+  if(k==='plain'&&!style){x.fillStyle=hex;x.fillRect(0,0,n,n);return c;}   /* b30: plain pencils are a solid, smooth, opaque marker (no grainy paper tooth) */
   const im=x.createImageData(w,h),D=im.data,T=Math.PI*2;
   const vn=new Float32Array(17*17);for(let i=0;i<vn.length;i++)vn[i]=hash2(i*7+3,i*13+1);   // low-frequency noise (watercolor)
   for(let i=0;i<17;i++){vn[i*17+16]=vn[i*17];vn[16*17+i]=vn[i];}
@@ -624,13 +624,13 @@ function markColor(){setTimeout(sizeUI,0);const sl=$('#saveLoop');if(sl)sl.hidde
     ab.classList.toggle('on',ink.id===anyId(k));ab.classList.toggle('cur',mine);if(sw)sw.style.background=mine?ink.hex:'conic-gradient(#f44,#fa3,#ee4,#4c6,#3cd,#46f,#a5f,#f4a,#f44)';ab.dataset.c=mine?ink.hex:'';}}
 }
 function pickNum(k){ if(mode==='free'){pickColor(S.d.palette[k-1]);return;} selNum=k;markColor();highlight();drawNums();}
-function pickColor(h){color=h;ink=settings.chromeFinish&&!MIX.on?{kind:'chrome',hex:h,id:'c-any'}:{kind:'plain',hex:h,id:null};if(ink.id==='c-any')enableTilt();if(tool==='eraser'||tool==='poperase')setTool(backTool());if(MIX.on){if($('#mixer').hidden&&!pickColor.keepMix)setMix(false);else mixInk();}   /* v25: after Mix is accepted, picking another pencil ends Mix, so no effect leaks into plain strokes */setInkPattern();markColor();
+function pickColor(h){try{grabToDraw();}catch(e){}color=h;ink=settings.chromeFinish&&!MIX.on?{kind:'chrome',hex:h,id:'c-any'}:{kind:'plain',hex:h,id:null};if(ink.id==='c-any')enableTilt();if(tool==='eraser'||tool==='poperase')setTool(backTool());if(MIX.on){if($('#mixer').hidden&&!pickColor.keepMix)setMix(false);else mixInk();}   /* v25: after Mix is accepted, picking another pencil ends Mix, so no effect leaks into plain strokes */setInkPattern();markColor();
   $$('#pgroup .brush').forEach(b=>{b.innerHTML=premiumIcon(PREM[b.dataset.p]);});}
 /* v16: the bottom bar follows the tool. Pencil shows the drawing pencils, Fill the fill colors, Pop Pencil its options plus pencils,
    Pop Fill (pencils too, for Color while popping) / Eraser / Pop Erase their options. Each of Pencil (incl. brushes), Fill and Pop Pencil remembers its last pencil or color. */
 let TMEM={};const TMEMS={'2d':TMEM,'3d':{}},LASTT={},CTX={pencil:['Pencil','Drawing pencils · flip sets with ‹ ›, hover a pencil for its name, or pick any color with the wheel'],fill:['Fill','Fill colors · pick a color here, then tap an area to fill it'],
   poppencil:['Pop Pencil','Paint over an area to lift it or press it in · with Color while popping on, it also paints with the pencil you pick'],pop:['Pop Fill','Tap an area to raise it (or press it in with Inset) · stays inside the lines like Fill · the slider sets the area you last tapped · Color while popping fills it too'],
-  eraser:['Eraser','Rub out color · set the size with the Size slider · tap Eraser again, any pencil or any tool to go back'],poperase:['Pop Erase','Tap a raised or inset part to flatten it · tap Pop Erase again, any pencil or any tool to go back']};
+  eraser:['Eraser','Click = clear area · Drag = erase · set the size with the Size slider · Undo brings it back'],poperase:['Pop Erase','Tap a raised or inset part to flatten it · tap Pop Erase again, any pencil or any tool to go back']};
 const LASTD={};const isEr=t=>t==='eraser'||t==='poperase';const backTool=()=>LASTD[toolSet]&&inToolSet(LASTD[toolSet])?LASTD[toolSet]:drawTool();
 const toolGroup=t=>PREM[t]?'pencil':(t==='pencil'||t==='fill'||t==='poppencil'||t==='pop')?t:null;
 const sameInk=(a,b)=>a&&b&&a.kind===b.kind&&a.hex===b.hex&&(a.id||null)===(b.id||null)&&JSON.stringify(a.mix||null)===JSON.stringify(b.mix||null)&&(a.ramp||null)===(b.ramp||null);
@@ -640,7 +640,7 @@ function ctxBar(t,anim){const g=toolGroup(t)||t,c=CTX[g]||CTX.pencil,prev=app.da
 /* v17: 2D and 3D have separate tool sets. 2D: Pencil, Fill, Eraser (+ brushes). 3D: Fill, Pop Fill, Pop Pencil, Pop Erase, Eraser.
    The 2D / 3D switch at the left of the pencil bar swaps the toolbar and pencils; each set remembers its own tool and colors. */
 let toolSet='2d';
-const SET_TOOLS={'2d':['pencil','fill','eraser'],'3d':['fill','pop','poppencil','poperase','eraser']};
+const SET_TOOLS={'2d':['pencil','fill','eraser'],'3d':['fill','pop','poppencil','eraser']};   /* b30: Pop Erase merged into the one Eraser */
 const inToolSet=(t,s=toolSet)=>PREM[t]?true:SET_TOOLS[s].includes(t);   /* v24: brushes work over 3D too */
 const setOK=i=>true;   /* v24: every set (brushes too) is usable in 3D */   // brushes are 2D only (they can't color through Pop Fill)
 const drawTool=()=>toolSet==='3d'?'fill':'pencil';
@@ -658,7 +658,8 @@ function setToolSet(s){app.classList.toggle('set3d',s==='3d');if(s===toolSet){mo
 function setbarFit(){const bar=$('#setbar');if(!bar)return;bar.classList.remove('stack');const k=[...bar.children].filter(e=>e.offsetParent&&e.offsetWidth);
   const tops=new Set(k.map(e=>Math.round(e.offsetTop/6)));if(tops.size>1)bar.classList.add('stack');}
 let fitRaf=0;const fitSoon=()=>{cancelAnimationFrame(fitRaf);fitRaf=requestAnimationFrame(setbarFit);};
-function setTool(t){if(!inToolSet(t))t=t==='pop'||t==='poppencil'||t==='poperase'?'fill':drawTool();const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool),g1=memG(t);let rebuild=false;   /* v16: Pop Fill shares Fill's color */
+function grabToDraw(){let ch=false;if(settings.grab==='hand'){settings.grab='draw';LS.set('settings',settings);ch=true;}if(GRAB.auto!=='draw'){GRAB.auto='draw';ch=true;}if(ch)grabUI();}
+function setTool(t){if(t==='poperase')t='eraser';try{grabToDraw();}catch(e){}if(!inToolSet(t))t=t==='pop'||t==='poppencil'||t==='poperase'?'fill':drawTool();const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool),g1=memG(t);let rebuild=false;   /* v16: Pop Fill shares Fill's color */
   if(g0)TMEM[g0]={ink:{...ink},color,setIdx,tool};
   if(false&&g1&&g1!==g0&&TMEM[g1]){const m=TMEM[g1];if(g1==='pencil'&&t==='pencil'&&PREM[m.tool])t=m.tool;
     if(!sameInk(m.ink,ink)){ink={...m.ink};color=m.color;if(m.setIdx!==setIdx){setIdx=m.setIdx;settings.pset=SETS[setIdx].id;LS.set('settings',settings);}rebuild=true;}}
@@ -800,7 +801,8 @@ function inkMap(){ // 1 where the line art is dark ink (computed once per scene)
   for(let i=0,j=0;i<m.length;i++,j+=4)m[i]=(d[j+3]>110&&d[j]+d[j+1]+d[j+2]<360)?1:0; return (S.ink=m);}
 const isInk=(x,y)=>{const m=inkMap();return !!(m&&x>=0&&y>=0&&x<W&&y<H&&m[(y|0)*W+(x|0)]);};
 const scrScale=()=>zoomer.getBoundingClientRect().width/W;   // screen px per canvas px
-function setMask(r){mctx.clearRect(0,0,W,H);const m=mctx.createImageData(W,H),D=m.data;for(let p=S.off[r];p<S.off[r+1];p++)D[S.pix[p]*4+3]=255;mctx.putImageData(m,0,0);}
+function setMask(r){mctx.clearRect(0,0,W,H);const m=mctx.createImageData(W,H),D=m.data,L=S.lab;for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p];D[i*4+3]=255;if(L[i-1]===r&&L[i+1]===r&&L[i-W]===r&&L[i+W]===r)continue;const x=i%W,y=(i/W)|0;   /* b30: also cover the line-art pixels right at the edge (up to 3px) so colour meets the line with no white gap; never into a neighbouring area */
+  for(let dy=-2;dy<=2;dy++){const yy=y+dy;if(yy<0||yy>=H)continue;for(let dx=-2;dx<=2;dx++){const xx=x+dx;if(xx<0||xx>=W||dx*dx+dy*dy>5)continue;const j=yy*W+xx;if(!L[j])D[j*4+3]=255;}}}mctx.putImageData(m,0,0);}
 let lastStroke=null,rampC=null,rampT=null;
 function rampStamp(x,y,R){const rp=stroke.ramp;rp.d+=Math.hypot(x-rp.last[0],y-rp.last[1]);rp.last=[x,y];const t=pingpong(rp.d/RAMP_LEN),c=rampRgb(rp.k,t),rr=R*1.3;
   const a=rampC.getContext('2d'),b=rampT.getContext('2d');a.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;a.beginPath();a.arc(x,y,rr,0,6.2832);a.fill();
@@ -826,7 +828,7 @@ function stamp(x,y,pr){
   const p=(pr>0&&pr!==.5)?pr:.5;
   if(stroke.er){const R=eraR()/zoomSizeDiv(),P=S.pp;   /* v24: one eraser for everything under it: color, Pulse, tracing, Pop Pencil heights (and Pop Fill shapes, at the end) */
     const cs=[S.free.ctx];if(S.pulse)cs.push(S.pulse.ctx);if(S.ltr&&mode==='free')cs.push(S.ltr.getContext('2d'));if(P&&P.any&&mode==='free'){cs.push(P.rx,P.ix);stroke.ppEr=true;}
-    for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.globalAlpha=(P&&(c===P.rx||c===P.ix))?1:.85;c.drawImage(tip,x-R,y-R,2*R,2*R);c.restore();}
+    for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.globalAlpha=1;c.beginPath();c.arc(x,y,R,0,6.2832);c.fill();c.restore();}   /* b30: one pass erases 100% under the brush (hard round tip, full strength) */
     if(mode==='free')fxEraseAt(x,y,R);
     {const r=S.lab[(y|0)*W+(x|0)];if(r)(stroke.erR||(stroke.erR=new Set())).add(r);}
     if(S.pulse)dirty('pulse');if(S.ltr&&mode==='free'){dirty('ltr');stroke.ltEr=true;}return;}
@@ -835,7 +837,7 @@ function stamp(x,y,pr){
       cov.drawImage(tip,x+Math.cos(a)*d-rr,y+Math.sin(a)*d-rr,2*rr,2*rr);}}
   else if(stroke.st==='water'){R*=2.3;cov.globalAlpha=.09;cov.drawImage(tip,x-R,y-R,2*R,2*R);}
   else{const j=R*.15,rich=['metal','glitter','neon','jewel','chrome','lightning'].includes(inkKind())||TEXK.has(inkKind());if(ink.kind==='smoke'||ink.kind==='cloud'){R*=1.5;cov.globalAlpha=ink.kind==='smoke'?.4+.3*p:.5+.35*p;cov.drawImage(tip,x-R,y-R,2*R,2*R);}else{
-    cov.globalAlpha=rich?.75+.25*p:.45+.4*p; cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);if(stroke.fur)furStamp(x,y,R);}
+    const solid=inkKind()==='plain';cov.globalAlpha=solid?1:rich?.75+.25*p:.45+.4*p; if(solid)cov.drawImage(tip,x-R,y-R,2*R,2*R);else cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);if(stroke.fur)furStamp(x,y,R);}
   const d=stroke.dirty,a=[x-R-2,y-R-2,x+R+2,y+R+2];
   stroke.dirty=d?[Math.min(d[0],a[0]),Math.min(d[1],a[1]),Math.max(d[2],a[2]),Math.max(d[3],a[3])]:a;
   {const q=stroke.bbx;stroke.bbx=q?[Math.min(q[0],a[0]),Math.min(q[1],a[1]),Math.max(q[2],a[2]),Math.max(q[3],a[3])]:a.slice();}
@@ -869,7 +871,7 @@ function lockedStamp(x,y,pr){
   if(r===stroke.region){stroke.exit=null;stroke.brace=null;stroke.inPt=[x,y];return stamp(x,y,pr);}
   if(!stroke.exit)stroke.exit=stroke.inPt;
   const sc=scrScale(), far=Math.hypot(x-stroke.exit[0],y-stroke.exit[1])*sc;
-  if(r&&(far>=LINE_LOCK.BREAK_PX||(stroke.pen&&pr>LINE_LOCK.PRESSURE)))return breakThrough(r,x,y,pr);
+  /* b30: Line Lock is strict: a stroke stays in the area where it started at any pen size (no break-through past a line). Turn Line Lock off to cross lines. */
   // brace: pull the stamp to the nearest inside pixel (magnetic edge); never paint outside
   const q=nearestPx(x,y,Math.min(40,Math.ceil(LINE_LOCK.MAGNET_PX/sc)),v=>v===stroke.region);
   const b=q?[q[0]+.5,q[1]+.5]:stroke.inPt;
@@ -897,6 +899,7 @@ function flush(){
 function commitPaint(){
   let src=strokeC;if(!stroke.er&&stroke.st!=='water'){const b=stroke.bbx||[0,0,W,H],bx=b[0]-2,by=b[1]-2,bw=b[2]-b[0]+4,bh=b[3]-b[1]+4;
     if(!stroke.neon&&(fxOverlap(bx,by,bw,bh)||under3DAt(bx,by,bw,bh)))src=solidStroke(strokeC,bx,by,bw,bh);   /* v24: over 3D work / effects the colour lays on top solidly */
+    if(src!==strokeC&&stroke.region){const sx=src.getContext('2d');sx.save();sx.globalCompositeOperation='destination-in';sx.drawImage(maskC,0,0);sx.restore();}   /* b30: Line Lock also clips the solid pass, so nothing spills past the line */
     fxCoverOld(src,bx,by,bw,bh,adjOp(),stroke.pulse);}
   if(!stroke.er){const c=stroke.pulse?pulseLayer().ctx:S.free.ctx;adjGlowDraw(c,strokeC,ink.hex);c.save();c.globalAlpha=adjOp();if(stroke.pulse){S.pulseUsed=true;dirty('pulse');}
     if(stroke.neon&&ink.kind==='glow'){haloDraw(c,strokeC,ink.hex);}
@@ -906,6 +909,12 @@ function commitPaint(){
     if(stroke.ramp){const tm=mk(),tx=tm.getContext('2d');tx.drawImage(rampT,0,0);tx.globalCompositeOperation='destination-in';tx.drawImage(strokeC,0,0);fxAdd(['rampfx'],stroke.ramp.k,tm);}
     else fxAdd(fxKindsOf(ink),ink.hex,strokeC,0,0,stroke.path);}
 }
+/* b30: reverse Fill: remove everything the user added inside one line-art area (color, Pulse, effects, Pop Pencil heights, Pop Fill / Deep Pop). The line art itself is never touched; Undo restores. */
+function eraseRegionAt(x,y){const r=labAt(x,y);if(!r||!S)return false;const b=r*4,bx=Math.max(0,S.bb[b]-2),by=Math.max(0,S.bb[b+1]-2),bw=Math.min(W,S.bb[b+2]+3)-bx,bh=Math.min(H,S.bb[b+3]+3)-by;if(bw<=0||bh<=0)return false;
+  const c=document.createElement('canvas');c.width=bw;c.height=bh;const cx=c.getContext('2d'),m=cx.createImageData(bw,bh);for(let p=S.off[r];p<S.off[r+1];p++){const q=S.pix[p];m.data[(((q/W)|0)-by)*bw*4+((q%W)-bx)*4+3]=255;}cx.putImageData(m,0,0);
+  cx.filter='blur(1.2px)';cx.drawImage(c,0,0);cx.drawImage(c,0,0);cx.filter='none';
+  const cs=[S.free.ctx];if(S.pulse)cs.push(S.pulse.ctx);for(const q of cs){q.save();q.globalCompositeOperation='destination-out';q.drawImage(c,bx,by);q.restore();}if(S.pulse)dirty('pulse');
+  try{fxEraseRegion(r);}catch(e){}try{ppEraseAt(r);}catch(e){}if(stroke)(stroke.erR||(stroke.erR=new Set())).add(r);dirty('free');return true;}
 function eraserEnd(st){if(!S||mode!=='free')return;for(const r of (S.fx||[]))if(r.erD){r.erD=false;r.dirty=true;}   /* v25: rescan erased masks once, when the stroke ends */
   if(st.ppEr)ppRender(S);if(st.ltEr&&typeof ltRender==='function')ltRender();
   if(st.erR&&S.pops&&S.pops.length){const n0=S.pops.length;S.pops=S.pops.filter(p=>!(p.rs||[p.r]).some(r=>st.erR.has(r)));if(S.pops.length!==n0){renderPops();dirty('pop');}}}
@@ -969,9 +978,10 @@ let Z={z:1,x:0,y:0};
    (grab and pull to pan), as Miles described. Flip the rule with ONE setting: settings.grabRule='in-hand' (zoom in = hand, zoom out = draw).
    Space held = a temporary hand. Tools are never changed by it. Two-finger pinch / pan keeps working on touch. */
 const GRAB={auto:'draw',lastZ:1};
-const grabMode=()=>settings.grab||'auto';
-function handOn(){const m=grabMode();return spaceDown||m==='hand'||(m==='auto'&&GRAB.auto==='hand');}
-function grabAutoZoom(z0,z1){if(Math.abs(z1-z0)<.001)return;const zin=z1>z0,rule=settings.grabRule==='in-hand'?'in-hand':'in-draw';GRAB.auto=(z1<=1.001)?'draw':(zin===(rule==='in-draw'))?'draw':'hand';grabUI();}   /* back at the whole page there is nothing to pan, so Auto returns to drawing */
+const grabMode=()=>settings.grab==='hand'?'hand':'draw';   /* b30: no Auto grab: the picture pans ONLY with the Hand button (or Space+drag, two-finger pinch/pan on touch) */
+let lastPT='mouse';addEventListener('pointerdown',e=>{lastPT=e.pointerType||'mouse';},true);
+function handOn(){return spaceDown||grabMode()==='hand';}
+function grabAutoZoom(z0,z1){return;if(Math.abs(z1-z0)<.001)return;const zin=z1>z0,rule=settings.grabRule==='in-hand'?'in-hand':'in-draw';GRAB.auto=(z1<=1.001)?'draw':(zin===(rule==='in-draw'))?'draw':'hand';grabUI();}   /* back at the whole page there is nothing to pan, so Auto returns to drawing */
 function grabUI(){const m=grabMode(),h=handOn();stage.classList.toggle('handmode',h);$$('#grabSw button').forEach(b=>{b.classList.toggle('on',b.dataset.g===m);b.classList.toggle('eff',m==='auto'&&b.dataset.g===(h?'hand':'draw'));b.setAttribute('aria-pressed',String(b.dataset.g===m));});
   const a=$('#grabAuto');if(a)a.title=`Auto (Smart Grab): zoom ${settings.grabRule==='in-hand'?'in to grab and pan, zoom out to draw':'in to draw, zoom out to grab and pan'} · now: ${h?'Hand':'Draw'}`;}
 function setGrab(m){settings.grab=m;LS.set('settings',settings);grabUI();toast(m==='hand'?'Hand: grab and pull to pan':m==='draw'?'Draw: clicks draw and color':'Auto: zoom in to draw, zoom out to grab and pan');}
@@ -1057,7 +1067,7 @@ stage.addEventListener('pointermove',e=>{
     Z.z=z;Z.x=mx-(pinch.mx-pinch.x)*z/pinch.z;Z.y=my-(pinch.my-pinch.y)*z/pinch.z;applyZoom();return;}
   if(down&&down.lt===1&&e.pointerId===down.id){const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of (evs.length?evs:[e])){const [x,y]=toCanvas(ev);ltMove(x,y);}return;}
   if(pps&&down&&e.pointerId===down.id){const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of (evs.length?evs:[e])){const [x,y]=toCanvas(ev);ppMove(x,y);if(stroke)moveStroke(x,y,ev.pressure);}return;}
-  if(down&&e.pointerId===down.id&&!stroke&&!down.pp&&(down.pan||(Z.z>1.01&&Math.hypot(e.clientX-down.x,e.clientY-down.y)>10))){
+  if(down&&e.pointerId===down.id&&down.pan){   /* b30: dragging with Fill / Pop Fill no longer pans a zoomed picture; only Hand, Space or middle drag pan */
     down.pan=true;stage.classList.add('panning');Z.x=down.zx+(e.clientX-down.x);Z.y=down.zy+(e.clientY-down.y);applyZoom();return;}
   if(stroke&&down&&e.pointerId===down.id){const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];
     for(const ev of (evs.length?evs:[e])){const [x,y]=toCanvas(ev);moveStroke(x,y,ev.pressure);}}
@@ -1070,7 +1080,7 @@ function up(e){
   if(down.pan){down=null;return;}
   if(down.lt){if(down.lt===1){if(e.type==='pointerup')ltUp();else{LTS=null;ltRender();}}down=null;return;}
   if(pps){ppEnd();if(stroke){const r=stroke.region||labAt(down.cx,down.cy);endStroke();helperAfterColor(r);}down=null;return;}
-  if(stroke){const r=stroke.region||labAt(down.cx,down.cy);endStroke();helperAfterColor(r);}
+  if(stroke){const r=stroke.region||labAt(down.cx,down.cy);if(stroke.er&&mode==='free'&&e.type==='pointerup'&&moved<4)eraseRegionAt(down.cx,down.cy);endStroke();helperAfterColor(r);}   /* b30: Eraser click (<4px movement) = clear that whole area, drag = erase along the path */
   else if(e.type==='pointerup'&&moved<14){ if(mode==='cbn'&&tool==='pop')popTap(down.cx,down.cy); else if(mode==='cbn'&&tool==='poperase')popErase(down.cx,down.cy); else if(mode==='cbn'&&tool!=='poppencil')tapCBN(down.cx,down.cy); else if(mode==='cbn'){} else if(tool==='fill')fillFree(down.cx,down.cy); else if(tool==='pop')popTap(down.cx,down.cy); else if(tool==='poperase')popErase(down.cx,down.cy); }
   down=null;
 }
@@ -1141,7 +1151,7 @@ const DPRAND=n=>{const s=Math.sin(n*12.9898)*43758.5453;return s-Math.floor(s);}
 const DCURVE={smooth:x=>(Math.sin(x)+1)/2,bounce:x=>{const o=(x/Math.PI)%2;return o<1?o:2-o;},pulse:x=>Math.pow((Math.sin(x)+1)/2,4),
   random:x=>{x*=.5;const i=Math.floor(x),f=x-i,a=DPRAND(i),b=DPRAND(i+1),u=f*f*(3-2*f);return a+(b-a)*u;}};   // Miles's smooth random noise
 const DPK=[['n','Layers',8,64,1,''],['d','Depth',0,100,1,''],['l1','Shadow L1',.05,.3,.01,'%'],['l2','Shadow L2',.05,.5,.01,'%'],['bl','Blur',1,5,.1,'×'],['hs','Hue Shift',0,360,1,'°']];
-const DPDEF={n:24,d:55,l1:.16,l2:.3,bl:2,hs:0,carved:false,drift:true,rot:false,pal:null,cyc:false};
+const DPDEF={n:24,d:72,l1:.2,l2:.36,bl:2,hs:0,carved:false,drift:true,rot:false,pal:null,cyc:false};
 const DPMAX=64;
 function dpDefaults(){const s=settings.dp||{};const o={...DPDEF};for(const k in DPDEF)if(s[k]!=null&&typeof s[k]===typeof DPDEF[k]||(k==='pal'&&s[k]!==undefined))o[k]=s[k];o.au={};if(s.au)for(const k in s.au)o.au[k]={...s.au[k]};return o;}
 function dpNew(){const d=dpDefaults();d.ph=Math.random()*1000;return d;}
@@ -1308,10 +1318,10 @@ function popErase(x,y){const r=labAt(x,y);if(!r||!S)return;const hadPop=(S.pops|
   if(!T.lv[r]){toast('Already flat');return;}
   const rs=POP.whole?objectOf(S,r):[r],back=rs.every(q=>fl.has(q));
   rs.forEach(q=>back?fl.delete(q):fl.add(q));S.flat3d=[...fl];fl.size?LS.set('flat3d.'+S.n,S.flat3d):LS.del('flat3d.'+S.n);
-  S.relief=null;apply3D(true);toast(back?'3D restored':'Flattened · tap again to restore');}
+  if(back){toast('Already flat');return;}S.relief=null;apply3D(true);toast('Flattened');}   /* b30: no hidden tap-again restore; Undo restores */
 let tilt={x:0,y:0};
 function popParallax(){relParallax();if(!S||!S.popSh)return;S.popSh.style.transform=S.popLi.style.transform='';}   // v12: pops stay put inside their lines (no parallax drift over neighbours)
-stage.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||!S||!((S.pops&&S.pops.length)||D3.on))return;D3.lastMove=performance.now();const r=stage.getBoundingClientRect();
+stage.addEventListener('pointermove',e=>{return;if(e.pointerType!=='mouse'||!S||!((S.pops&&S.pops.length)||D3.on))return;D3.lastMove=performance.now();const r=stage.getBoundingClientRect();
   tilt={x:((e.clientX-r.left)/r.width-.5)*2.4,y:((e.clientY-r.top)/r.height-.5)*2.4};popParallax();});
 let orientOn=false;
 function enableTilt(){if(orientOn)return;const go=()=>{orientOn=true;window.addEventListener('deviceorientation',e=>{if(e.gamma==null)return;
@@ -2124,6 +2134,8 @@ function setMix(on){const was=MIX.on;MIX.on=on;if(was!==on)setTimeout(buildPalet
 /* ---------- owner test controls: only with ?owner=primewest, or after the owner code was used on this device ---------- */
 const OWNER_KEY=(OWNER&&OWNER.storageKey)||'ep.owner.v1';
 function ownerMode(){if(!OWNER)return false;try{if(new URLSearchParams(location.search).get(OWNER.urlParam||'owner')===(OWNER.urlValue||'primewest')){localStorage.setItem(OWNER_KEY,'1');return true;}return localStorage.getItem(OWNER_KEY)==='1';}catch(e){return false;}}
+function ownerAuto(){try{if(!OWNER||new URLSearchParams(location.search).get(OWNER.urlParam||'owner')!==(OWNER.urlValue||'primewest'))return;if(localStorage.getItem('ep.owner.relock')==='1')return;if(Object.values(ENT).every(e=>e.unlocked()))return;Object.values(ENT).forEach(e=>e.grant('owner-link'));}catch(e){}}
+ownerAuto();
 function ownerBar(){const b=$('#ownerbar');if(!b)return;b.hidden=!ownerMode();if(b.hidden)return;
   const all=Object.values(ENT).every(e=>e.unlocked());$('#ownUnlock').classList.toggle('on',all);$('#ownRelock').setAttribute('aria-pressed',String(!all));$('#ownRelock').classList.toggle('on',!all);}
 
@@ -2594,12 +2606,21 @@ $$('.tool').forEach(b=>b.onclick=()=>{const t=b.dataset.tool;setTool(isEr(t)&&to
 {const to=$('#toolopts');if(to){const a=$('#tools .popswwrap'),b=$('#tools .popctl');if(a)to.appendChild(a);if(b)to.appendChild(b);}ctxBar(tool,false);}   /* v16: pop options live in the tool bar row */
 /* v20: size slider with a live preview dot, the number, and quick preset dots */
 function sizeUI(){try{sizeUI0();}catch(e){}try{phSync();}catch(e){}}
-function sizeUI0(){const r=$('#szRange');if(!r)return;if(document.activeElement!==r)r.value=penSize;$('#szNum').textContent=penSize;
+function sizeUI0(){const r=$('#szRange');if(!r)return;const ER=tool==='eraser',V=ER?erSize:penSize;if(document.activeElement!==r)r.value=V;$('#szNum').textContent=V;{const t=$('#sizebox .bxt');if(t)t.textContent=ER?'Eraser size':'Pen size';$('#sizebox').setAttribute('aria-label',ER?'Eraser size':'Pen size');r.setAttribute('aria-label',ER?'Eraser size':'Pen tip size');}
   const er=tool==='eraser',d=$('#szDot'),px=Math.max(2,Math.min(40,(er?eraR()*2:penSize)*.62+1));d.style.width=d.style.height=px+'px';
   d.style.background=er?'transparent':(ink&&ink.hex)||color;d.style.boxShadow=er?'inset 0 0 0 1.5px #ffe2bd':'';$('#sizebox')&&$('#sizebox').classList.toggle('er',er);
-  r.style.setProperty('--p',((penSize-1)/59*100)+'%');$$('.szp').forEach(b=>b.classList.toggle('on',+b.dataset.v===penSize));}
-function setPenSize(v){penSize=Math.max(1,Math.min(60,Math.round(+v)||13));settings.penSize=penSize;clearTimeout(setPenSize.t);setPenSize.t=setTimeout(()=>LS.set('settings',settings),300);sizeUI();}
+  r.style.setProperty('--p',((V-1)/59*100)+'%');$$('.szp').forEach(b=>b.classList.toggle('on',+b.dataset.v===V));}
+function setPenSize(v){if(tool==='eraser'){erSize=Math.max(1,Math.min(60,Math.round(+v)||13));settings.erSize=erSize;clearTimeout(setPenSize.t);setPenSize.t=setTimeout(()=>LS.set('settings',settings),300);sizeUI();erCurShow(null,true);return;}penSize=Math.max(1,Math.min(60,Math.round(+v)||13));settings.penSize=penSize;clearTimeout(setPenSize.t);setPenSize.t=setTimeout(()=>LS.set('settings',settings),300);sizeUI();}
 {const r=$('#szRange');if(r)r.oninput=e=>setPenSize(e.target.value);$$('.szp').forEach(b=>{b.querySelector('i').style.width=b.querySelector('i').style.height=Math.max(3,Math.min(18,+b.dataset.v*.4+2))+'px';b.onclick=()=>setPenSize(b.dataset.v);});sizeUI();}
+/* b30: Eraser circle cursor at the exact eraser size (follows the mouse; on touch while dragging; previewed while moving the size slider) */
+function erCurEl(){let c=document.getElementById('erCur');if(!c){c=document.createElement('div');c.id='erCur';c.className='ercur';stage.appendChild(c);}return c;}
+function erCurDia(){const r=zoomer.getBoundingClientRect();return 2*eraR()/zoomSizeDiv()*r.width/W;}
+let erCurT=0;function erCurShow(e,preview){const c=erCurEl();if(tool!=='eraser'){c.hidden=true;return;}const sr=stage.getBoundingClientRect(),d=erCurDia();let x,y;
+  if(e){x=e.clientX-sr.left;y=e.clientY-sr.top;}else{x=sr.width/2;y=sr.height/2;}c.style.width=c.style.height=d+'px';c.style.left=(x-d/2)+'px';c.style.top=(y-d/2)+'px';c.hidden=false;c.classList.toggle('prev',!!preview);
+  clearTimeout(erCurT);if(preview||(e&&e.pointerType!=='mouse'))erCurT=setTimeout(()=>{if(!preview&&down)return;c.hidden=true;},preview?900:700);}
+stage.addEventListener('pointermove',e=>{if(tool==='eraser'&&(e.pointerType==='mouse'||down))erCurShow(e);else{const c=document.getElementById('erCur');if(c)c.hidden=true;}});
+stage.addEventListener('pointerdown',e=>{if(tool==='eraser')erCurShow(e);});
+stage.addEventListener('pointerleave',()=>{const c=document.getElementById('erCur');if(c)c.hidden=true;});
 function syncClip(){const b=$('#clip');b.classList.toggle('on',clip);b.setAttribute('aria-pressed',clip);b.querySelector('.llstate').textContent=clip?'On':'Off';}
 $('#clip').onclick=()=>{clip=!clip;settings.lineLock=clip;LS.set('settings',settings);syncClip();hideLLTip();toast(clip?'Line Lock on':'Line Lock off');};
 syncClip();
@@ -2699,8 +2720,8 @@ phSync();$('#mxOk').onclick=mixAccept;$('#mxCancel').onclick=mixCancel;$('#mixer
 $('#mxOff').onclick=()=>{closeMix();setMix(false);};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#mixer').hidden)mixCancel();});
 $('#chromeBtn').onclick=()=>{settings.chromeFinish=!settings.chromeFinish;LS.set('settings',settings);if(MIX.on)setMix(false);if(ink.kind==='plain'||ink.id==='c-any')pickColor(color);else markColor();toast(settings.chromeFinish?'Chrome finish on · every color you pick is chrome':'Chrome finish off');};$('#mixer .mxx').onclick=()=>setMix(false);
-$('#ownUnlock').onclick=()=>{Object.values(ENT).forEach(e=>e.grant('owner-test'));ownerBar();toast('Owner test: everything unlocked on this device');};
-$('#ownRelock').onclick=()=>{Object.values(ENT).forEach(e=>e.revoke());try{localStorage.removeItem('ep.trials.v1');}catch(e){}ownerBar();buildPalette();toast('Re-locked: testing as a buyer (free tries reset)');};
+$('#ownUnlock').onclick=()=>{try{localStorage.removeItem('ep.owner.relock');}catch(e){}Object.values(ENT).forEach(e=>e.grant('owner-test'));ownerBar();toast('Owner test: everything unlocked on this device');};
+$('#ownRelock').onclick=()=>{try{localStorage.setItem('ep.owner.relock','1');}catch(e){}Object.values(ENT).forEach(e=>e.revoke());try{localStorage.removeItem('ep.trials.v1');}catch(e){}ownerBar();buildPalette();toast('Re-locked: testing as a buyer (free tries reset)');};
 /* ---------- Show ideas (Free Color, optional): empty areas softly pulse a suggested colour. ‹ › switch idea sets
    (the scene's colour guide, then the palettes). Never locks anything; an area you colour stops pulsing. ---------- */
 const IDEAS={on:settings.showIdeas===true,set:+settings.ideaSet||0};
@@ -3042,3 +3063,4 @@ function fitPencils(){const r=$('#freerow');if(!r)return;r.style.removeProperty(
 {let fpT=0;const fp=()=>{cancelAnimationFrame(fpT);fpT=requestAnimationFrame(fitPencils);};addEventListener('resize',fp);
   const go=()=>{const r=$('#palbody')||document.body;new MutationObserver(fp).observe(r,{childList:true,subtree:true});fp();};go();}
 })();
+

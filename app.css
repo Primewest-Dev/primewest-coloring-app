@@ -1143,3 +1143,8 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 #scBtn svg{fill:currentColor;stroke:none}
 #scView,#settings,#upgrade,#map,#soDlg,#showcase{z-index:1100}
 #showThumb:not([src]),#showThumb[src=""]{visibility:hidden}
+
+/* b30: Pop Erase merged into the one Eraser */
+.tool[data-tool=poperase]{display:none!important}
+#grabAuto{display:none!important}
+.ercur{position:absolute;z-index:40;pointer-events:none;border-radius:50%;border:1.5px solid rgba(255,255,255,.95);box-shadow:0 0 0 1.5px rgba(20,14,8,.85),inset 0 0 0 1px rgba(20,14,8,.5);box-sizing:border-box}.ercur.prev{border-style:dashed}.ercur[hidden]{display:none}
