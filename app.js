@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=47;let EP_place=null;
+const EP_BUILD=48;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -2712,6 +2712,16 @@ function placeTry(){const el=$('#tryrow');if(!el||el.hidden)return;const phone=m
   if(Math.max(roomL,roomR)<w){el.style.visibility='';el.hidden=true;return;}
   const left=roomL>=w?r.left-8-w:r.right+8,top=Math.max(8,Math.min(innerHeight-h-8,r.top));el.style.left=Math.round(left)+'px';el.style.top=Math.round(top)+'px';el.style.visibility='';}
 addEventListener('resize',()=>placeTry());
+/* b48: the colour coach ("Nice gold! Try …") sits in the free column beside the page (under the Try column) instead of over the art; phones / no room keep the old spot */
+function placeNudge(){const el=$('#nudge');if(!el||el.hidden)return;const phone=matchMedia('(max-width:600px)').matches;
+  const home=()=>{if(el.parentNode!==stage)stage.appendChild(el);el.classList.remove('col');el.style.cssText='';};
+  if(phone)return home();
+  const r=stage.getBoundingClientRect(),roomL=r.left-16,roomR=innerWidth-r.right-16;const side=roomL>=96?'L':roomR>=96?'R':null;if(!side)return home();
+  const w=Math.round(Math.min(150,side==='L'?roomL:roomR));if(el.parentNode!==document.body)document.body.appendChild(el);el.classList.add('col');el.style.width=w+'px';
+  const tr=$('#tryrow');let top=r.top;if(tr&&!tr.hidden&&tr.classList.contains('col')){const q=tr.getBoundingClientRect();if((side==='L')===(q.right<=r.left+1))top=Math.max(top,q.bottom+10);}
+  const h=el.offsetHeight;if(top+h>r.bottom&&top>r.top){top=r.top;if(tr&&!tr.hidden)tr.hidden=true;}   /* no room under the Try column: the coach takes its place */
+  top=Math.max(8,Math.min(innerHeight-h-8,top));el.style.left=Math.round(side==='L'?r.left-8-w:r.right+8)+'px';el.style.top=Math.round(top)+'px';}
+addEventListener('resize',()=>placeNudge());
 function showTry(r){if(!hintsOn()||mode!=='free'||!r||tool==='eraser'||tool==='pop')return;const sw=suggestFor(r),el=$('#tryrow');el.classList.remove('natural');el.querySelector('b').textContent='Try';
   el.querySelector('.tsw').innerHTML=sw.map((h,i)=>`<button style="background:${h}" data-c="${h}" title="${i===0&&S.num[r]?'From the color guide':colorName(h)}">${i===0&&S.num[r]?'<i>★</i>':''}</button>`).join('');
   el.querySelectorAll('.tsw button').forEach(b=>b.onclick=e=>{e.stopPropagation();pickColor(b.dataset.c);el.hidden=true;});
@@ -2802,7 +2812,7 @@ function showNudge(c,why){lastHint=performance.now();const [h,s,l]=rgb2hsl(hex2r
   const sugN=first===nm?'deeper '+nm:first;$('#nudgeTxt').textContent=`Nice ${nm}! Try ${/^[aeiou]/.test(sugN)?'an':'a'} ${sugN} on the next piece for contrast`;
   $('#nudge .nsw').innerHTML=sug.map(x=>`<button style="background:${x}" data-c="${x}" title="${colorName(x)}"></button>`).join('');
   $$('#nudge .nsw button').forEach(b=>b.onclick=e=>{e.stopPropagation();pickColor(b.dataset.c);$('#nudge').hidden=true;});
-  $('#nudge').dataset.why=why;$('#nudge').hidden=false;clearTimeout(nudgeT);nudgeT=setTimeout(()=>$('#nudge').hidden=true,10000);}
+  $('#nudge').dataset.why=why;$('#nudge').hidden=false;placeNudge();clearTimeout(nudgeT);nudgeT=setTimeout(()=>$('#nudge').hidden=true,10000);}
 function previewIdea(){if(!S)return;const c=$('#ideaC');c.width=W;c.height=H;const x=c.getContext('2d'),im=x.createImageData(W,H),D=im.data;
   const fd=S.free.ctx.getImageData(0,0,W,H).data,unc=new Uint8Array(S.N);S.rc=S.rc||{};
   for(let r=1;r<S.N;r++){if(!S.num[r]||S.rc[r])continue;const i=((S.cy[r]|0)*W+(S.cx[r]|0))*4+3;if(fd[i]<40)unc[r]=1;}
