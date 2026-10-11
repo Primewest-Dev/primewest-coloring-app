@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=35;
+const EP_BUILD=36;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -324,7 +324,7 @@ const adjOp=()=>{const a=curAdj();return a?adjVal(a,'o')/100:1;};
    previous one keeps its look (it is baked into the picture, so autosave keeps it). Undo removes the stroke with its adjustments. */
 function lastOpCapture(ctx,x,y,w,h,kind){if(!S||mode==='cbn')return;const u=S.free.undo[S.free.undo.length-1];if(!u)return;const M=52;
   const bx=Math.max(0,(x|0)-M),by=Math.max(0,(y|0)-M),bw=Math.min(W-bx,Math.ceil(w)+2*M),bh=Math.min(H-by,Math.ceil(h)+2*M);if(bw<=0||bh<=0)return;
-  const pulse=ctx!==S.free.ctx,src=pulse?u.p:u.f,B=new ImageData(bw,bh);if(src){const sd=src.data,bd=B.data;for(let r=0;r<bh;r++){const o=((by+r)*W+bx)*4;bd.set(sd.subarray(o,o+bw*4),r*bw*4);}}
+  const pulse=ctx!==S.free.ctx,src=pulse?u.p:u.f,B=src?cbox(src,bx,by,bw,bh):new ImageData(bw,bh);
   const A=ctx.getImageData(bx,by,bw,bh),ad=A.data,bd=B.data,mk8=new Uint8Array(bw*bh);let any=0;for(let i=0,j=0;i<mk8.length;i++,j+=4)if(ad[j]!==bd[j]||ad[j+1]!==bd[j+1]||ad[j+2]!==bd[j+2]||ad[j+3]!==bd[j+3]){mk8[i]=1;any++;}
   if(!any)return;const n=undoKey(),recs=[];for(const e of (S.fxUndo||[]))if(e.n===n)for(const q of e.m)if(q[3]==null&&!recs.some(z=>z[0]===q[0]))recs.push([q[0],q[0].hex]);
   S.lastOp={path:typeof stroke!=='undefined'&&stroke&&stroke.path&&stroke.path.length>1?[stroke.path[0],stroke.path[stroke.path.length-1]]:null,kind,pulse,bx,by,bw,bh,B,A,M:mk8,n,hex:ink.base||ink.hex,name:ink.id&&PREM[ink.id]?PREM[ink.id].name:ink.kind==='mix'?'Mix · '+colorName(ink.base||ink.hex):colorName(ink.base||ink.hex),recs,a:{}};   /* b29 hotfix: every new stroke/fill starts plain (full opacity, no hue/effect). Carrying Adjust values (e.g. Opacity 0) made every new stroke vanish on release */
@@ -711,7 +711,7 @@ async function showScene(n){
   {const cs=SETS[SETI.ccycle];if(cs){cs.items=ccItems(n);if(setIdx===SETI.ccycle)buildPalette();}}if(typeof scBtnSync==='function')scBtnSync();
   $$('.scene').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
   storyStrip();
-  lineImg.src=S.d.line; lineImg.onload=()=>{scheduleLineTint();linesApply();linesDoneGlow();lineBackDraw();}; layers.innerHTML=''; layers.appendChild(S.cbn.c); layers.appendChild(S.free.c); if(S.pulse)layers.appendChild(S.pulse.c);
+  lineImg.src=S.d.line; lineImg.onload=()=>{scheduleLineTint();linesApply();linesDoneGlow();lineBackDraw();setTimeout(()=>{try{if(S)inkMap();}catch(e){}},400);}; layers.innerHTML=''; layers.appendChild(S.cbn.c); layers.appendChild(S.free.c); if(S.pulse)layers.appendChild(S.pulse.c);
   renderPops(); ppAttach(S); fxAttach(); fxStart(); LTS=null; ltRender(); if($('#idea3d').classList.contains('on'))idea3d(false); loadVectorLines(n);
   selNum=firstOpen()||1; buildColors(); setMode(mode,true);
   needDepth(n).then(()=>{if(S.n!==n)return;cleanPops(S);apply3D(true);});
@@ -791,10 +791,17 @@ function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.cl
 let toastT=0;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),1600);}
 
 /* ---------- free color ---------- */
-function snap(){if(S){S.lastOp=null;if(!REDOING&&S.redo&&S.redo.length){S.redo=[];redoUI();}}const f=S.free,er=(tool==='eraser'||tool==='poperase')&&mode==='free';S.useq=(S.useq||0)+1;f.undo.push({id:S.useq,t:Date.now(),f:f.ctx.getImageData(0,0,W,H),p:S.pulseUsed?S.pulse.ctx.getImageData(0,0,W,H):null,
-    x:er?{l:S.ltr?S.ltr.getContext('2d').getImageData(0,0,W,H):null,rx:S.pp&&S.pp.any?S.pp.rx.getImageData(0,0,W,H):null,ix:S.pp&&S.pp.any?S.pp.ix.getImageData(0,0,W,H):null,pops:JSON.stringify((S.pops||[]).map(({k,anim,...p})=>p))}:null});if(f.undo.length>15){f.undo.shift();const lo=f.undo[0].id;S.fxUndo=(S.fxUndo||[]).filter(e=>e.n>=lo);}}
+/* b36: undo snapshots are GPU canvas copies (drawImage) instead of full-frame getImageData, which cost ~8 ms per layer at every pointerdown */
+function ccopy(c){const k=document.createElement('canvas');k.width=c.width;k.height=c.height;k.getContext('2d').drawImage(c,0,0);return k;}
+function cput(ctx,src){if(!src)return;if(src instanceof ImageData){ctx.putImageData(src,0,0);return;}if(src.pz){ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.clearRect(src.x,src.y,src.c.width,src.c.height);ctx.drawImage(src.c,src.x,src.y);ctx.restore();return;}ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=1;ctx.globalCompositeOperation='copy';ctx.drawImage(src,0,0);ctx.restore();}
+function cbox(src,bx,by,bw,bh){if(src.pz){const B=new ImageData(bw,bh),X0=Math.max(bx,src.x),Y0=Math.max(by,src.y),X1=Math.min(bx+bw,src.x+src.c.width),Y1=Math.min(by+bh,src.y+src.c.height);if(X1>X0&&Y1>Y0){const d=src.c.getContext('2d').getImageData(X0-src.x,Y0-src.y,X1-X0,Y1-Y0).data,bd=B.data,w=X1-X0;for(let r=0;r<Y1-Y0;r++)bd.set(d.subarray(r*w*4,(r+1)*w*4),((Y0-by+r)*bw+(X0-bx))*4);}return B;}if(src instanceof ImageData){const B=new ImageData(bw,bh),sd=src.data,bd=B.data;for(let r=0;r<bh;r++){const o=((by+r)*W+bx)*4;bd.set(sd.subarray(o,o+bw*4),r*bw*4);}return B;}return src.getContext('2d').getImageData(bx,by,bw,bh);}
+function snap(lazy){if(S){S.lastOp=null;if(!REDOING&&S.redo&&S.redo.length){S.redo=[];redoUI();}}const f=S.free,er=(tool==='eraser'||tool==='poperase')&&mode==='free';S.useq=(S.useq||0)+1;f.undo.push({id:S.useq,t:Date.now(),lz:lazy?1:0,f:lazy?null:ccopy(f.ctx.canvas),p:!lazy&&S.pulseUsed?ccopy(S.pulse.ctx.canvas):null,
+    x:er?{l:S.ltr?ccopy(S.ltr):null,rx:S.pp&&S.pp.any?ccopy(S.pp.rx.canvas):null,ix:S.pp&&S.pp.any?ccopy(S.pp.ix.canvas):null,pops:JSON.stringify((S.pops||[]).map(({k,anim,...p})=>p))}:null});if(f.undo.length>15){f.undo.shift();const lo=f.undo[0].id;S.fxUndo=(S.fxUndo||[]).filter(e=>e.n>=lo);}}
+function cpart(c,b){const P=80,x=Math.max(0,Math.floor(b[0])-P),y=Math.max(0,Math.floor(b[1])-P),w=Math.min(W,Math.ceil(b[2])+P)-x,h=Math.min(H,Math.ceil(b[3])+P)-y;if(w<=0||h<=0)return null;const k=document.createElement('canvas');k.width=w;k.height=h;k.getContext('2d').drawImage(c,x,y,w,h,0,0,w,h);return {pz:1,x,y,c:k};}
+function snapFill(){const u=S&&S.free.undo[S.free.undo.length-1];if(!u||!u.lz)return;const b=stroke&&stroke.bbx&&stroke.st!=='water'?stroke.bbx:null;u.f=b?cpart(S.free.ctx.canvas,b):ccopy(S.free.ctx.canvas);u.p=S.pulseUsed?(b?cpart(S.pulse.ctx.canvas,b):ccopy(S.pulse.ctx.canvas)):null;u.lz=0;if(!u.f)u.lz=1;}   /* b36: only the stroke's box (+80 px for glows) is copied */   /* b36: pencil strokes only touch the layers at commit, so the undo copy is taken then (pointerdown stays instant) */
 const undoKey=()=>{const u=S&&S.free&&S.free.undo[S.free.undo.length-1];return u?u.id:0;};
-function unsnap(u){if(u.full){fullRestore(u.full);return;}S.free.ctx.putImageData(u.f,0,0);if(u.x){const X=u.x;if(X.l&&S.ltr){S.ltr.getContext('2d').putImageData(X.l,0,0);dirty('ltr');if(typeof ltRender==='function')ltRender();}if(X.rx&&S.pp){S.pp.rx.putImageData(X.rx,0,0);S.pp.ix.putImageData(X.ix,0,0);ppRender(S);dirty('pp');}const ps=JSON.parse(X.pops||'[]');if(ps.length!==(S.pops||[]).length){S.pops=ps;renderPops();dirty('pop');}}if(S.pulse){if(u.p)S.pulse.ctx.putImageData(u.p,0,0);else S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}}
+function unsnap(u){if(u.full){fullRestore(u.full);return;}if(u.lz)return;   /* b36: a lazy (never committed) stroke changed nothing */
+cput(S.free.ctx,u.f);if(u.x){const X=u.x;if(X.l&&S.ltr){cput(S.ltr.getContext('2d'),X.l);dirty('ltr');if(typeof ltRender==='function')ltRender();}if(X.rx&&S.pp){cput(S.pp.rx,X.rx);cput(S.pp.ix,X.ix);ppRender(S);dirty('pp');}const ps=JSON.parse(X.pops||'[]');if(ps.length!==(S.pops||[]).length){S.pops=ps;renderPops();dirty('pop');}}if(S.pulse){if(u.p)cput(S.pulse.ctx,u.p);else S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}}
 /* glow inks: soft light halo spilling around the colour (committed with blurred shadows in 'screen') */
 function haloDraw(c,src,hex){c.save();c.shadowColor=hex;c.shadowBlur=34;c.globalAlpha=.9;c.drawImage(src,0,0);c.shadowBlur=14;c.globalAlpha=1;c.drawImage(src,0,0);
   c.globalCompositeOperation='screen';c.shadowBlur=0;c.globalAlpha=.35;c.drawImage(src,0,0);c.restore();}
@@ -835,8 +842,10 @@ function inkMap(){ // 1 where the line art is dark ink (computed once per scene)
   for(let i=0,j=0;i<m.length;i++,j+=4)m[i]=(d[j+3]>110&&d[j]+d[j+1]+d[j+2]<360)?1:0; return (S.ink=m);}
 const isInk=(x,y)=>{const m=inkMap();return !!(m&&x>=0&&y>=0&&x<W&&y<H&&m[(y|0)*W+(x|0)]);};
 const scrScale=()=>zoomer.getBoundingClientRect().width/W;   // screen px per canvas px
-function setMask(r){mctx.clearRect(0,0,W,H);const m=mctx.createImageData(W,H),D=m.data,L=S.lab;for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p];D[i*4+3]=255;if(L[i-1]===r&&L[i+1]===r&&L[i-W]===r&&L[i+W]===r)continue;const x=i%W,y=(i/W)|0;   /* b30: also cover the line-art pixels right at the edge (up to 3px) so colour meets the line with no white gap; never into a neighbouring area */
-  for(let dy=-2;dy<=2;dy++){const yy=y+dy;if(yy<0||yy>=H)continue;for(let dx=-2;dx<=2;dx++){const xx=x+dx;if(xx<0||xx>=W||dx*dx+dy*dy>5)continue;const j=yy*W+xx;if(!L[j])D[j*4+3]=255;}}}mctx.putImageData(m,0,0);}
+function setMask(r){mctx.clearRect(0,0,W,H);const L=S.lab,b4=r*4,X0=Math.max(0,S.bb[b4]-3),Y0=Math.max(0,S.bb[b4+1]-3),X1=Math.min(W-1,S.bb[b4+2]+3),Y1=Math.min(H-1,S.bb[b4+3]+3),bw=X1-X0+1,bh=Y1-Y0+1;
+  /* b36: build the Line Lock mask only over the area's bounding box (+3 px), not the whole 1600x900 frame */
+  const m=mctx.createImageData(bw,bh),D=m.data;for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p],x=i%W,y=(i/W)|0;D[((y-Y0)*bw+(x-X0))*4+3]=255;if(L[i-1]===r&&L[i+1]===r&&L[i-W]===r&&L[i+W]===r)continue;   /* b30: also cover the line-art pixels right at the edge (up to 3px) so colour meets the line with no white gap; never into a neighbouring area */
+  for(let dy=-2;dy<=2;dy++){const yy=y+dy;if(yy<Y0||yy>Y1)continue;for(let dx=-2;dx<=2;dx++){const xx=x+dx;if(xx<X0||xx>X1||dx*dx+dy*dy>5)continue;const j=yy*W+xx;if(!L[j])D[((yy-Y0)*bw+(xx-X0))*4+3]=255;}}}mctx.putImageData(m,X0,Y0);}
 let lastStroke=null,rampC=null,rampT=null;
 function rampStamp(x,y,R){const rp=stroke.ramp;rp.d+=Math.hypot(x-rp.last[0],y-rp.last[1]);rp.last=[x,y];const t=pingpong(rp.d/RAMP_LEN),c=rampRgb(rp.k,t),rr=R*1.3;
   const a=rampC.getContext('2d'),b=rampT.getContext('2d');a.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;a.beginPath();a.arc(x,y,rr,0,6.2832);a.fill();
@@ -844,7 +853,7 @@ function rampStamp(x,y,R){const rp=stroke.ramp;rp.d+=Math.hypot(x-rp.last[0],y-r
 let stroke=null;
 function beginStroke(x,y,pr,ptype){
   if(tool!=='eraser'&&!allowPremiumUse(1))return;
-  snap(); let r=labAt(x,y);
+  snap(tool!=='eraser'&&tool!=='poppencil'&&!pps); let r=labAt(x,y);
   if(tool!=='eraser'&&S)S.dpLastR=r;
   const locked=tool!=='eraser'&&clip, onInk=locked&&(!r||isInk(x,y));
   if(onInk){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q){r=labAt(q[0],q[1]);x=q[0]+.5;y=q[1]+.5;}}  // started on a line: snap
@@ -856,7 +865,7 @@ function beginStroke(x,y,pr,ptype){
   if(stroke.region)setMask(r);
   if(ink.kind==='ramp'&&!stroke.er&&!stroke.st){rampC=rampC||mk();rampT=rampT||mk();rampC.getContext('2d').clearRect(0,0,W,H);rampT.getContext('2d').clearRect(0,0,W,H);stroke.ramp={k:ink.ramp,d:0,last:[x,y]};}
   if(inkKind()==='fur'&&!stroke.er&&!stroke.st){furC=furC||mk();furC.getContext('2d').clearRect(0,0,W,H);stroke.fur={dx:0,dy:1,has:false,s:0,lx:x,ly:y,lanes:null};}
-  if(!stroke.er)showTry(r||labAt(x,y));
+  if(!stroke.er){const rr=r||labAt(x,y);setTimeout(()=>showTry(rr),0);}   /* b36: hint layout read off the pointerdown path */
   stamp(x,y,pr); flush();
 }
 function stamp(x,y,pr){
@@ -995,7 +1004,7 @@ function flush(){
   sctx.save();sctx.beginPath();sctx.rect(x,y,w,h);sctx.clip();sctx.clearRect(x,y,w,h);sctx.drawImage(covC,x,y,w,h,x,y,w,h);
   sctx.globalCompositeOperation='source-in';if(stroke.ramp)sctx.drawImage(rampC,x,y,w,h,x,y,w,h);else if(stroke.fur)sctx.drawImage(furC,x,y,w,h,x,y,w,h);else{sctx.fillStyle=grainPat;sctx.fillRect(x,y,w,h);}sctx.restore();
 }
-function commitPaint(){
+function commitPaint(){snapFill();
   let src=strokeC;if(!stroke.er&&stroke.st!=='water'){const b=stroke.bbx||[0,0,W,H],bx=b[0]-2,by=b[1]-2,bw=b[2]-b[0]+4,bh=b[3]-b[1]+4;
     if(!stroke.neon&&(fxOverlap(bx,by,bw,bh)||under3DAt(bx,by,bw,bh)))src=solidStroke(strokeC,bx,by,bw,bh);   /* v24: over 3D work / effects the colour lays on top solidly */
     if(src!==strokeC&&stroke.region){const sx=src.getContext('2d');sx.save();sx.globalCompositeOperation='destination-in';sx.drawImage(maskC,0,0);sx.restore();}   /* b30: Line Lock also clips the solid pass, so nothing spills past the line */
@@ -1016,7 +1025,12 @@ function eraseRegionAt(x,y){const r=labAt(x,y);if(!r||!S)return false;const b=r*
   try{fxEraseRegion(r);}catch(e){}try{ppEraseAt(r);}catch(e){}if(stroke)(stroke.erR||(stroke.erR=new Set())).add(r);dirty('free');return true;}
 function eraserEnd(st){if(!S||mode!=='free')return;for(const r of (S.fx||[]))if(r.erD){r.erD=false;r.dirty=true;}else r.scanLim=null;   /* v25: rescan erased masks once, when the stroke ends */
   if(st.ppEr)ppRender(S);if(st.ltEr&&typeof ltRender==='function')ltRender();
-  if(st.erR&&S.pops&&S.pops.length){const n0=S.pops.length;S.pops=S.pops.filter(p=>!(p.rs||[p.r]).some(r=>st.erR.has(r)));if(S.pops.length!==n0){renderPops();dirty('pop');}}}
+  if(st.erR&&S.pops&&S.pops.length){const gone=S.pops.filter(p=>(p.rs||[p.r]).some(r=>st.erR.has(r)));if(gone.length){S.pops=S.pops.filter(p=>!gone.includes(p));popsRemoveFast(S,gone);dirty('pop');}}}
+/* b36: erasing a pop clears just its areas from the pop layers (pops are clipped to their own areas) instead of re-rendering every pop */
+function popsRemoveFast(st,gone){if(!st.popSh){renderPops(st);return;}const rs=[];for(const p of gone)for(const r of (p.rs||[p.r]))rs.push(r);let x0=W,y0=H,x1=0,y1=0;for(const r of rs){const b=r*4;x0=Math.min(x0,st.bb[b]);y0=Math.min(y0,st.bb[b+1]);x1=Math.max(x1,st.bb[b+2]);y1=Math.max(y1,st.bb[b+3]);}
+  const w=x1-x0+1,h=y1-y0+1;if(w<=0||h<=0)return;const c=document.createElement('canvas');c.width=w;c.height=h;const cx=c.getContext('2d'),m=cx.createImageData(w,h),D=m.data;for(const r of rs)for(let p=st.off[r];p<st.off[r+1];p++){const i=st.pix[p],x=i%W,y=(i/W)|0;D[((y-y0)*w+(x-x0))*4+3]=255;}cx.putImageData(m,0,0);
+  for(const k of [st.popSh,st.popLi]){const g=k.getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(c,x0,y0);g.restore();}
+  if(gone.some(p=>p.deep))deepRender(st,true);if(st===S)scheduleLineTint();}
 function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er){eraserEnd(stroke);fxRedrawSoon();}else if(stroke.bbx){const b=stroke.bbx;lastOpCapture(stroke.pulse?S.pulse.ctx:S.free.ctx,b[0],b[1],b[2]-b[0],b[3]-b[1],'stroke');}
   dirty('free'); strokeC.style.filter='';strokeC.style.opacity='';
   cov.clearRect(0,0,W,H);sctx.clearRect(0,0,W,H);stroke=null;}
@@ -1186,7 +1200,9 @@ function up(e){
   else if(e.type==='pointerup'&&moved<14){ if(mode==='cbn'&&tool==='pop')popTap(down.cx,down.cy); else if(mode==='cbn'&&tool==='poperase')popErase(down.cx,down.cy); else if(mode==='cbn'&&tool!=='poppencil')tapCBN(down.cx,down.cy); else if(mode==='cbn'){} else if(tool==='fill')fillFree(down.cx,down.cy); else if(tool==='pop')popTap(down.cx,down.cy); else if(tool==='poperase')popErase(down.cx,down.cy); }
   down=null;
 }
-stage.addEventListener('pointerup',up);stage.addEventListener('pointercancel',up);
+stage.addEventListener('pointerup',up);
+/* b36: decorative CSS animations pause while a finger / mouse is down on the picture */
+stage.addEventListener('pointerdown',()=>app.classList.add('busy'),true);for(const ev of ['pointerup','pointercancel'])window.addEventListener(ev,()=>app.classList.remove('busy'),true);stage.addEventListener('pointercancel',up);
 stage.addEventListener('contextmenu',e=>e.preventDefault());
 
 
@@ -1755,18 +1771,20 @@ function star(x,cx,cy,R,a){x.globalAlpha=a;x.beginPath();for(let i=0;i<8;i++){co
    (randomised +/-7..20%) from its own start phase, and each effect kind runs at a non-integer period ratio (golden-ratio based), so
    a page full of Glowing / Pulse / Neon strokes never breathes or resets in step. */
 const KPER={glowfx:1,pulsefx:1.1459,neonfx:.8541,shimmer:1.0902};
-function fxCells(r){if(r.cells&&r.cellsMv===r.mv)return r.cells;const [bx,by,bw,bh]=r.bb,K=Math.max(1,Math.min(3,Math.round(Math.sqrt(bw*bh)/220))),P=r.pts.length?r.pts:[[bx+bw/2,by+bh/2]],sd=r.seed||7,C=[];
+function fxCells(r){if(r.cells&&r.cellsMv===r.mv)return r.cells;const [bx,by,bw,bh]=r.bb,K=Math.max(1,Math.min(r.kmax||3,Math.round(Math.sqrt(bw*bh)/220))),P=r.pts.length?r.pts:[[bx+bw/2,by+bh/2]],sd=r.seed||7,C=[];
   for(let k=0;k<K;k++){let best=P[0],bd=-1;for(let n=0;n<10;n++){const q=P[(hash2(k*11+n,sd)*P.length)|0];let m=1e12;for(const c of C)m=Math.min(m,(c.x-q[0])**2+(c.y-q[1])**2);if(m>bd){bd=m;best=q;}}
     const v=.05+.05*hash2(k,sd+5);C.push({x:best[0],y:best[1],sp:1+(hash2(k,sd+7)<.5?-v:v),ph:hash2(k,sd+9)*97});}
   const R=Math.sqrt(bw*bh/K)*1.25;C.forEach((c,k)=>c.R=R*(.85+.35*hash2(k,sd+13)));r.cellsMv=r.mv;return r.cells=C;}
 let CELLC=null;
 function cellPass(x,r,t,kp,op,fn){const C=fxCells(r),[bx,by,bw,bh]=r.bb,pad=50;
   if(C.length===1){const X0=Math.max(0,bx-pad),Y0=Math.max(0,by-pad);x.save();fn(x,t*C[0].sp*kp+C[0].ph,[X0,Y0,Math.min(W,bx+bw+pad)-X0,Math.min(H,by+bh+pad)-Y0]);x.restore();return;}
-  const F=(CELLC||(CELLC=mk())).getContext('2d');
+  /* b36: the cell scratch canvas is only as big as one cell (drawing from a modified full-frame canvas copied 5.7 MB per cell) */
   for(const c of C){const e=c.R+pad,sx=Math.max(0,Math.floor(c.x-e)),sy=Math.max(0,Math.floor(c.y-e)),sw=Math.min(W,Math.ceil(c.x+e))-sx,sh=Math.min(H,Math.ceil(c.y+e))-sy;if(sw<=0||sh<=0)continue;
-    F.save();F.globalCompositeOperation='source-over';F.globalAlpha=1;F.shadowBlur=0;F.clearRect(sx,sy,sw,sh);F.beginPath();F.rect(sx,sy,sw,sh);F.clip();fn(F,t*c.sp*kp+c.ph,[sx,sy,sw,sh]);F.restore();
-    F.save();F.globalCompositeOperation='destination-in';const g=F.createRadialGradient(c.x,c.y,0,c.x,c.y,e);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(.6,'rgba(0,0,0,.8)');g.addColorStop(1,'rgba(0,0,0,0)');F.fillStyle=g;F.fillRect(sx,sy,sw,sh);F.restore();
-    x.save();x.globalCompositeOperation=op;x.drawImage(CELLC,sx,sy,sw,sh,sx,sy,sw,sh);x.restore();}}
+    const K=fxScratch(sw,sh),F=K.getContext('2d');
+    F.save();F.setTransform(1,0,0,1,-sx,-sy);F.globalCompositeOperation='source-over';F.globalAlpha=1;F.shadowBlur=0;F.clearRect(sx,sy,sw,sh);F.beginPath();F.rect(sx,sy,sw,sh);F.clip();fn(F,t*c.sp*kp+c.ph,[sx,sy,sw,sh]);F.restore();
+    F.save();F.setTransform(1,0,0,1,-sx,-sy);F.globalCompositeOperation='destination-in';const g=F.createRadialGradient(c.x,c.y,0,c.x,c.y,e);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(.6,'rgba(0,0,0,.8)');g.addColorStop(1,'rgba(0,0,0,0)');F.fillStyle=g;F.fillRect(sx,sy,sw,sh);F.restore();
+    x.save();x.globalCompositeOperation=op;x.drawImage(K,0,0,sw,sh,sx,sy,sw,sh);x.restore();}}
+const SCR={};function fxScratch(w,h,tg){const k=(tg||'')+(Math.ceil(w/32)*32)+'x'+(Math.ceil(h/32)*32);let c=SCR[k];if(!c){c=SCR[k]=document.createElement('canvas');c.width=Math.ceil(w/32)*32;c.height=Math.ceil(h/32)*32;const ks=Object.keys(SCR);if(ks.length>24)delete SCR[ks[0]];}return c;}
 const subDraw=(c,im,R)=>c.drawImage(im,R[0],R[1],R[2],R[3],R[0],R[1],R[2],R[3]);
 /* v23 particles: Water, Fire/Embers, Sparks, Snow, Bubbles, Stars, Leaves. Each puff has its own life, size and phase and fades in
    and out (tapered), stays inside the colored area, and follows the Speed slider (partSpeed) and the Mix size slider (r.amt). */
@@ -2143,21 +2161,33 @@ let PPLV=null;function ppPulse(x,t){ // light pulses travel up through raised Po
   const c=P.pc||(P.pc=Object.assign(document.createElement('canvas'),{width:WQ,height:HQ}));c.getContext('2d').putImageData(q,0,0);
   x.save();x.globalCompositeOperation='lighter';x.imageSmoothingQuality='high';x.drawImage(c,0,0,W,H);x.restore();}
 let fxTotal=0,fxRaf=0,fxLast=0;
-function fxDraw(now){if(!S||!S.fxC)return;const x=S.fxC.getContext('2d');if(x.reset)x.reset();else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.shadowBlur=0;x.shadowColor='rgba(0,0,0,0)';x.filter='none';}x.clearRect(0,0,W,H);const t=RM.matches?1.2:now/1000;fxNow=now/1000;{const d=Math.min(.4,Math.max(0,fxNow-pclkLast));pclkLast=fxNow;PCLK+=d*motionLvl('pulseSpeed');if(!CFIX)CCLK+=d*motionLvl('shimmerSpeed');for(const k of ['twinkleSpeed','neonSpeed','glowSpeed','boltSpeed','smokeSpeed','partSpeed'])if(!(BFIX&&k==='boltSpeed'))CLK[k]=(CLK[k]||0)+d*motionLvl(k);}
-  const t0=performance.now();fxTotal=(S.fx||[]).reduce((a,r)=>a+r.parts.length,0);{const mir=(S.fx||[]).filter(r=>r.kind==='mirror');let mDone=false;for(const r of S.fx||[]){const q=performance.now();if(r.kind!=='mirror'&&r.dirty)fxScan(r);if(r.kind!=='mirror'&&r!==S.fx[0]){if(r.bb){const [ex,ey,ew,eh]=r.bb;x.save();x.globalCompositeOperation='destination-out';x.drawImage(r.mask,ex,ey,ew,eh,ex,ey,ew,eh);x.restore();}}if(r.kind==='cover'||(r.kind!=='mirror'&&!r.bb))continue;   /* v24: newer paint hides the older effects' glow under it */
-    if(r.kind==='mirror'){if(!mDone){mDone=true;drawMirrors(x,mir);}}else if(r.amt&&Math.abs(r.amt-1)>.02&&!PARTK(r.kind)){const A=AMTC||(AMTC=mk()),ax=A.getContext('2d'),bq=r.bb,PD=90,qx=Math.max(0,bq[0]-PD),qy=Math.max(0,bq[1]-PD),qw=Math.min(W,bq[0]+bq[2]+PD)-qx,qh=Math.min(H,bq[1]+bq[3]+PD)-qy;ax.clearRect(qx,qy,qw,qh);ax.save();ax.beginPath();ax.rect(qx,qy,qw,qh);ax.clip();fxDrawRec(ax,r,t);if(LIGHTK.has(r.kind))drawLight(ax,r);ax.restore();x.save();x.globalAlpha=Math.min(1,r.amt);x.drawImage(A,qx,qy,qw,qh,qx,qy,qw,qh);if(r.amt>1){x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,r.amt-1);x.drawImage(A,qx,qy,qw,qh,qx,qy,qw,qh);}x.restore();ax.clearRect(qx,qy,qw,qh);r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;continue;}   /* v23: Mix intensity */
-    else fxDrawRec(x,r,t);if(LIGHTK.has(r.kind))drawLight(x,r);r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;}}ppPulse(x,t);fxMs=fxMs*.8+(performance.now()-t0)*.2;}
+function fxBegin(now,x){if(x.reset)x.reset();else{x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.shadowBlur=0;x.shadowColor='rgba(0,0,0,0)';x.filter='none';}x.clearRect(0,0,W,H);const t=RM.matches?1.2:now/1000;fxNow=now/1000;{const d=Math.min(.4,Math.max(0,fxNow-pclkLast));pclkLast=fxNow;PCLK+=d*motionLvl('pulseSpeed');if(!CFIX)CCLK+=d*motionLvl('shimmerSpeed');for(const k of ['twinkleSpeed','neonSpeed','glowSpeed','boltSpeed','smokeSpeed','partSpeed'])if(!(BFIX&&k==='boltSpeed'))CLK[k]=(CLK[k]||0)+d*motionLvl(k);}
+  return t;}
+function fxOne(x,r,t,J){const mir=J.mir;const q=performance.now();if(r.kind!=='mirror'&&r.dirty)fxScan(r);if(r.kind!=='mirror'&&r!==S.fx[0]){if(r.bb){const [ex,ey,ew,eh]=r.bb;x.save();x.globalCompositeOperation='destination-out';x.drawImage(r.mask,ex,ey,ew,eh,ex,ey,ew,eh);x.restore();}}if(r.kind==='cover'||(r.kind!=='mirror'&&!r.bb))return;   /* v24: newer paint hides the older effects' glow under it */
+    if(r.kind==='mirror'){if(!J.mDone){J.mDone=true;drawMirrors(x,mir);}}else if(r.amt&&Math.abs(r.amt-1)>.02&&!PARTK(r.kind)){const bq=r.bb,PD=90,qx=Math.max(0,bq[0]-PD),qy=Math.max(0,bq[1]-PD),qw=Math.min(W,bq[0]+bq[2]+PD)-qx,qh=Math.min(H,bq[1]+bq[3]+PD)-qy,A=fxScratch(qw,qh,'a'),ax=A.getContext('2d');ax.setTransform(1,0,0,1,0,0);ax.clearRect(0,0,A.width,A.height);ax.save();ax.setTransform(1,0,0,1,-qx,-qy);ax.beginPath();ax.rect(qx,qy,qw,qh);ax.clip();fxDrawRec(ax,r,t);if(LIGHTK.has(r.kind))drawLight(ax,r);ax.restore();x.save();x.globalAlpha=Math.min(1,r.amt);x.drawImage(A,0,0,qw,qh,qx,qy,qw,qh);if(r.amt>1){x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,r.amt-1);x.drawImage(A,0,0,qw,qh,qx,qy,qw,qh);}x.restore();   /* b36: bbox-sized scratch */r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;return;}   /* v23: Mix intensity */
+    else fxDrawRec(x,r,t);if(LIGHTK.has(r.kind))drawLight(x,r);r.ms=(r.ms||0)*.8+(performance.now()-q)*.2;if(r.ms>10&&(r.kmax||3)>1){r.kmax=(r.kmax||3)-1;r.cells=null;r.ms=0;}   /* b36: an expensive effect drops to fewer animation cells */}
+function fxDraw(now){if(!S||!S.fxC)return;FXJ=null;const x=S.fxC.getContext('2d'),t=fxBegin(now,x),t0=performance.now();fxTotal=(S.fx||[]).reduce((a,r)=>a+r.parts.length,0);
+  const J={mir:(S.fx||[]).filter(r=>r.kind==='mirror'),mDone:false};for(const r of S.fx||[])fxOne(x,r,t,J);ppPulse(x,t);fxMs=fxMs*.8+(performance.now()-t0)*.2;}
+/* b36: time-sliced effect frames. A heavy frame is drawn a few records per animation frame (~5 ms each) into a back buffer and shown when complete,
+   so no single frame blocks input for 100+ ms. A stroke / erase starting mid-frame cancels the job (masks may change). */
+let FXJ=null,FXB=null;const FX_SLICE=5;
+function fxSliced(now){if(!S||!S.fxC)return true;if(!FXJ){FXB=FXB||mk();const x=FXB.getContext('2d');FXJ={x,t:fxBegin(now,x),i:0,mir:(S.fx||[]).filter(r=>r.kind==='mirror'),mDone:false,cost:0,st:S};fxTotal=(S.fx||[]).reduce((a,r)=>a+r.parts.length,0);}
+  const J=FXJ;if(J.st!==S){FXJ=null;return true;}const t0=performance.now(),L=S.fx||[];
+  while(J.i<L.length){fxOne(J.x,L[J.i],J.t,J);J.i++;if(performance.now()-t0>FX_SLICE)break;}
+  if(J.i<L.length){J.cost+=performance.now()-t0;return false;}
+  ppPulse(J.x,J.t);const f=S.fxC.getContext('2d');f.setTransform(1,0,0,1,0,0);f.globalAlpha=1;f.globalCompositeOperation='copy';f.drawImage(FXB,0,0);f.globalCompositeOperation='source-over';
+  J.cost+=performance.now()-t0;fxMs=fxMs*.8+J.cost*.2;FXJ=null;return true;}
 let fxMs=0,AMTC=null;
 /* b33 CPU budget: effects and Deep Pop animate at most 30 fps, back off further on slow machines (frame cost x3, up to ~8 fps),
    and pause completely while a stroke / erase / push is in progress, so input always wins. */
 const perfBusy=()=>!!(typeof stroke!=='undefined'&&stroke)||!!(typeof down!=='undefined'&&down&&!down.pan);
 const fxGap=()=>Math.min(2000,Math.max(33,(fxMs+(typeof DP!=='undefined'&&DP.fms?DP.fms:0))*4));   /* effects get at most ~25% of the CPU */
-let fxRS=0;function fxRedrawSoon(){if(fxRS)return;fxRS=requestAnimationFrame(()=>{fxRS=0;if(S&&S.fxC&&fxLive())fxDraw(performance.now());if(S&&typeof deepRender==='function'&&(S.pops||[]).some(p=>p.deep))try{deepRender(S);}catch(e){}fxStart();});}const PARTK=k=>k==='twinkle'||k==='smoke'||k==='cloud'||k.startsWith('pt');
+let fxRS=0;function fxRedrawSoon(){if(fxRS)return;fxRS=requestAnimationFrame(()=>{fxRS=0;if(S&&S.fxC&&fxLive()){if(fxRaf&&fxNeedsLoop()){FXJ=null;fxLast=-1e9;}else fxDraw(performance.now());}   /* b36: with the loop running, the redraw is time-sliced instead of one long frame */if(S&&typeof deepRender==='function'&&(S.pops||[]).some(p=>p.deep))try{deepRender(S);}catch(e){}fxStart();});}const PARTK=k=>k==='twinkle'||k==='smoke'||k==='cloud'||k.startsWith('pt');
 function mixSlotOf(k){return PARTK(k)?'part':(k==='pulsefx'||k==='glowfx'||k==='boltfx'||(k==='shimmer'&&ink.mix&&ink.mix.anim==='shimmer'))?'anim':'finish';}
 const fxLive=()=>S&&((S.fx&&S.fx.length)||(S.pp&&S.pp.any));
 const fxNeedsLoop=()=>!RM.matches||(S&&(S.fx||[]).some(r=>(motionLvl('shimmer')>0&&['mirror','shine','jshine','shimmer'].includes(r.kind))||(motionLvl('sparkle')>0&&r.kind==='twinkle')));
 function fxStart(){if(fxRaf||!fxLive())return;fxAttach();if(!fxNeedsLoop()||document.hidden){fxDraw(performance.now());return;}
-  const step=now=>{fxRaf=0;if(!fxLive()||document.hidden)return;if(!fxNeedsLoop()){fxDraw(now);return;}if(!perfBusy()&&now-fxLast>=fxGap()){fxLast=now;fxDraw(now);}/* adaptive: slow machines draw effects less often so taps and strokes stay responsive */fxRaf=requestAnimationFrame(step);};fxRaf=requestAnimationFrame(step);}
+  const step=now=>{fxRaf=0;if(!fxLive()||document.hidden)return;if(!fxNeedsLoop()){fxDraw(now);return;}if(perfBusy()){FXJ=null;}else if(FXJ){if(fxSliced(now))fxLast=now;}else if(now-fxLast>=fxGap()){if(fxSliced(now))fxLast=now;}/* adaptive: slow machines draw effects less often so taps and strokes stay responsive */fxRaf=requestAnimationFrame(step);};fxRaf=requestAnimationFrame(step);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(fxRaf);fxRaf=0;cancelAnimationFrame(pvRaf);pvRaf=0;}else{fxStart();pvStart();}});
 function fxUrl(r){if(r.dirty)fxScan(r);if(r._url&&r._urlV===r.mv)return r._url;r._urlV=r.mv;return r._url=r.mask.toDataURL('image/png');}   /* b33: re-encode a mask only when it changed */
 function saveFx(st){const L=st.fxL||{free:st.fx||[],cbn:[]};for(const [md,key] of [['free','fx.'],['cbn','cfx.']]){const a=(L[md]||[]).filter(r=>r.bb||r.dirty).map(r=>Object.assign({kind:r.kind,hex:r.hex,m:fxUrl(r)},r.phC?{ph:r.phC.toDataURL('image/png')}:{},r.seed?{P:{seed:r.seed,ph:r.ph,dir:r.dir,light:r.light,sp:r.sp,amt:r.amt||1,mixO:r.mixO||null}}:{}));a.length?LS.set(key+st.n,a):LS.del(key+st.n);}}
@@ -2234,8 +2264,9 @@ function draw3DPreview(cv,t){ // 3D Pop: a shape rises, settles flat, then sinks
 const PVS=new Set();let pvRaf=0,pvLast=0;   // live preview canvases: {cv, draw(t)}
 function pvAdd(cv,draw){const o={cv,draw};PVS.add(o);draw(RM.matches?1.3:performance.now()/1000);pvStart();return o;}
 function pvStart(){if(pvRaf||RM.matches||document.hidden)return;const step=now=>{pvRaf=0;if(document.hidden)return;
-  for(const o of [...PVS]){if(!o.cv.isConnected){PVS.delete(o);continue;}if(o.cv.offsetParent===null)continue;}
-  if(now-pvLast>=40){pvLast=now;for(const o of PVS)if(o.cv.offsetParent!==null)o.draw(now/1000);}
+  /* b36: previews pause while drawing, run at ~15 fps, and check visibility (a layout read) only twice a second */
+  if(now-(pvStart.vis||0)>500){pvStart.vis=now;for(const o of [...PVS]){if(!o.cv.isConnected){PVS.delete(o);continue;}o.vis=o.cv.offsetParent!==null;}}
+  if(!perfBusy()&&now-pvLast>=66){pvLast=now;for(const o of PVS)if(o.vis!==false)o.draw(now/1000);}
   if(PVS.size)pvRaf=requestAnimationFrame(step);};pvRaf=requestAnimationFrame(step);}
 function pvCanvas(cls,wc,hc){const c=document.createElement('canvas');const dpr=Math.min(2,window.devicePixelRatio||1);c.width=Math.round(wc*dpr);c.height=Math.round(hc*dpr);c.style.width=wc+'px';c.style.height=hc+'px';c.className=cls;return c;}
 function productPreview(cv,key,from){ // store row + upgrade sheet
