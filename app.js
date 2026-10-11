@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=58;let EP_place=null;
+const EP_BUILD=59;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1000,14 +1000,21 @@ function breakThrough(r,x,y,pr){
   d.className='llpulse';d.style.left=(cx-sr.left)+'px';d.style.top=(cy-sr.top)+'px';stage.appendChild(d);setTimeout(()=>d.remove(),600);
   stamp(x,y,pr);
 }
+/* b59: the eraser's dab for this move is copied out of the full-page cover canvas once, into a small tile (one GPU copy, plus one CPU copy
+   for the layers kept in memory for reading), and every layer is cut from that tile. Before, each layer drew straight from the full-page
+   canvas: up to ~60 layers per move on a busy page, each one a full-page snapshot or GPU readback. Same pixels. */
+const ERG=document.createElement('canvas'),ERC=document.createElement('canvas');let erCpu=false;
+function erTile(x,y,w,h){if(ERG.width<w||ERG.height<h){ERG.width=Math.max(ERG.width,w);ERG.height=Math.max(ERG.height,h);}const g=ERG.getContext('2d');g.globalCompositeOperation='copy';g.drawImage(covC,x,y,w,h,0,0,w,h);g.globalCompositeOperation='source-over';erCpu=false;
+  return c=>{let rf=false;try{rf=!!(c.getContextAttributes&&c.getContextAttributes().willReadFrequently);}catch(e){}if(!rf)return ERG;
+    if(!erCpu){if(ERC.width<w||ERC.height<h){ERC.width=Math.max(ERC.width,w);ERC.height=Math.max(ERC.height,h);}const q=ERC.getContext('2d',{willReadFrequently:true});q.globalCompositeOperation='copy';q.drawImage(ERG,0,0,w,h,0,0,w,h);q.globalCompositeOperation='source-over';erCpu=true;}return ERC;};}
 function eraseFlush(x,y,w,h){if(!S)return;const cs=[S.free.ctx];if(FLAT)for(const q of FLAT)cs.push(q.f.getContext('2d'));if(S.pulse)cs.push(S.pulse.ctx);if(S.ltr&&mode==='free'){cs.push(S.ltr.getContext('2d'));stroke.ltEr=true;}
   const P=S.pp;if(P&&P.any&&mode==='free'){cs.push(P.rx,P.ix);stroke.ppEr=true;}
-  for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.drawImage(covC,x,y,w,h,x,y,w,h);c.restore();}
+  const ER=erTile(x,y,w,h);for(const c of cs){c.save();c.globalCompositeOperation='destination-out';c.drawImage(ER(c),0,0,w,h,x,y,w,h);c.restore();}
   if(mode==='free'&&S.fx&&S.fx.length){let u=stroke.fxu;for(const r of S.fx){const b=r.bb;if(!b||x>b[0]+b[2]||y>b[1]+b[3]||x+w<b[0]||y+h<b[1])continue;
       if(!stroke.fxT)stroke.fxT=new Set();if(!stroke.fxT.has(r)){stroke.fxT.add(r);if(!u){u=stroke.fxu={n:undoKey(),m:[]};S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);}
         const c=document.createElement('canvas');c.width=b[2];c.height=b[3];c.getContext('2d').drawImage(r.mask,b[0],b[1],b[2],b[3],0,0,b[2],b[3]);u.m.push([r,c,undefined,b[0],b[1]]);r.scanLim=b.slice();}
-      r.mx.save();r.mx.globalCompositeOperation='destination-out';r.mx.drawImage(covC,x,y,w,h,x,y,w,h);r.mx.restore();r.erD=true;}}
-  for(const el of [S.fxC,S.dpC,S.popSh,S.popLi])if(el&&el.isConnected){const g=el.getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(covC,x,y,w,h,x,y,w,h);g.restore();}   /* instant visual: effects vanish under the eraser right away */
+      r.mx.save();r.mx.globalCompositeOperation='destination-out';r.mx.drawImage(ER(r.mx),0,0,w,h,x,y,w,h);r.mx.restore();r.erD=true;}}
+  for(const el of [S.fxC,S.dpC,S.popSh,S.popLi])if(el&&el.isConnected){const g=el.getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(ER(g),0,0,w,h,x,y,w,h);g.restore();}   /* instant visual: effects vanish under the eraser right away */
   if(S.pulse)dirty('pulse');if(stroke.ltEr)dirty('ltr');}
 function flush(){
   const d=stroke.dirty; if(!d)return; stroke.dirty=null;
