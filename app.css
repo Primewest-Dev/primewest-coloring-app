@@ -1276,7 +1276,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 @media (orientation:landscape) and (max-height:520px){
   #toolbox .tgrid button{padding:4px 2px!important;gap:1px!important;height:auto!important;min-height:46px}#toolbox .tgrid button svg{width:16px;height:16px;flex:none}
   #toolbox .tgrid button>span{white-space:normal;line-height:1;font-size:9px!important;letter-spacing:-.1px;text-align:center;overflow-wrap:normal;max-width:100%}
-  #toolbox #dpBtn .dpst{display:none}
+  #toolbox #dpBtn .dpst{font-size:8px}
 }
 /* b55: short landscape phones (side panel ~300px): size + style bar, action buttons, 3D Pop row and palette header all fit the panel width */
 @media (orientation:landscape) and (max-height:520px){
@@ -1311,3 +1311,14 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 #settings .row>i,#settings .row>.danger,#settings .row>button{flex:none}
 @media (max-width:600px){#settings .row>canvas{display:none}}
 #settings .row.setrange>span{flex:1 1 100%!important;padding-right:0}
+/* b56: tablets (601-1100px wide): the size + style box shrinks so undo/redo/clear/start over/save stay on screen */
+@media (min-width:601px) and (max-width:1100px) and (min-height:521px){
+  #tools .szbar{flex:1 1 0!important;min-width:0!important;overflow:hidden}
+  #tools .szbar .bxt{display:none!important}
+  #tools .szbar #szRange{flex:1 1 50%;width:auto!important;min-width:40px}
+  #tools .szbar .sznum{min-width:20px;flex:none}
+  .psbox{flex:1 1 50%;min-width:0;position:relative;align-self:stretch;margin-left:6px;padding-left:8px}
+  .psbox #psRange{flex:1 1 auto;width:auto!important;min-width:40px}
+  .psbox .psname{position:absolute;left:auto;right:0;width:max-content;max-width:180px;bottom:1px;text-align:right;background:#241a12;padding:0 3px;border-radius:3px;font-size:9px;line-height:10px;min-width:0;pointer-events:none}
+  #tools .grp.right{min-width:0;flex:1 1 auto}
+}

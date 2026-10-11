@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=55;let EP_place=null;
+const EP_BUILD=56;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1496,7 +1496,7 @@ function dpLastArea(){if(!S)return 0;const sel=S.popSel&&S.popSel.r;if(sel&&dpCo
     let best=0,bn=0;for(const [r,n] of cnt)if(n>bn&&dpColored(r)){best=r;bn=n;}if(best)return best;}
   return 0;}
 function dpTileSync(){const b=$('#dpBtn');if(!b)return;const any=dpAnyColored(),on=!!settings.deepOn;b.classList.toggle('deepon',on&&any);b.setAttribute('aria-pressed',String(on&&any));b.setAttribute('aria-disabled',String(!any));
-  const st=b.querySelector('.dpst');if(st)st.textContent=any?(on?'ON':'OFF'):'Color an area first';
+  const st=b.querySelector('.dpst');if(st)st.textContent=any?(on?'ON':'OFF'):'Color first';
   b.title=any?(on?'Deep Pop is ON: tap any colored area to deepen it into 3D layers (tap to turn off)':'Deep Pop is OFF: turn on to deepen colored areas into 3D layers'):'Color an area first: Deep Pop deepens areas you have already colored';
   const g=$('#dpSet');if(g)g.setAttribute('aria-expanded',String(!!($('#deep')&&!$('#deep').hidden)));}
 let dpTileT=0;function dpTileSoon(){clearTimeout(dpTileT);dpTileT=setTimeout(dpTileSync,160);}
