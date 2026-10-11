@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=42;let EP_place=null;
+const EP_BUILD=43;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -438,7 +438,9 @@ function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onloa
 function needData(n){return new Promise((res,rej)=>{
   if(SC[n])return res(SC[n]); const c=CHM[n]; if(!c||!c.data)return rej(new Error('no data for scene '+n));
   const sc=document.createElement('script');sc.src=c.data;sc.onload=()=>SC[n]?res(SC[n]):rej(new Error('bad data '+n));sc.onerror=rej;document.head.appendChild(sc);});}
-async function loadScene(n){
+const sceneLoading={};   /* b42: one load per page at a time. The Example thumbnail used to load page 4 a second time while a big saved page was still restoring; the second copy replaced the cached one and later saves wrote that stale copy (work after reload was lost) */
+function loadScene(n){if(cache[n])return Promise.resolve(cache[n]);if(!sceneLoading[n])sceneLoading[n]=loadScene0(n).finally(()=>{delete sceneLoading[n];});return sceneLoading[n];}
+async function loadScene0(n){
   if(cache[n])return cache[n];
   await needData(n);
   const d=SC[n]; const img=await loadImg(d.labels);
@@ -1495,7 +1497,7 @@ function popTap(x,y,noColor){try{redoClear();}catch(e){}const r=labAt(x,y);if(!r
   else{if(!Effects3D.unlocked()){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
       const l=Trials.popsLeft();toast(l?`Pop Fill · free tries: ${l} left`:'That was your last free Pop Fill ✦');}
     const p={r,rs:[r],depth,pressed,hz:null};if(settings.deepOn){p.deep=dpNew();p.deep.carved=pressed;}S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}
-  if(noColor||(settings.deepOn&&dpColored(r)))return;if(settings.ppColor!==false)popColor(x,y,r);}
+  if(noColor||settings.ppColor===false)return;if(dpColored(r)){if(!popTap.told){popTap.told=1;toast('Pop Fill kept the color that\u2019s already here · use Fill to recolor');}return;}popColor(x,y,r);}   /* b42: popping a finished picture never repaints it with the current pencil; Color while popping colors blank areas only */
 function popColor(x,y,r){if(mode==='free'){if(ink&&ink.kind==='brush')return;fillFree(x,y);}else if(!S.cbn.filled[r]&&S.num[r]===selNum)tapCBN(x,y);}
 function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}}
 function popRestyle(){applySelHeight(popH());}   // v13: the slider / switch drive only the selected section
@@ -1726,6 +1728,7 @@ function fxRec(kind,hex,path){fxSetList(S);const same=S.fx.filter(q=>q.kind===ki
   if(same.length&&(same.length>=lim||S.fx.length>=90)){const pd=fxParams(path);if(!pd.pathDir)return same[same.length-1];
     const ad=q=>{const d=Math.abs(((q.dir||0)-pd.dir+Math.PI*3)%(Math.PI*2)-Math.PI);return d;};return same.slice().sort((a,b)=>ad(a)-ad(b))[0];}
   const m=mk(),r=Object.assign({kind,hex,mask:m,mx:m.getContext('2d',{willReadFrequently:true}),bb:null,pts:[],parts:[],dirty:true},fxParams(path));if(FINK.has(kind)){lightN21=(lightN21+1)%7;r.light=LIGHTS21[lightN21];}S.fx.push(r);return r;}
+const SHK=new Set(['shine','mirror','jshine']),SYNCK=new Set(['glowfx','pulsefx','neonfx','shine','jshine','shimmer','mirror']);   /* b42: polished finishes already have their own glint; the extra light sweep stays subtle on them (it washed light metals to white) */
 const LIGHTK=new Set(['mirror','shine','jshine','shimmer','twinkle','glowfx','neonfx','pulsefx']);
 function lightClock(r){return r.kind==='twinkle'?(CLK.twinkleSpeed||0):r.kind==='glowfx'?(CLK.glowSpeed||0):r.kind==='neonfx'?(CLK.neonSpeed||0):r.kind==='pulsefx'?PCLK:CCLK;}
 const glS=a=>Math.pow(a||1,1.5),glB=a=>Math.min(1,.3+.7*(a||1));   /* v24 glitter Size: low = tiny dim dot flashes, high = big bright stars */
@@ -1744,7 +1747,7 @@ function drawLight(x,r){if(FINK.has(r.kind))return drawLightV21(x,r);if(!r.light
   else if(L2==='chaser'){const fs=flowSweep(r,tt,per,0),A=fs.ang!=null?fs.ang:flowDir(r),c2=Math.cos(A),s2=Math.sin(A),uu=fs.p<-.9?-9:fs.p;g.fillStyle=GL?Wc+'1)':'#fff';for(let j=-L/2;j<L/2;j+=7){const sh=(vnoise1(j*.03+fs.c*1.9,r.seed)-.5)*.5;for(let i=-L/2;i<L/2;i+=4.5){const dd=(i/L+.5)-uu-sh,a=Math.max(0,1-Math.abs(dd)/.12)**3;if(a<.12)continue;
       const jx=(hash2((i*9)|0,(j*7+r.seed)|0)-.5)*2.4,jy=(hash2((j*5)|0,(i*3+r.seed)|0)-.5)*2.4,px=cx+c2*i-s2*j+jx,py=cy+s2*i+c2*j+jy;if(px<0||py<0||px>w||py>h)continue;g.globalAlpha=a;g.fillRect(px-.7,py-.7,1.4,1.4);}}g.globalAlpha=1;}
   g.globalCompositeOperation='destination-in';g.drawImage(r.mask,X0*MQ,Y0*MQ,w*MQ,h*MQ,0,0,w,h);
-  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(GL?.4:1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8*glB(r.amt):1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
+  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(GL?.4:SHK.has(r.kind)?.3:1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8*glB(r.amt):1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
 function drawLightV21(x,r){if(!r.light||!r.bb||RM.matches)return;const lv=motionLvl({twinkle:'sparkle',glowfx:'glowStr',neonfx:'neonSpeed',pulsefx:'pulseSpeed'}[r.kind]||'shimmer');if(lv<=0)return;
   const [bx,by,bw,bh]=r.bb,X0=bx/MQ|0,Y0=by/MQ|0,w=Math.max(2,Math.min(WQ-X0,Math.ceil(bw/MQ)+2)),h=Math.max(2,Math.min(HQ-Y0,Math.ceil(bh/MQ)+2));
   const c=r.lc||(r.lc=document.createElement('canvas'));if(c.width!==w||c.height!==h){c.width=w;c.height=h;}const g=c.getContext('2d');g.globalCompositeOperation='source-over';g.clearRect(0,0,w,h);
@@ -1763,7 +1766,7 @@ function drawLightV21(x,r){if(!r.light||!r.bb||RM.matches)return;const lv=motion
       const jx=(hash2((i*9)|0,(j*7+r.seed)|0)-.5)*2.4,jy=(hash2((j*5)|0,(i*3+r.seed)|0)-.5)*2.4,px=cx+cs*i-sn*j+jx,py=cy+sn*i+cs*j+jy;if(px<0||py<0||px>w||py>h)continue;g.globalAlpha=a;g.fillRect(px-.7,py-.7,1.4,1.4);}g.globalAlpha=1;}
   else if(L2==='beam'){g.save();g.translate(cx,cy);g.rotate(tt*1.1*(r.seed%2?1:-1)+D);const gr=g.createLinearGradient(0,-L*.06,0,L*.06);gr.addColorStop(0,Wc+'0)');gr.addColorStop(.5,Wc+'.8)');gr.addColorStop(1,Wc+'0)');g.fillStyle=gr;g.fillRect(-L,-L*.06,2*L,L*.12);g.restore();}
   g.globalCompositeOperation='destination-in';g.drawImage(r.mask,X0*MQ,Y0*MQ,w*MQ,h*MQ,0,0,w,h);
-  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(GL?.4:1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8:1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
+  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(GL?.4:SHK.has(r.kind)?.3:1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8:1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
 /* v24: new colour always sits ON TOP. Paint (2D or 3D, stroke or fill) hides the older effects under it by cutting its coverage out of their
    masks (and out of the Pulse layer when the new paint is not Pulse). The cut parts are kept in the undo entry, so undo brings them back exactly. */
 function fxCoverOld(src,bx,by,bw,bh,a=1,keepPulse=false,ox=0,oy=0){if(!S||mode==='cbn'||a<=0)return false;bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));if(bw<=0||bh<=0)return false;
@@ -1790,7 +1793,8 @@ function under3DAt(bx,by,bw,bh){bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.
   if(S.pp&&S.pp.any){const d=S.pp.rx.getImageData(bx,by,bw,bh).data;for(let i=3;i<d.length;i+=16)if(d[i]>20)return true;}
   if(S.pops&&S.pops.length&&S.lab){for(let y=by;y<by+bh;y+=4)for(let x=bx;x<bx+bw;x+=4){const l=S.lab[y*W+x];if(l&&S.pops.some(p=>(p.rs||[p.r]).includes(l)))return true;}}return false;}
 function fxAdd(kinds,hex,src,sx=0,sy=0,path=null){if(!kinds.length||!S)return;const u={n:undoKey(),m:[]};
-  for(const k of kinds){const n0=(S.fx||[]).length,r=fxRec(k,hex,path),fresh=S.fx.length>n0,c=fresh?null:mk();r.amt=ink&&ink.kind==='mix'&&ink.mix&&ink.mix.L&&MXK[k]&&(MXK[k] in ink.mix.L)?ink.mix.L[MXK[k]]:ink&&ink.kind==='mix'&&ink.mix&&ink.mix.amt?(ink.mix.amt[mixSlotOf(k)]||1):(r.amt||1);r.mixO=ink&&ink.kind==='mix'&&ink.mix?(MXK[k]&&ink.mix.L?MXK[k]:ink.mix[mixSlotOf(k)]):null;if(ink&&ink.kind==='mix'){const sk9=KSPD(r.kind);if(sk9&&MIX.S&&MIX.S[sk9]!=null)r.spd=MIX.S[sk9];if(!S.lastMix||S.lastMix.n!==u.n)S.lastMix={n:u.n,recs:[],hex};S.lastMix.recs.push(r);}r.sf=null;if(c)c.getContext('2d').drawImage(r.mask,0,0);u.m.push(k==='mirror'?[r,c,phCopy(r)]:[r,c]);r.mx.drawImage(src,sx,sy);r.dirty=true;r.boost=performance.now()/1000;if(k==='mirror')chromePhase(r,src,sx,sy,path);}
+  for(const k of kinds){const n0=(S.fx||[]).length,r=fxRec(k,hex,path),fresh=S.fx.length>n0,c=fresh?null:mk();r.amt=ink&&ink.kind==='mix'&&ink.mix&&ink.mix.L&&MXK[k]&&(MXK[k] in ink.mix.L)?ink.mix.L[MXK[k]]:ink&&ink.kind==='mix'&&ink.mix&&ink.mix.amt?(ink.mix.amt[mixSlotOf(k)]||1):(r.amt||1);r.mixO=ink&&ink.kind==='mix'&&ink.mix?(MXK[k]&&ink.mix.L?MXK[k]:ink.mix[mixSlotOf(k)]):null;if(ink&&ink.kind==='mix'){const sk9=KSPD(r.kind);if(sk9&&MIX.S&&MIX.S[sk9]!=null)r.spd=MIX.S[sk9];if(!S.lastMix||S.lastMix.n!==u.n)S.lastMix={n:u.n,recs:[],hex};S.lastMix.recs.push(r);}r.sf=null;if(c)c.getContext('2d').drawImage(r.mask,0,0);u.m.push(k==='mirror'?[r,c,phCopy(r)]:[r,c]);r.mx.drawImage(src,sx,sy);r.dirty=true;r.boost=performance.now()/1000;if(k==='mirror')chromePhase(r,src,sx,sy,path);
+    if(fresh&&!path&&SYNCK.has(k)){fxScan(r);const b=r.bb;if(b){const q=S.fx.find(o=>o!==r&&o.kind===k&&o.hex===hex&&o.bb&&!(o.bb[0]>b[0]+b[2]+40||o.bb[1]>b[1]+b[3]+40||o.bb[0]+o.bb[2]<b[0]-40||o.bb[1]+o.bb[3]<b[1]-40));if(q){r.ph=q.ph;r.sp=q.sp;r.dir=q.dir;r.light=q.light;}}}}   /* b42: fills of the same glow / metal next to each other breathe and glint together (a seal in two halves no longer looks two-toned) */
   S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);
   fxAttach();fxStart();dirty('fx');}
 /* v25: the eraser removes the effect itself, not just the colour under it. Every effect mask (glitter, shimmer, glow, pulse, fur
@@ -2079,37 +2083,43 @@ function drawBolt(x,r){const B=boltPrep(r),still=RM.matches,t=still?0:(CLK.boltS
     F.globalCompositeOperation='destination-in';const g=F.createRadialGradient(c.x,c.y,0,c.x,c.y,c.R);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(.55,'rgba(0,0,0,.85)');g.addColorStop(1,'rgba(0,0,0,0)');F.fillStyle=g;F.fillRect(sx,sy,sw,sh);
     x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(1,I);x.drawImage(B.fl,sx,sy,sw,sh,B.X0+sx,B.Y0+sy,sw,sh);if(I>1){x.globalAlpha=I-1;x.drawImage(B.fl,sx,sy,sw,sh,B.X0+sx,B.Y0+sy,sw,sh);}x.restore();}}
   r.lastI=Im;}
-function drawShine(x,r,t,style){if(!r.bb)return;const lvl=motionLvl('shimmer'),still=lvl<=0,live=!still&&performance.now()-LIGHT.t<2500,plx=live?LIGHT.x:0,ply=live?LIGHT.y:0,lq=[Math.round(plx*4)/20,Math.round(ply*4)/20];   // pointer / tilt: a small, quantised nudge
+function drawShine(x,r,t,style){if(!r.bb)return;const lvl=motionLvl('shimmer'),still=lvl<=0,live=!still&&performance.now()-LIGHT.t<2500,plx=live?LIGHT.x:0,ply=live?LIGHT.y:0,lq=[Math.max(-.12,Math.min(.12,Math.round(plx*4)/20)),Math.max(-.12,Math.min(.12,Math.round(ply*4)/20))];   /* b42: the nudge never swings the key light overhead (flat areas then mirrored it and flashed white) */   // pointer / tilt: a small, quantised nudge
   const now=performance.now();let ss=r.ss;if(!ss||!r.ssT||now-r.ssT>180||contourField(r)!==ss.F){ss=shineStatic(r,style,lq);r.ssT=now;}
   const {X0,Y0,w,h}=ss;if(w<=2||h<=2)return;const bx=X0*MQ,by=Y0*MQ,bw=w*MQ,bh=h*MQ,T=still?1.3:CCLK*(r.sp||1)+(r.ph||0),PL=style==='chrome'&&!still?phaseList(r,ss):null,add=style==='jewel';
+  // b42: everything below is composed at quarter resolution (the source layers already are), then scaled up ONCE and clipped to the
+  // full-res mask: 4 full-size passes per record instead of 7, same look
+  const Q=r.qc||(r.qc=document.createElement('canvas'));if(Q.width!==w||Q.height!==h){Q.width=w;Q.height=h;}const qx=Q.getContext('2d');
   // 1) polished surface
-  scx.clearRect(bx,by,bw,bh);scx.globalCompositeOperation='source-over';scx.imageSmoothingEnabled=true;scx.drawImage(ss.base,bx,by,bw,bh);
+  qx.globalCompositeOperation='copy';qx.globalAlpha=1;qx.drawImage(ss.base,0,0);qx.globalCompositeOperation='source-over';
   // 1b) live shimmer (v11): a slow colour shift washing over the surface and two soft bands of light that keep flowing
-  if(!still&&style==='chrome'){const fl=r.fl||(r.fl=document.createElement('canvas'));if(fl.width!==w||fl.height!==h){fl.width=w;fl.height=h;}const fx2=fl.getContext('2d'),k=style==='metal'?.6:1;
+  if(!still&&style==='chrome'){const fl=r.fl||(r.fl=document.createElement('canvas'));if(fl.width!==w||fl.height!==h){fl.width=w;fl.height=h;}const fx2=fl.getContext('2d'),k=1;
     fx2.globalCompositeOperation='source-over';fx2.clearRect(0,0,w,h);const hs=(T*24)%360,g1=fx2.createLinearGradient(0,0,w,h);
     for(let q=0;q<=4;q++)g1.addColorStop(q/4,`hsl(${(hs+q*80)%360},75%,60%)`);fx2.fillStyle=g1;fx2.fillRect(0,0,w,h);
-    scx.globalCompositeOperation='soft-light';scx.globalAlpha=Math.min(1,.5*lvl*k);scx.drawImage(fl,bx,by,bw,bh);
+    qx.globalCompositeOperation='soft-light';qx.globalAlpha=Math.min(1,.5*lvl*k);qx.drawImage(fl,0,0);
     fx2.clearRect(0,0,w,h);const L2=w+h;for(const [per,off,wd] of [[6.5,0,.16],[10,.55,.1]]){const p2=(((T/per)+off)%1)*1.6-.3,g2=fx2.createLinearGradient(0,0,L2*.7,L2*.7);
       const a0=Math.max(0,Math.min(1,p2-wd)),a1=Math.max(0,Math.min(1,p2)),a2=Math.max(0,Math.min(1,p2+wd));g2.addColorStop(0,'rgba(255,255,255,0)');if(a0>0)g2.addColorStop(a0,'rgba(255,255,255,0)');g2.addColorStop(a1,'rgba(255,255,255,1)');if(a2<1)g2.addColorStop(a2,'rgba(255,255,255,0)');g2.addColorStop(1,'rgba(255,255,255,0)');
       fx2.fillStyle=g2;fx2.fillRect(0,0,w,h);}
     if(PL){const P1=((T/6.5)%1)*1.6-.3,P2=(((T/10)+.55)%1)*1.6-.3,D=PL.im.data;for(let n=0;n<PL.idx.length;n++){const f=PL.ph[n],v=Math.max(0,1-Math.abs(f-P1)/.16,1-Math.abs(f-P2)/.1),j=PL.idx[n]*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=v*255;}
       PL.cx.putImageData(PL.im,0,0);fx2.globalCompositeOperation='destination-out';fx2.drawImage(PL.mask,0,0);fx2.globalCompositeOperation='source-over';fx2.drawImage(PL.c,0,0);}   /* v13: on chrome strokes the light bands travel along the stroke, the way it was drawn */
-    scx.globalCompositeOperation='lighter';scx.globalAlpha=Math.min(1,.55*lvl*k);scx.drawImage(fl,bx,by,bw,bh);scx.globalAlpha=1;scx.globalCompositeOperation='source-over';}
+    qx.globalCompositeOperation='lighter';qx.globalAlpha=Math.min(1,.55*lvl*k);qx.drawImage(fl,0,0);qx.globalAlpha=1;qx.globalCompositeOperation='source-over';}
   // 2) travelling glint: a bright diagonal band that sweeps across every ~3.6 s, strongest on the lit rims and highlights
   const per=3.6,u=((T%per)/per)*1.8-.4,gc=r.gc||(r.gc=document.createElement('canvas'));if(gc.width!==w||gc.height!==h){gc.width=w;gc.height=h;}
   const gx=gc.getContext('2d');gx.globalCompositeOperation='source-over';gx.clearRect(0,0,w,h);const L=w+h,p=u*L,gr=gx.createLinearGradient(p-L*.12,0,p+L*.12,0);
-  gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.5,'rgba(255,255,255,1)');gr.addColorStop(1,'rgba(255,255,255,0)');
+  {const gw=style==='metal'?'255,232,178':'255,255,255';gr.addColorStop(0,`rgba(${gw},0)`);gr.addColorStop(.5,`rgba(${gw},1)`);gr.addColorStop(1,`rgba(${gw},0)`);}   /* b42: a warm glint on metal (pure white washed light gold out) */
   gx.save();gx.transform(1,0,1,1,0,0);gx.fillStyle=gr;gx.fillRect(-h,0,L+h,h);gx.restore();   // sheared: the band runs top-left -> bottom-right diagonal
   if(PL){const D=PL.im.data;for(let n=0;n<PL.idx.length;n++){const v=Math.max(0,1-Math.abs(PL.ph[n]-u)/.12),j=PL.idx[n]*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=v*255;}
     PL.cx.putImageData(PL.im,0,0);gx.globalCompositeOperation='destination-out';gx.drawImage(PL.mask,0,0);gx.globalCompositeOperation='source-over';gx.drawImage(PL.c,0,0);}   /* v13: the glint follows each chrome stroke's own path (tap fills keep the diagonal) */
   gx.globalCompositeOperation='destination-in';gx.drawImage(ss.glint,0,0);
-  if(!still){scx.globalCompositeOperation='lighter';scx.globalAlpha=Math.min(1,.35+.65*lvl)*(style==='metal'?.7:1);scx.drawImage(gc,bx,by,bw,bh);if(style!=='metal'){scx.globalAlpha=.6*lvl;scx.drawImage(gc,bx,by,bw,bh);}scx.globalAlpha=1;}
+  if(!still){qx.globalCompositeOperation='lighter';qx.globalAlpha=Math.min(1,.35+.65*lvl)*(style==='metal'?.42:1);qx.drawImage(gc,0,0);if(style!=='metal'){qx.globalAlpha=Math.min(1,.6*lvl);qx.drawImage(gc,0,0);}qx.globalAlpha=1;qx.globalCompositeOperation='source-over';}
+  scx.clearRect(bx,by,bw,bh);scx.globalCompositeOperation='source-over';scx.imageSmoothingEnabled=true;scx.drawImage(Q,bx,by,bw,bh);
   scx.globalCompositeOperation='destination-in';scx.drawImage(r.mask,bx,by,bw,bh,bx,by,bw,bh);scx.globalCompositeOperation='source-over';
   x.save();if(add)x.globalCompositeOperation='lighter';x.drawImage(scratch,bx,by,bw,bh,bx,by,bw,bh);x.restore();
-  // 3) bloom around the hottest highlights (breathes a little), plus the glint's own glow
-  x.save();x.globalCompositeOperation='lighter';x.globalAlpha=(add?.45:.5)*(.85+.15*Math.sin(T*1.7));x.drawImage(ss.bloom,bx-16,by-16,(w+8)*MQ,(h+8)*MQ);
-  const gb=r.gb||(r.gb=document.createElement('canvas'));if(gb.width!==w+8||gb.height!==h+8){gb.width=w+8;gb.height=h+8;}const gbx=gb.getContext('2d');gbx.clearRect(0,0,w+8,h+8);gbx.filter='blur(1.6px)';gbx.drawImage(gc,4,4);gbx.filter='none';
-  x.globalAlpha=still?0:(add?.35:.45)*Math.min(1,.4+lvl);x.drawImage(gb,bx-16,by-16,(w+8)*MQ,(h+8)*MQ);
+  // 3) bloom around the hottest highlights (breathes a little), plus the glint's own glow: both summed at quarter res, one scaled draw
+  const gb=r.gb||(r.gb=document.createElement('canvas'));if(gb.width!==w+8||gb.height!==h+8){gb.width=w+8;gb.height=h+8;}const gbx=gb.getContext('2d');
+  gbx.globalCompositeOperation='source-over';gbx.globalAlpha=1;gbx.clearRect(0,0,w+8,h+8);
+  if(!still){gbx.filter='blur(1.6px)';gbx.globalAlpha=Math.min(1,(add?.35:style==='metal'?.16:.45)*Math.min(1,.4+lvl));gbx.drawImage(gc,4,4);gbx.filter='none';}
+  gbx.globalCompositeOperation='lighter';gbx.globalAlpha=Math.min(1,(add?.45:.5)*(.85+.15*Math.sin(T*1.7)));gbx.drawImage(ss.bloom,0,0);gbx.globalAlpha=1;gbx.globalCompositeOperation='source-over';
+  x.save();x.globalCompositeOperation='lighter';x.drawImage(gb,bx-16,by-16,(w+8)*MQ,(h+8)*MQ);
   // 4) specular shimmer: tiny star glints on the brightest spots, twinkling
   for(const [px,py,ph] of ss.pts){const a=Math.pow(Math.max(0,Math.sin(T*2.6+ph*40)),6);if(a<.05)continue;const R2=3+5*a;x.globalAlpha=a*.9;x.drawImage(GLINT,px-R2*2,py-R2*2,R2*4,R2*4);}
   x.restore();}
@@ -3485,6 +3495,8 @@ clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   ppHeight:(x,y)=>{if(!S.pp)return 0;const a=S.pp.rx.getImageData(x|0,y|0,1,1).data[3],b=S.pp.ix.getImageData(x|0,y|0,1,1).data[3];return (a-b)/255;},
   tipNames:()=>SETS.map((t,ti)=>({id:t.id,names:(t.type==='plain'?t.colors.map(h=>({dataset:{c:h},classList:{contains:c=>c==='pencil'}})):t.items.map(p=>({dataset:{p:p.id},classList:{contains:()=>false}}))).map(el=>{const o=setIdx;setIdx=ti;const d=tipFor(el);setIdx=o;return d&&d[0]+' | '+d[1];})})),
   lines:()=>({...linesOf(S),under:!$('#lineUnder').hidden,col:!$('#lineCol').hidden,op:lineImg.style.opacity,vfill:(vline.querySelector('path')||{getAttribute:()=>null}).getAttribute('fill'),vauto:!!vline.querySelector('#vauto'),hist:(S.linesHist||[]).length,saved:LS.get('lines.'+S.n,null)}),
+  _pend:()=>JSON.stringify(pend),_saveNow:()=>{saveNow();return true;},_cacheIsS:()=>S===cache[S.n],
+  fxProbe:(px,py)=>{const c=mk(),x=c.getContext('2d'),o=[];const t=fxNow;for(let i=0;i<S.fx.length;i++){const r=S.fx[i];x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.globalCompositeOperation='source-over';x.clearRect(0,0,W,H);const k=r.kind;if(k==='cover')continue;const sv=S.fx[0];fxDrawRec(x,r,t);if(LIGHTK.has(k))drawLight(x,r);const d=x.getImageData(px,py,1,1).data;if(d[3])o.push([i,k,r.hex,[...d].join('.')]);}return o;},
   compSnap:()=>{EP._cs=composite().getContext('2d').getImageData(0,0,W,H).data;return true;},
   _od:{},compDiff:(rs)=>{const A=EP._cs,B=composite().getContext('2d').getImageData(0,0,W,H).data,set=new Set(rs);let inside=0,outside=0,maxOut=0;
     for(let i=0;i<W*H;i++){const j=i*4,d=Math.abs(A[j]-B[j])+Math.abs(A[j+1]-B[j+1])+Math.abs(A[j+2]-B[j+2]);if(!d)continue;if(set.has(S.lab[i]))inside++;else{outside++;if(d>maxOut)maxOut=d;const q=S.lab[i];EP._od[q]=(EP._od[q]||0)+1;}}const o={inside,outside,maxOut};if(outside)o.where=Object.entries(EP._od).sort((a,b)=>b[1]-a[1]).slice(0,4);EP._od={};return o;},
