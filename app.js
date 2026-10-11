@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=41;
+const EP_BUILD=42;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1018,7 +1018,7 @@ function commitPaint(){snapFill();try{const b=stroke&&stroke.bbx;if(b&&!stroke.e
     if(!stroke.neon&&(fxOverlap(bx,by,bw,bh)||under3DAt(bx,by,bw,bh)))src=solidStroke(strokeC,bx,by,bw,bh);   /* v24: over 3D work / effects the colour lays on top solidly */
     if(src!==strokeC&&stroke.region){const sx=src.getContext('2d'),q0=Math.max(0,bx|0),q1=Math.max(0,by|0),q2=Math.min(W-q0,Math.ceil(bw)),q3=Math.min(H-q1,Math.ceil(bh));sx.save();sx.globalCompositeOperation='destination-in';if(q2>0&&q3>0)sx.drawImage(maskC,q0,q1,q2,q3,q0,q1,q2,q3);sx.restore();}   /* b41: only the stroke's box */   /* b30: Line Lock also clips the solid pass, so nothing spills past the line */
     {const cx0=Math.max(0,bx|0),cy0=Math.max(0,by|0),cw=Math.min(W-cx0,Math.ceil(bw)),ch=Math.min(H-cy0,Math.ceil(bh)),a=adjOp(),kp=stroke.pulse;
-      if(cw>0&&ch>0){const cp=document.createElement('canvas');cp.width=cw;cp.height=ch;cp.getContext('2d').drawImage(src,cx0,cy0,cw,ch,0,0,cw,ch);defer(()=>{fxCoverOld(cp,cx0,cy0,cw,ch,a,kp,cx0,cy0);fxRedrawSoon();});}}}
+      if(cw>0&&ch>0){fxCoverOld(src,cx0,cy0,cw,ch,a,kp);defer(fxRedrawSoon);}}}   /* b42: the cut runs BEFORE this stroke's own effect is added (deferring it in b41 cut the new effect too) */
   if(!stroke.er){const c=stroke.pulse?pulseLayer().ctx:S.free.ctx;adjGlowDraw(c,strokeC,ink.hex);c.save();c.globalAlpha=adjOp();if(stroke.pulse){S.pulseUsed=true;dirty('pulse');}
     if(stroke.neon&&ink.kind==='glow'){haloDraw(c,strokeC,ink.hex);}
     else if(stroke.neon){c.shadowColor=ink.hex;c.shadowBlur=18;c.drawImage(strokeC,0,0);c.shadowBlur=6;c.drawImage(strokeC,0,0);c.shadowBlur=0;}
@@ -2019,7 +2019,7 @@ function shineStatic(r,style,lq){ // the still part (reflection colour, specular
         if(env){const e=((Math.max(0,Math.min(EH-1,(.5+Ry*.5)*EH|0)))*EW+Math.max(0,Math.min(EW-1,((X+X0)/WQ-Rx*.5)*EW|0)))*4;o=[cc[0]*.66+env[e]*.34,cc[1]*.66+env[e+1]*.34,cc[2]*.66+env[e+2]*.34];}else o=cc;}
       else o=metalAt(tint,Math.max(0,Math.min(1,.36+ndl*.42+.16*Math.cos(di*.4)-(Ry>0?Ry*.25:0))));
       const k=255*hot;D[j]=Math.min(255,o[0]+k);D[j+1]=Math.min(255,o[1]+k);D[j+2]=Math.min(255,o[2]+k*.96);D[j+3]=metal?225:245;}
-    const gm=Math.min(1,.5+1.3*rim+1.1*spec);G[j]=255;G[j+1]=add?Math.round(mix(rgb,WHITE,.7)[1]):250;G[j+2]=add?Math.round(mix(rgb,WHITE,.7)[2]):236;G[j+3]=gm*255;
+    const gm=Math.min(1,.16+1.3*rim+1.1*spec);   /* b42: the sweeping glint lights rims and highlights; flat middles get only a faint wash (was a full white wipe on light metals) */G[j]=255;G[j+1]=add?Math.round(mix(rgb,WHITE,.7)[1]):250;G[j+2]=add?Math.round(mix(rgb,WHITE,.7)[2]):236;G[j+3]=gm*255;
     if(hot>.5){const bl=Math.min(1,(hot-.5)*1.2);BD[j]=255;BD[j+1]=246;BD[j+2]=228;BD[j+3]=255*bl;}
     if(spec>.8&&hash2(X+X0,y+Y0)<.06)pts.push([(X+X0)*MQ+2,(y+Y0)*MQ+2,hash2(y,X)]);}
   const cv=(im,pad)=>{const c=document.createElement('canvas');c.width=w+pad*2;c.height=h+pad*2;const x=c.getContext('2d');if(!pad){x.putImageData(im,0,0);return c;}
@@ -2103,7 +2103,7 @@ function drawShine(x,r,t,style){if(!r.bb)return;const lvl=motionLvl('shimmer'),s
   if(PL){const D=PL.im.data;for(let n=0;n<PL.idx.length;n++){const v=Math.max(0,1-Math.abs(PL.ph[n]-u)/.12),j=PL.idx[n]*4;D[j]=D[j+1]=D[j+2]=255;D[j+3]=v*255;}
     PL.cx.putImageData(PL.im,0,0);gx.globalCompositeOperation='destination-out';gx.drawImage(PL.mask,0,0);gx.globalCompositeOperation='source-over';gx.drawImage(PL.c,0,0);}   /* v13: the glint follows each chrome stroke's own path (tap fills keep the diagonal) */
   gx.globalCompositeOperation='destination-in';gx.drawImage(ss.glint,0,0);
-  if(!still){scx.globalCompositeOperation='lighter';scx.globalAlpha=Math.min(1,.35+.65*lvl);scx.drawImage(gc,bx,by,bw,bh);scx.globalAlpha=.6*lvl;scx.drawImage(gc,bx,by,bw,bh);scx.globalAlpha=1;}
+  if(!still){scx.globalCompositeOperation='lighter';scx.globalAlpha=Math.min(1,.35+.65*lvl)*(style==='metal'?.7:1);scx.drawImage(gc,bx,by,bw,bh);if(style!=='metal'){scx.globalAlpha=.6*lvl;scx.drawImage(gc,bx,by,bw,bh);}scx.globalAlpha=1;}
   scx.globalCompositeOperation='destination-in';scx.drawImage(r.mask,bx,by,bw,bh,bx,by,bw,bh);scx.globalCompositeOperation='source-over';
   x.save();if(add)x.globalCompositeOperation='lighter';x.drawImage(scratch,bx,by,bw,bh,bx,by,bw,bh);x.restore();
   // 3) bloom around the hottest highlights (breathes a little), plus the glint's own glow
@@ -3151,6 +3151,19 @@ async function startOver(){if(!S)return;const n=S.n;clearTimeout(saveT);delete p
   buildScenes();toast('Started over · this page is blank again');return true;}$('#save').onclick=save;
 $('#celebrate').onclick=()=>{$('#celebrate').hidden=true;};
 window.addEventListener('resize',applyZoom);
+/* b42: on wide screens the zoom bar + Smart Grab switch sit beside the page instead of over the bottom-right corner of the art */
+{const wrap=$('#stagewrap'),st=$('#stage'),zu=$('.zoomui'),gu=$('.grabui');
+ if(wrap&&st&&zu){const home=[[zu,zu.parentNode,zu.nextSibling]];if(gu)home.push([gu,gu.parentNode,gu.nextSibling]);
+  const clr=e=>{e.style.left=e.style.right=e.style.bottom='';};
+  const place=()=>{const small=matchMedia('(max-width:760px)').matches;const wr=wrap.getBoundingClientRect(),sr=st.getBoundingClientRect();
+   const need=Math.max(zu.offsetWidth,gu?gu.offsetWidth:0)+16,side=!small&&sr.width>0&&wr.right-sr.right>=need;
+   if(side){if(zu.parentNode!==wrap){wrap.appendChild(zu);gu&&wrap.appendChild(gu);}
+     const L=Math.round(sr.right-wr.left+10),B=Math.round(wr.bottom-sr.bottom);zu.style.left=L+'px';zu.style.right='auto';zu.style.bottom=B+'px';
+     if(gu){gu.style.left=L+'px';gu.style.right='auto';gu.style.bottom=(B+zu.offsetHeight+8)+'px';}}
+   else if(zu.parentNode===wrap){for(const [e,p,n] of home){clr(e);p.insertBefore(e,n&&n.parentNode===p?n:null);}}
+   document.body.classList.toggle('zside',side);};
+  let pT=0;const soon=()=>{cancelAnimationFrame(pT);pT=requestAnimationFrame(place);};
+  if(window.ResizeObserver){const ro=new ResizeObserver(soon);ro.observe(wrap);ro.observe(st);ro.observe(zu);}addEventListener('resize',soon);soon();EP_place=place;}}
 document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test((document.activeElement||{}).tagName||'')&&document.activeElement.type!=='range')return;const k=(e.key||'').toLowerCase();if((e.ctrlKey||e.metaKey)&&((k==='z'&&e.shiftKey)||k==='y')){e.preventDefault();redo();}else if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();undoR();}});
 
 /* ---------- saving each scene's coloring ---------- */

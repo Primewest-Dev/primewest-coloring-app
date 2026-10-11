@@ -744,6 +744,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
    options (Raise / Inset, pop height, Color while popping, 3D idea) while a pop tool is in use */
 #ctxtag,#ctxhint{display:none!important}
 #setbar{display:none}.tool-pop #setbar{display:flex;min-height:0;padding-top:4px;padding-bottom:0}
+@media (min-width:761px){#app.set3d:not(.tool-pop) #setbar{display:flex;visibility:hidden;height:38px;min-height:0;padding-top:4px;padding-bottom:0;box-sizing:border-box;overflow:hidden}}   /* b42: in 3D the Pop options row keeps its slot, so the page doesn't jump in size when you switch Pop Fill <-> Eraser */
 /* the active Eraser says how to leave it */
 #toolbox .tool[data-tool=eraser].on span::after,#toolbox .tool[data-tool=poperase].on span::after{content:'tap to stop';display:block;font-size:8px;font-weight:500;color:#ffb35c;margin-top:1px}
 @media (max-width:1400px){#optbox{flex:1 1 auto}}
