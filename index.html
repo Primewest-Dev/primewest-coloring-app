@@ -14,7 +14,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="fonts.css">
-<link rel="stylesheet" href="app.css?v=30">
+<link rel="stylesheet" href="app.css?v=31">
 </head>
 <body>
 <div id="app">
@@ -145,7 +145,7 @@
       <button class="row big" id="set_smoke"><span>Smoke Pencils<small></small></span><b>Unlock</b></button>
       <button class="row big" id="set_clouds"><span>Cloud Pencils<small></small></span><b>Unlock</b></button>
       <button class="row big" id="set_gradients"><span>Rainbow &amp; Gradients<small></small></span><b>Unlock</b></button>
-      <p class="buildno" id="buildNo">Build 30</p>
+      <p class="buildno" id="buildNo">Build 31</p>
       <button class="big" id="setClose">Close</button>
     </div>
   </div>
@@ -165,7 +165,7 @@
       <div class="grp free-only story-only"><button class="big accent" id="done" title="Finish this picture and reveal the story"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg><span>Done</span></button></div>
       <div class="grp cbn-only"><div id="progress"><b id="pdone">0</b><span>/</span><span id="ptotal">0</span><small>filled</small></div></div>
       <div class="grp right">
-        <div id="sizebox" class="szbar" role="group" aria-label="Pen size" title="Pen tip size: from hair-thin (1) to very thick (60)"><span class="bxt">Pen size</span><span class="szprev"><i id="szDot"></i></span><input type="range" id="szRange" min="1" max="60" step="1" value="13" aria-label="Pen tip size"><b id="szNum" class="sznum">13</b></div>
+        <div id="sizebox" class="szbar" role="group" aria-label="Pen size" title="Pen tip size: from hair-thin (1) to very thick (60)"><span class="bxt">Pen size</span><span class="szprev"><i id="szDot"></i></span><input type="range" id="szRange" min="1" max="60" step="1" value="13" aria-label="Pen tip size"><b id="szNum" class="sznum">13</b><span class="psbox" title="Pencil style: Brush, Pen, Marker, Colored pencil, Crayon"><span class="bxt">Style</span><input type="range" id="psRange" min="0" max="100" step="1" value="37" aria-label="Pencil style: Brush, Pen, Marker, Colored pencil, Crayon" list="psStops"><b id="psName" class="psname">Pen → Marker</b><datalist id="psStops"><option value="0" label="Brush"></option><option value="25" label="Pen"></option><option value="50" label="Marker"></option><option value="75" label="Colored pencil"></option><option value="100" label="Crayon"></option></datalist></span></div>
         <button class="act big" id="undo" title="Undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/></svg><span>Undo</span></button>
         <button class="act big" id="clear" title="Clear"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span>Clear</span></button><button class="act big" id="startOver" title="Start over: wipe this whole page back to blank"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v4h4"/></svg><span>Start over</span></button>
         <button class="act big" id="saveLoop" hidden title="Save a short looping video of the pulse colors (WebM)"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg><span>Loop</span></button>
@@ -205,9 +205,9 @@
 </div>
 <!-- Chapter list (data-driven). Scene art files (data/scene_XX.js) are loaded on demand as plain <script> tags:
      works from file:// and USB sticks; images are data: URIs so canvases never taint. -->
-<script>window.EP_BUILD_HTML=30;</script>
-<script src="data/story.js?v=30"></script>
-<script src="premium-config.js?v=30"></script>
-<script src="app.js?v=30"></script>
+<script>window.EP_BUILD_HTML=31;</script>
+<script src="data/story.js?v=31"></script>
+<script src="premium-config.js?v=31"></script>
+<script src="app.js?v=31"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=30;
+const EP_BUILD=31;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -52,6 +52,14 @@ const cache={};
 const hex2rgb=h=>[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
 
 /* ---------- pencil textures ---------- */
+/* b31: Pencil Style slider: Brush (0) → Pen (25) → Marker (50) → Colored pencil (75) → Crayon (100). Default 37 (between Pen and Marker: solid, no grain). Remembered per 2D/3D mode; baked into each stroke. */
+const PS_STOPS=[[0,'Brush'],[25,'Pen'],[50,'Marker'],[75,'Colored pencil'],[100,'Crayon']];
+function psGet(){let m='2d';try{m=toolSet==='3d'?'3d':'2d';}catch(e){}const v=settings['pstyle'+m];return v==null?37:Math.max(0,Math.min(100,+v));}
+function psName(v){let b=PS_STOPS[0];for(const q of PS_STOPS)if(Math.abs(q[0]-v)<Math.abs(b[0]-v))b=q;const d=v-b[0];return Math.abs(d)<=4?b[1]:(d>0?b[1]+' → '+PS_STOPS[PS_STOPS.indexOf(b)+1][1]:PS_STOPS[PS_STOPS.indexOf(b)-1][1]+' → '+b[1]);}
+function psParams(v){const t=v/100;   // hard: edge hardness 0 soft .. 1 crisp; a: dab opacity; g: grain amount; taper: brush taper
+  const hard=t<=.25?t/.25:t<=.5?1-(t-.25)/.25*.45:.55,a=t<=.5?(t<.25?.9+.1*t/.25:1):1-(t-.5)/.5*.3,g=t<=.5?0:t<=.75?(t-.5)/.25*.28:.28+(t-.75)/.25*.72,taper=t<.25?1-t/.25:0;return {hard,a,g,taper};}
+const tipCache={};function psTip(h){const k=Math.round(h*10);if(tipCache[k])return tipCache[k];const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');
+  const g=x.createRadialGradient(32,32,0,32,32,32),i=Math.min(.97,.55+.42*k/10);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(i,'rgba(0,0,0,1)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,64,64);return tipCache[k]=c;}
 const tip=(()=>{const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');
   const g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(0,0,0,1)');g.addColorStop(.55,'rgba(0,0,0,.85)');g.addColorStop(1,'rgba(0,0,0,0)');
   x.fillStyle=g;x.fillRect(0,0,64,64);return c})();
@@ -248,7 +256,7 @@ function inkTile(k,hex,style,big){if(big&&((k==='plain'&&!style)||style==='air')
 function inkTile0(k,hex,style,big){
   const n=256,w=big?W:n,h=big?H:n,c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');const rgb=hex2rgb(hex);
   if(TEXK.has(k)&&!style){x.putImageData(texTile(k,texVariant(k,hex),rgb,big),0,0);return c;}
-  if(k==='plain'&&!style){x.fillStyle=hex;x.fillRect(0,0,n,n);return c;}   /* b30: plain pencils are a solid, smooth, opaque marker (no grainy paper tooth) */
+  if(k==='plain'&&!style){x.fillStyle=hex;x.fillRect(0,0,n,n);const G=psParams(psGet()).g;if(G>.01){const m=document.createElement('canvas');m.width=m.height=n;const mx=m.getContext('2d');mx.fillStyle=`rgba(0,0,0,${(1-G).toFixed(3)})`;mx.fillRect(0,0,n,n);mx.globalAlpha=G;mx.drawImage(grain,0,0);x.globalCompositeOperation='destination-in';x.drawImage(m,0,0);}return c;}   /* b31: grain only for Colored pencil / Crayon styles; Brush/Pen/Marker are solid */
   const im=x.createImageData(w,h),D=im.data,T=Math.PI*2;
   const vn=new Float32Array(17*17);for(let i=0;i<vn.length;i++)vn[i]=hash2(i*7+3,i*13+1);   // low-frequency noise (watercolor)
   for(let i=0;i<17;i++){vn[i*17+16]=vn[i*17];vn[16*17+i]=vn[i];}
@@ -646,9 +654,16 @@ const setOK=i=>true;   /* v24: every set (brushes too) is usable in 3D */   // b
 const drawTool=()=>toolSet==='3d'?'fill':'pencil';
 /* v18: the 2D / 3D buttons ONLY swap which tools are shown. They never touch the picture: the 3D relief, pops, colors, line
    shading and settings stay exactly as they are (the relief view simply stays on wherever the page has 3D). */
-function setToolSet(s){app.classList.toggle('set3d',s==='3d');if(s===toolSet){modeLabels();return;}
-  const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool);if(g0)TMEM[g0]={ink:{...ink},color,setIdx,tool};LASTT[toolSet]=tool;
-  toolSet=s;TMEM=TMEMS[s];
+/* b31: per-mode memory (2D and 3D each keep their own last tool, pencil set + pencil, pen size, eraser size, style), persisted across reloads */
+let MM_READY=false;setTimeout(()=>{MM_READY=true;},2500);
+function mmSave(){if(!MM_READY)return;const mm=settings.modeMem||{};const memG=q=>q==='pop'?'fill':toolGroup(q),g=memG(tool);if(g)TMEM[g]={ink:{...ink},color,setIdx,tool};LASTT[toolSet]=tool;
+  mm.tmems={'2d':TMEMS['2d'],'3d':TMEMS['3d']};mm.lastt={...LASTT};mm.size=mm.size||{};mm.size[toolSet]={pen:penSize,er:erSize};mm.cur=toolSet;settings.modeMem=JSON.parse(JSON.stringify(mm));LS.set('settings',settings);}
+function mmSizes(s){const z=settings.modeMem&&settings.modeMem.size&&settings.modeMem.size[s];if(!z)return;if(z.pen){penSize=z.pen;settings.penSize=penSize;}if(z.er){erSize=z.er;settings.erSize=erSize;}try{sizeUI();}catch(e){}}
+{const mm=settings.modeMem;if(mm&&mm.tmems){try{Object.assign(TMEMS['2d'],mm.tmems['2d']||{});Object.assign(TMEMS['3d'],mm.tmems['3d']||{});Object.assign(LASTT,mm.lastt||{});}catch(e){}}}
+addEventListener('pagehide',()=>{try{mmSave();}catch(e){}});document.addEventListener('visibilitychange',()=>{if(document.hidden)try{mmSave();}catch(e){}});
+function setToolSet(s){setTimeout(()=>{try{psUI();setInkPattern();}catch(e){}},0);app.classList.toggle('set3d',s==='3d');if(s===toolSet){modeLabels();return;}
+  const memG=q=>q==='pop'?'fill':toolGroup(q),g0=memG(tool);if(g0&&MM_READY)TMEM[g0]={ink:{...ink},color,setIdx,tool};if(MM_READY)LASTT[toolSet]=tool;
+  if(MM_READY)try{mmSave();}catch(e){}toolSet=s;TMEM=TMEMS[s];try{mmSizes(s);}catch(e){}
   let t=LASTT[s]&&inToolSet(LASTT[s],s)?LASTT[s]:(s==='3d'?({pencil:'fill',eraser:'eraser',fill:'fill'}[tool]||'fill'):({pop:'fill',poppencil:'pencil',poperase:'eraser',fill:'fill',eraser:'eraser'}[tool]||'pencil'));
   const g1=memG(t),m=g1&&TMEM[g1];if(m){ink={...m.ink};color=m.color;if(m.setIdx!==setIdx){setIdx=m.setIdx;settings.pset=SETS[setIdx].id;LS.set('settings',settings);}}
   if(!setOK(setIdx)){setIdx=0;settings.pset=SETS[0].id;LS.set('settings',settings);}
@@ -837,7 +852,8 @@ function stamp(x,y,pr){
       cov.drawImage(tip,x+Math.cos(a)*d-rr,y+Math.sin(a)*d-rr,2*rr,2*rr);}}
   else if(stroke.st==='water'){R*=2.3;cov.globalAlpha=.09;cov.drawImage(tip,x-R,y-R,2*R,2*R);}
   else{const j=R*.15,rich=['metal','glitter','neon','jewel','chrome','lightning'].includes(inkKind())||TEXK.has(inkKind());if(ink.kind==='smoke'||ink.kind==='cloud'){R*=1.5;cov.globalAlpha=ink.kind==='smoke'?.4+.3*p:.5+.35*p;cov.drawImage(tip,x-R,y-R,2*R,2*R);}else{
-    const solid=inkKind()==='plain';cov.globalAlpha=solid?1:rich?.75+.25*p:.45+.4*p; if(solid)cov.drawImage(tip,x-R,y-R,2*R,2*R);else cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);if(stroke.fur)furStamp(x,y,R);}
+    const solid=inkKind()==='plain';if(solid){const P=stroke.ps||(stroke.ps=psParams(psGet()));if(P.taper>0){const lp=stroke.lp||[x,y];stroke.len=(stroke.len||0)+Math.hypot(x-lp[0],y-lp[1]);stroke.lp=[x,y];R*=1-P.taper*.55*Math.max(0,1-stroke.len/(R*4+20));}
+      cov.globalAlpha=P.a;cov.drawImage(psTip(P.hard),x-R,y-R,2*R,2*R);}else cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);if(stroke.fur)furStamp(x,y,R);}
   const d=stroke.dirty,a=[x-R-2,y-R-2,x+R+2,y+R+2];
   stroke.dirty=d?[Math.min(d[0],a[0]),Math.min(d[1],a[1]),Math.max(d[2],a[2]),Math.max(d[3],a[3])]:a;
   {const q=stroke.bbx;stroke.bbx=q?[Math.min(q[0],a[0]),Math.min(q[1],a[1]),Math.max(q[2],a[2]),Math.max(q[3],a[3])]:a.slice();}
@@ -2605,13 +2621,15 @@ $$('.tool').forEach(b=>b.onclick=()=>{const t=b.dataset.tool;setTool(isEr(t)&&to
  const pb=$('#palbody');if(pb)pb.addEventListener('click',e=>{if(isEr(tool)&&e.target.closest('button'))setTool(backTool());},true);}   /* tapping any pencil or color leaves the eraser */
 {const to=$('#toolopts');if(to){const a=$('#tools .popswwrap'),b=$('#tools .popctl');if(a)to.appendChild(a);if(b)to.appendChild(b);}ctxBar(tool,false);}   /* v16: pop options live in the tool bar row */
 /* v20: size slider with a live preview dot, the number, and quick preset dots */
-function sizeUI(){try{sizeUI0();}catch(e){}try{phSync();}catch(e){}}
+function psUI(){const r=$('#psRange');if(!r)return;const v=psGet();if(document.activeElement!==r)r.value=v;const n=$('#psName');if(n)n.textContent=psName(v);r.style.setProperty('--p',v+'%');}
+function setPStyle(v){const m=toolSet==='3d'?'3d':'2d';settings['pstyle'+m]=Math.max(0,Math.min(100,Math.round(+v)));clearTimeout(setPStyle.t);setPStyle.t=setTimeout(()=>LS.set('settings',settings),300);psUI();try{setInkPattern();}catch(e){}}
+function sizeUI(){try{psUI();}catch(e){}try{sizeUI0();}catch(e){}try{phSync();}catch(e){}}
 function sizeUI0(){const r=$('#szRange');if(!r)return;const ER=tool==='eraser',V=ER?erSize:penSize;if(document.activeElement!==r)r.value=V;$('#szNum').textContent=V;{const t=$('#sizebox .bxt');if(t)t.textContent=ER?'Eraser size':'Pen size';$('#sizebox').setAttribute('aria-label',ER?'Eraser size':'Pen size');r.setAttribute('aria-label',ER?'Eraser size':'Pen tip size');}
   const er=tool==='eraser',d=$('#szDot'),px=Math.max(2,Math.min(40,(er?eraR()*2:penSize)*.62+1));d.style.width=d.style.height=px+'px';
   d.style.background=er?'transparent':(ink&&ink.hex)||color;d.style.boxShadow=er?'inset 0 0 0 1.5px #ffe2bd':'';$('#sizebox')&&$('#sizebox').classList.toggle('er',er);
   r.style.setProperty('--p',((V-1)/59*100)+'%');$$('.szp').forEach(b=>b.classList.toggle('on',+b.dataset.v===V));}
 function setPenSize(v){if(tool==='eraser'){erSize=Math.max(1,Math.min(60,Math.round(+v)||13));settings.erSize=erSize;clearTimeout(setPenSize.t);setPenSize.t=setTimeout(()=>LS.set('settings',settings),300);sizeUI();erCurShow(null,true);return;}penSize=Math.max(1,Math.min(60,Math.round(+v)||13));settings.penSize=penSize;clearTimeout(setPenSize.t);setPenSize.t=setTimeout(()=>LS.set('settings',settings),300);sizeUI();}
-{const r=$('#szRange');if(r)r.oninput=e=>setPenSize(e.target.value);$$('.szp').forEach(b=>{b.querySelector('i').style.width=b.querySelector('i').style.height=Math.max(3,Math.min(18,+b.dataset.v*.4+2))+'px';b.onclick=()=>setPenSize(b.dataset.v);});sizeUI();}
+{const q=$('#psRange');if(q)q.oninput=e=>setPStyle(e.target.value);}{const r=$('#szRange');if(r)r.oninput=e=>setPenSize(e.target.value);$$('.szp').forEach(b=>{b.querySelector('i').style.width=b.querySelector('i').style.height=Math.max(3,Math.min(18,+b.dataset.v*.4+2))+'px';b.onclick=()=>setPenSize(b.dataset.v);});sizeUI();}
 /* b30: Eraser circle cursor at the exact eraser size (follows the mouse; on touch while dragging; previewed while moving the size slider) */
 function erCurEl(){let c=document.getElementById('erCur');if(!c){c=document.createElement('div');c.id='erCur';c.className='ercur';stage.appendChild(c);}return c;}
 function erCurDia(){const r=zoomer.getBoundingClientRect();return 2*eraR()/zoomSizeDiv()*r.width/W;}
