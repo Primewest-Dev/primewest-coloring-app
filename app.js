@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=54;let EP_place=null;
+const EP_BUILD=55;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -626,7 +626,7 @@ function allowPremiumUse(cost){
   if(Trials.left(set.id)===0)setTimeout(()=>toast(`That was your last free ${set.name} try ✦`),300);return true;}
 function refreshPremiumUI(){buildPalette();
   for(const [key,sub] of [['pencils','Metallic, chrome, glitter, neon, glow, pulse + brushes'],['palettes','Sunset, Ocean, Forest and 11 more palettes: the full spectrum, neutrals, skin and earth tones'],['effects3d','Pop Pencil, 3D Pop and the 3D views'],['smoke','5 drifting smoke pencils'],['clouds','5 billowing cloud pencils'],['gradients','Rainbow + 11 gradient ramps that shift along the stroke']]){
-    const on=ENT[key].unlocked(),b=$(`#set_${key} b`),sm=$(`#set_${key} small`);if(b){b.textContent=on?'Lock again (demo)':'Unlock';sm.textContent=on?`Unlocked on this device (${(ENT[key].state()||{}).source||'demo'})`:sub;}}
+    const on=ENT[key].unlocked(),b=$(`#set_${key} b`),sm=$(`#set_${key} small`);if(b){b.innerHTML=on?'Lock again<i class="ox">(demo)</i>':'Unlock';sm.textContent=on?`Unlocked on this device (${(ENT[key].state()||{}).source||'demo'})`:sub;}}
   ownerBar();if(!$('#mixer').hidden)buildMixer();
   const pt=$('#popTries');if(pt)pt.textContent=ENT.effects3d.unlocked()?'':`Free tries: ${Trials.popsLeft()} left`;
   markColor();}
@@ -2738,6 +2738,13 @@ function suggestFor(r){const out=[],add=h=>{h=h.toLowerCase();if(!out.includes(h
   add(hsl2hex(h,s*1.05,l-.16));add(hsl2hex(h,s*.8,l+.16));return out.slice(0,5);}
 /* v24 (desktop): the color suggestions sit in a column OUTSIDE the picture, on its left (right side only if the left has no room),
    so they never cover the drawing. Phone keeps its strip above the tab bar. */
+/* b55: phone - the zoom and grab buttons ride just above whatever is docked at the bottom (tab strip, or the 3D Pop options row above it) */
+const phMQ=matchMedia('(max-width:600px)');
+function phoneDock(){const zu=document.querySelector('.zoomui'),gu=document.querySelector('.grabui'),bt=document.getElementById('bottom');if(!zu||!bt)return;
+  if(!phMQ.matches){zu.style.bottom='';if(gu)gu.style.bottom='';return;}const q=bt.getBoundingClientRect();
+  if(!(q.height>0&&q.top>innerHeight*.55&&q.bottom>=innerHeight-4)){zu.style.bottom='';if(gu)gu.style.bottom='';return;}
+  const b=Math.round(innerHeight-q.top+8);zu.style.bottom=b+'px';if(gu)gu.style.bottom=(b+56)+'px';}
+{const bt=document.getElementById('bottom');if(bt&&window.ResizeObserver)new ResizeObserver(()=>requestAnimationFrame(phoneDock)).observe(bt);addEventListener('resize',()=>requestAnimationFrame(phoneDock));phMQ.addEventListener&&phMQ.addEventListener('change',phoneDock);setTimeout(phoneDock,0);}
 function phoneSlotBottom(){const t=[...document.querySelectorAll('.zoomui,.grabui')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').map(e=>e.getBoundingClientRect()).filter(q=>q.height>0&&q.top>innerHeight*.4).map(q=>q.top);return t.length?Math.round(innerHeight-Math.min(...t)+8):0;}
 function placeTry(){const el=$('#tryrow');if(!el||el.hidden)return;const phone=matchMedia('(max-width:600px)').matches;
   if(phone){if(el.parentNode!==stage)stage.appendChild(el);el.classList.remove('col','slim');el.style.cssText='';const b=phoneSlotBottom();if(b)el.style.bottom=b+'px';return;}   /* b51: above the zoom / grab buttons, never on top of them */

@@ -1253,3 +1253,61 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 @media (max-width:760px){.mixer .mxrows{order:1;max-height:52vh}.mixer .mxpre,.mixer .mxfin{flex-wrap:nowrap!important;overflow-x:auto}.mixer .mxpre>b,.mixer .mxfin>b{flex:none!important}.mixer .mxpre .mxo,.mixer .mxfin .mxo{flex:none;height:36px}}
 @media (max-width:600px){#colors>#mixer:not([hidden]){display:flex;flex-direction:column}#colors>#mixer .mxside{order:0;position:static}#colors>#mixer .mxrows{order:1;flex:1 1 auto;overflow-y:auto;max-height:none}
   #colors>#mixer .mxpre,#colors>#mixer .mxfin{flex-wrap:nowrap;overflow-x:auto}#colors>#mixer .mxpre>b,#colors>#mixer .mxfin>b{flex:none}}
+/* b55: phone top bar - size + style share the bar and shrink; the style name sits small under its slider, so undo/redo always fit */
+@media (max-width:600px){
+  #tools #redo{width:44px!important;flex:0 0 44px!important}
+  #tools .szbar{min-width:0!important;overflow:hidden;flex:1 1 0!important}
+  #tools .szbar #szRange{flex:1 1 50%;width:auto;min-width:32px}
+  #tools .szbar .sznum{min-width:18px;flex:none}#tools .szbar .bxt{display:none!important}
+  .psbox{flex:1 1 50%;min-width:0;position:relative;margin-left:2px;padding-left:6px;align-self:stretch}
+  .psbox #psRange{flex:1 1 auto;width:auto;min-width:32px}
+  .psbox .psname{position:absolute;left:auto;right:0;width:max-content;max-width:150px;bottom:1px;text-align:right;background:#241a12;padding:0 3px;border-radius:3px;font-size:9px;line-height:10px;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+}
+/* b55: phone 3D Pop row fits one screen width: no ▼▲ glyphs or number box, slider stretches, Reset is icon only (3D idea scrolls in after) */
+@media (max-width:600px){
+  #setbar .popswwrap{flex:0 1 auto;min-width:0}
+  #setbar .pph{flex:1 1 auto;min-width:0;margin-left:6px}
+  #setbar .pph .pphe,#setbar .pph .fxn{display:none}
+  #setbar .pph input[type=range]{flex:none;width:72px!important;min-width:0}
+  #setbar .pph b{min-width:0;font-size:10px}
+  #setbar #ppReset{margin-left:4px;padding:0 10px;min-width:44px;justify-content:center}#setbar #ppReset span{display:none}
+}
+/* b55: short landscape phones - tool tiles are ~50px wide: two-word labels wrap inside the tile; Deep Pop's status line moves to its tooltip */
+@media (orientation:landscape) and (max-height:520px){
+  #toolbox .tgrid button{padding:4px 2px!important;gap:1px!important;height:auto!important;min-height:46px}#toolbox .tgrid button svg{width:16px;height:16px;flex:none}
+  #toolbox .tgrid button>span{white-space:normal;line-height:1;font-size:9px!important;letter-spacing:-.1px;text-align:center;overflow-wrap:normal;max-width:100%}
+  #toolbox #dpBtn .dpst{display:none}
+}
+/* b55: short landscape phones (side panel ~300px): size + style bar, action buttons, 3D Pop row and palette header all fit the panel width */
+@media (orientation:landscape) and (max-height:520px){
+  #bottom{overflow-x:hidden}
+  #tools .szbar{flex:1 1 100%!important;min-width:0!important;max-width:100%;overflow:hidden;padding:0 8px!important;gap:6px!important}
+  #tools .szbar .bxt{display:none!important}
+  #tools .szbar #szRange{flex:1 1 50%;width:auto!important;min-width:32px}
+  #tools .szbar .sznum{min-width:18px;flex:none}
+  .psbox{flex:1 1 50%;min-width:0;position:relative;margin-left:2px;padding-left:6px;align-self:stretch}
+  .psbox #psRange{flex:1 1 auto;width:auto;min-width:32px}
+  .psbox .psname{position:absolute;left:auto;right:0;width:max-content;max-width:150px;bottom:1px;text-align:right;background:#241a12;padding:0 3px;border-radius:3px;font-size:9px;line-height:10px;min-width:0;pointer-events:none}
+  #tools .grp.right{flex-wrap:wrap;min-width:0;max-width:100%;row-gap:6px}
+  #tools .grp.right>#undo,#tools .grp.right>#redo,#tools .grp.right>#clear,#tools .grp.right>#startOver,#tools .grp.right>#save,#tools .grp.right>#saveLoop{flex:1 1 0!important;min-width:0!important;width:auto!important;padding-left:2px;padding-right:2px}
+  #tools .grp.right>button>span{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  #setbar,#setbar .toolopts{flex-wrap:wrap!important;row-gap:4px}#setbar .popswwrap{flex:1 1 100%!important;min-width:0;max-width:100%;flex-wrap:wrap;row-gap:4px}
+  #setbar .pph{flex:1 1 auto;min-width:0;margin-left:6px}
+  #setbar .pph .pphe,#setbar .pph .fxn{display:none}
+  #setbar .pph input[type=range]{flex:1 1 auto;width:auto!important;min-width:60px}
+  #setbar .pph b{min-width:0;font-size:10px}
+  #setbar #ppReset{margin-left:4px;padding:0 10px;min-width:40px;justify-content:center}#setbar #ppReset span{display:none}
+  #palbox .moresets{font-size:0!important;width:32px;padding:0!important;justify-content:center}#palbox .moresets::after{content:'✦';font-size:14px;position:relative}
+}
+/* b55: owner test bar - short labels on phones (full text stays in the tooltip) */
+@media (max-width:600px),(orientation:landscape) and (max-height:520px){.ownerbar .ox{display:none}.ownerbar button{white-space:nowrap}}
+/* b55: Settings rows keep their names on phones and tablets (the generic ".big span" icon-button rule hid every label under 1100px);
+   "Lock again" puts "(demo)" on a small second line so it never runs off the row; the sticky close X gets its own chip */
+@media (max-width:1100px){#settings .row.big>span{display:flex!important;min-width:0;flex:1 1 auto}}
+#settings .row>span{min-width:0}#settings .row>canvas{flex:0 1 auto;min-width:0;max-width:34%;object-fit:contain}
+#settings .row>b{white-space:nowrap;flex:none;text-align:center;line-height:1.1}#settings .row>b .ox{display:block;font-style:normal;font-size:10px;font-weight:500;opacity:.7}
+#setX{background:rgba(30,24,19,.92);border-radius:50%;z-index:3}
+#settings .row>span,#settings .row>span small{white-space:normal;overflow:hidden;overflow-wrap:anywhere}#settings .row>span{flex:1 1 0!important;padding-right:8px}
+#settings .row>i,#settings .row>.danger,#settings .row>button{flex:none}
+@media (max-width:600px){#settings .row>canvas{display:none}}
+#settings .row.setrange>span{flex:1 1 100%!important;padding-right:0}
