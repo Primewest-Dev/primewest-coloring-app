@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=31;
+const EP_BUILD=32;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -140,12 +140,17 @@ function lightPulse(d,t,speed,count,dir){let best=0;for(let p=0;p<count;p++){let
 function lightPulseE(d,t,speed,count,dir){let best=0;for(let p=0;p<count;p++){const u=((t*speed)+p/count)%1;let pos=u*u*(3-2*u);if(dir==='reverse')pos=1-pos;else if(dir==='bounce')pos=pos<.5?pos*2:2-pos*2;
   const e=d-pos,env=Math.sin(Math.PI*u);best=Math.max(best,Math.exp(-e*e*24)*env);}return best;}
 const RAMP_WAVE={rainbow:'sawtooth',aurora:'smooth',cyber:'triangle',vaporwave:'smooth',miami:'triangle'};
-const DPAL={sunset:{n:'Sunset',h:[50,30,15,350,330,310,290,270,250,230],s:70},ocean:{n:'Ocean',h:[180,195,210,220,230,240,250,260,270,280],s:55},
+const DPAL={sunset:{n:'Sunset',h:[50,30,15,350,330,310,290,270,250,230],s:70},ocean:{n:'Ocean',h:[165,180,195,210,225,240,255,270,285,300],s:68},
   fire:{n:'Fire',h:[50,40,30,20,15,10,5,0,350,340],s:85},cyber:{n:'Cyber',h:[180,200,260,290,320,350,20,50,80,120],s:80},
   toxic:{n:'Toxic',h:[80,90,100,70,60,50,40,30,20,10],s:90},rainbow:{n:'Rainbow',h:[0,30,60,120,180,210,270,300,330,360],s:75},
   electric:{n:'Electric',h:[270,250,230,210,190,170,290,310,330,350],s:90}};
 /* v26 Color Cycle: Miles's palettes as closed colour loops (cc-<palette>[-<lightness 2..8>]); strokes and Adjust Hue cycle flow through them */
 function ccEnsure(k){if(typeof k!=='string'||!k.startsWith('cc-')||RAMPS[k])return;const [,p,l]=k.split('-'),P=DPAL[p];if(!P)return;const L=l?(+l)/10:P.c?P.L:.55;
+  if(P.pic&&!P.own){/* b32: picture cycles must visibly move through 3+ distinct colours: keep the page's hue family but stretch hue to >=70deg span and lightness to >=.3 range */
+    const n=P.h.length;let sx=0,sy=0;P.h.forEach(h=>{sx+=Math.cos(h*Math.PI/180);sy+=Math.sin(h*Math.PI/180);});const mh=Math.atan2(sy,sx)*180/Math.PI;
+    const dh=P.h.map(h=>{let d=h-mh;while(d>180)d-=360;while(d<-180)d+=360;return d;});const span=Math.max(...dh)-Math.min(...dh)||1,kh=Math.max(1,70/span);
+    const pat=[0,.5,1,.5,-.5,-1,-.5];const hs=[],ss=[],ls=[];for(let i=0;i<n;i++){const t=n>1?i/(n-1):0;const ord=dh.length>1?dh[i]*kh:(t-.5)*70;hs.push(mh+ord);ss.push(Math.max(.55,P.ss[i]||P.s/100));ls.push(Math.max(.2,Math.min(.82,L+.16*pat[i%pat.length])));}
+    const o=[];for(let i=0;i<n;i++){const j=(i+1)%n;let d=hs[j]-hs[i];if(d>180)d-=360;if(d<-180)d+=360;for(let s=0;s<6;s++){const f=ease(s/6);o.push(hsl2hex(hs[i]+d*f,ss[i]+(ss[j]-ss[i])*f,ls[i]+(ls[j]-ls[i])*f));}}o.push(o[0]);RAMPS[k]=o;RAMP_WAVE[k]='sawtooth';return;}
   if(P.c){const o=[],n=P.h.length,Ls=P.own&&!l?P.ll:null;for(let i=0;i<n;i++){const j=(i+1)%n;let d=P.h[j]-P.h[i];if(d>180)d-=360;if(d<-180)d+=360;for(let s=0;s<6;s++){const f=ease(s/6);o.push(hsl2hex(P.h[i]+d*f,P.ss[i]+(P.ss[j]-P.ss[i])*f,Ls?Ls[i]+(Ls[j]-Ls[i])*f:L));}}o.push(o[0]);RAMPS[k]=o;RAMP_WAVE[k]='sawtooth';return;}
   RAMPS[k]=P.h.concat([P.h[0]]).map(h=>hsl2hex(h,P.s/100,L));RAMP_WAVE[k]='sawtooth';}
 /* v27 Picture colors: moving-colour presets drawn from each page's own colours (hand-picked per page, or derived from the page's
@@ -174,7 +179,7 @@ function ccItems(n){const P=PREMIUM.filter(p=>p.cc&&!p.my);return (typeof MYPEN!
 const PREM={};PREMIUM.forEach(p=>PREM[p.id]=p);
 /* b28 My color cycle: the user's own 2-6 colour loop. Each version gets a stable key (u<hash>) kept in ep.v1.myccAll, so pictures
    that used an older version still replay it after a reload; the pencil / Deep Pop / Adjust always use the current one. */
-const MYCC_PRESETS=[['sunw','Sunset warm',['#f6c56b','#f2a05a','#e9784b','#d4544c','#b4456a']],['ocean','Ocean cool',['#1d4e6b','#2a6f97','#3f8fba','#62b4ca','#93cfd2']],
+const MYCC_PRESETS=[['sunw','Sunset warm',['#f6c56b','#f08a4b','#d9434f','#a63a7a','#6a3f9e']],['ocean','Ocean cool',['#1d4e6b','#2a6f97','#3f8fba','#62b4ca','#93cfd2']],
   ['forest','Forest',['#2f4a2c','#40693a','#5a8a4a','#86a85c','#4d7a56']],['berry','Berry',['#5b1a3a','#7d2650','#a33a6b','#c45b88','#8e2f5e']],
   ['pastel','Pastel',['#f4c3c6','#f7d9c2','#f8ecc2','#cfe6d6','#c8d6ef']],['earth','Earth',['#5c4033','#8b5e3c','#b07d4f','#c9a36b','#7a6a4f']]];
 const myLS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem('ep.v1.'+k)||'null');localStorage.setItem('ep.v1.'+k,JSON.stringify(v));}catch(e){return null;}};
@@ -182,7 +187,7 @@ function myHash(cs){let h=7;for(const ch of cs.join(',').toLowerCase())h=(h*31+c
 function myReg(cs,save=true){const k=myHash(cs);if(!DPAL[k]){const hsl=cs.map(c=>rgb2hsl(hex2rgb(c)));DPAL[k]={n:'My color cycle',c:cs.slice(),pic:'my',own:1,h:hsl.map(q=>q[0]),ss:hsl.map(q=>q[1]),ll:hsl.map(q=>q[2]),s:Math.round(hsl.reduce((a,q)=>a+q[1],0)/hsl.length*100),L:hsl.reduce((a,q)=>a+q[2],0)/hsl.length};}
   if(save){const all=myLS('myccAll')||{};if(!all[k]){all[k]=cs.slice();myLS('myccAll',all);}}ccEnsure('cc-'+k);return k;}
 for(const cs of Object.values(myLS('myccAll')||{}))if(Array.isArray(cs)&&cs.length>1)myReg(cs,false);
-const MYCC={cols:(Array.isArray(myLS('mycc'))&&myLS('mycc').length>1)?myLS('mycc'):MYCC_PRESETS[0][2].slice(0,4),work:null,from:'pencil'};
+const MYCC={cols:(Array.isArray(myLS('mycc'))&&myLS('mycc').length>1)?myLS('mycc'):MYCC_PRESETS[0][2].slice(),work:null,from:'pencil'};
 const MYPEN={id:'my-cycle',kind:'ramp',cc:true,my:true,name:'My color cycle',ramp:'cc-'+myReg(MYCC.cols,false),hex:MYCC.cols[0]};MYPEN.key=MYPEN.ramp.slice(3);
 PREMIUM.push(MYPEN);PREM[MYPEN.id]=MYPEN;
 PREM['c-any']={id:'c-any',kind:'chrome',hex:'#d9dde3',name:'Chrome finish'};
@@ -2984,7 +2989,7 @@ function ccUse(where){const k=ccEdSave();if(!k)return;ccEdClose();
   if(where==='dp'){const {D,p}=dpTarget();D.pal=k;D.cyc=true;dpChanged(p);dpOpen();toast(p?'My color cycle is on this Deep Pop area':'My color cycle is set for your next Deep Pop');return;}
   if(where==='adj'){adjOpen();if(S&&S.lastOp){adjSetHue(k);adjBuild();toast('Your last stroke now cycles through My color cycle');}else toast('Draw or fill something first · then pick My color cycle in Hue Shift AUTO');return;}
   const ci=SETI.ccycle;if(ci!=null){setIdx=ci;buildPalette();}setTimeout(()=>{const b=$('#freerow .pencil[data-p="my-cycle"]');if(b)b.click();toast('My color cycle pencil is ready · draw or fill');},30);}
-(()=>{if(!$('#ccEd'))return;$('#ccX').onclick=ccEdClose;$('#ccDone').onclick=()=>ccUse(MYCC.from);$('#ccReset').onclick=()=>{MYCC.work=MYCC_PRESETS[0][2].slice(0,4);ccEdBuild();};
+(()=>{if(!$('#ccEd'))return;$('#ccX').onclick=ccEdClose;$('#ccDone').onclick=()=>ccUse(MYCC.from);$('#ccReset').onclick=()=>{MYCC.work=MYCC_PRESETS[0][2].slice();ccEdBuild();};
   $('#ccUse').querySelectorAll('[data-use]').forEach(b=>b.onclick=e=>{e.stopPropagation();ccUse(b.dataset.use);});})();
 
 /* b28 Focus view: while a bottom-half sheet is open, the part being edited is zoomed and centred in the space above the sheet; closing restores the view */
