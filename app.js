@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=28;
+const EP_BUILD=29;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -301,9 +301,9 @@ function lastOpCapture(ctx,x,y,w,h,kind){if(!S||mode==='cbn')return;const u=S.fr
   const pulse=ctx!==S.free.ctx,src=pulse?u.p:u.f,B=new ImageData(bw,bh);if(src){const sd=src.data,bd=B.data;for(let r=0;r<bh;r++){const o=((by+r)*W+bx)*4;bd.set(sd.subarray(o,o+bw*4),r*bw*4);}}
   const A=ctx.getImageData(bx,by,bw,bh),ad=A.data,bd=B.data,mk8=new Uint8Array(bw*bh);let any=0;for(let i=0,j=0;i<mk8.length;i++,j+=4)if(ad[j]!==bd[j]||ad[j+1]!==bd[j+1]||ad[j+2]!==bd[j+2]||ad[j+3]!==bd[j+3]){mk8[i]=1;any++;}
   if(!any)return;const n=undoKey(),recs=[];for(const e of (S.fxUndo||[]))if(e.n===n)for(const q of e.m)if(q[3]==null&&!recs.some(z=>z[0]===q[0]))recs.push([q[0],q[0].hex]);
-  S.lastOp={path:typeof stroke!=='undefined'&&stroke&&stroke.path&&stroke.path.length>1?[stroke.path[0],stroke.path[stroke.path.length-1]]:null,kind,pulse,bx,by,bw,bh,B,A,M:mk8,n,hex:ink.base||ink.hex,name:ink.id&&PREM[ink.id]?PREM[ink.id].name:ink.kind==='mix'?'Mix · '+colorName(ink.base||ink.hex):colorName(ink.base||ink.hex),recs,a:{...adjCarry}};if(opAdj())lastOpRender();   /* v24: a new stroke starts from the previous stroke's Adjust values */
+  S.lastOp={path:typeof stroke!=='undefined'&&stroke&&stroke.path&&stroke.path.length>1?[stroke.path[0],stroke.path[stroke.path.length-1]]:null,kind,pulse,bx,by,bw,bh,B,A,M:mk8,n,hex:ink.base||ink.hex,name:ink.id&&PREM[ink.id]?PREM[ink.id].name:ink.kind==='mix'?'Mix · '+colorName(ink.base||ink.hex):colorName(ink.base||ink.hex),recs,a:{}};   /* b29 hotfix: every new stroke/fill starts plain (full opacity, no hue/effect). Carrying Adjust values (e.g. Opacity 0) made every new stroke vanish on release */
   if($('#adjust')&&!$('#adjust').hidden)setTimeout(()=>{adjBuild();adjFlash();},0);}
-let adjCarry=LS.get('adjCarry',{});if(!adjCarry||typeof adjCarry!=='object')adjCarry={};
+let adjCarry={};try{LS.set('adjCarry',{});}catch(e){}   /* b29: purge the old carried Adjust values from earlier builds */
 function opAdj(){const L=S&&S.lastOp;return L&&ADJDEF.some(([k,, , ,d])=>L.a[k]!=null&&L.a[k]!==d)?L.a:null;}
 function adjMatrix(a){const h=adjVal(a,'h')*Math.PI/180,c=Math.cos(h),s=Math.sin(h),S2=adjVal(a,'s')/100;
   const Hm=[.213+c*.787-s*.213,.715-c*.715-s*.715,.072-c*.072+s*.928,.213-c*.213+s*.143,.715+c*.285+s*.140,.072-c*.072-s*.283,.213-c*.213-s*.787,.715-c*.715+s*.715,.072+c*.928+s*.072];
@@ -2631,11 +2631,11 @@ function adjClose(){const el=$('#adjust');if(el)el.hidden=true;if(typeof sheetSy
 function adjBuild(){const el=$('#adjRows');if(!el)return;const L=S&&S.lastOp,a=L?L.a:{},fmt=(d,v)=>(d[0]==='h'||d[0]==='b'||d[0]==='w')&&v>0?'+'+v+d[6]:v+d[6];
   el.innerHTML=ADJDEF.map(d=>{const v=adjVal(L?a:adjCarry,d[0]);return `<label class="adjr" title="${esc(d[7])}"><span>${d[1]}</span><input type="range" data-k="${d[0]}" min="${d[2]}" max="${d[3]}" step="${d[5]}" value="${v}" aria-label="${esc(d[1])}"><em>${fmt(d,v)}</em></label>`;}).join('');
   $('#adjust').classList.toggle('empty',!L);$('#adjReset').disabled=false;
-  const sw=()=>{const A=$('#adjAfter'),Bf=$('#adjBefore');if(!L){Bf.style.background='transparent';A.style.background='transparent';A.style.opacity=1;A.style.boxShadow='';$('#adjName').innerHTML='<b>Editing:</b> your next stroke · draw or fill something, then fine-tune that stroke here';return;}
+  const sw=()=>{const A=$('#adjAfter'),Bf=$('#adjBefore');if(!L){Bf.style.background='transparent';A.style.background='transparent';A.style.opacity=1;A.style.boxShadow='';$('#adjName').innerHTML='<b>Nothing to adjust yet</b> · draw or fill something, then adjust that stroke here';return;}
     const oa=opAdj(),hx=opHex(L,oa);Bf.style.background=L.hex;A.style.background=hx;A.style.opacity=adjVal(L.a,'o')/100;A.style.boxShadow=adjVal(L.a,'g')>0?`0 0 ${4+adjVal(L.a,'g')*.14}px ${hx}`:'';
     $('#adjName').textContent=L.name+(L.kind==='fill'?' · fill':' · stroke')+(oa?' · adjusted':'');};sw();
   adjFxRow(el,L);
-  el.querySelectorAll('input:not(.adjsp)').forEach(i=>i.oninput=()=>{if(!S.lastOp){adjCarry[i.dataset.k]=+i.value;LS.set('adjCarry',adjCarry);const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);return;}S.lastOp.a[i.dataset.k]=+i.value;adjCarry={...S.lastOp.a};LS.set('adjCarry',adjCarry);const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);sw();lastOpRenderSoon();});}
+  el.querySelectorAll('input:not(.adjsp)').forEach(i=>i.oninput=()=>{if(!S.lastOp){const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.value=d[4];i.nextElementSibling.textContent=fmt(d,d[4]);toast('Draw or fill something first · Adjust changes only the stroke you just made');return;}S.lastOp.a[i.dataset.k]=+i.value;const d=ADJDEF.find(q=>q[0]===i.dataset.k);i.nextElementSibling.textContent=fmt(d,+i.value);sw();lastOpRenderSoon();});}
 /* v25: add a live effect to the last stroke only (its own record: own direction, phase and speed), or change that stroke's effect speed.
    Other strokes and the rest of the picture are not touched. Undo of the stroke removes the added effect too. */
 const ADJFX=[['none','None',null],['shimmer','Shimmer','shimmer'],['glitter','Glitter','twinkle'],['glowing','Glowing','glowfx'],['metallic','Metallic','shine'],['pulse','Pulse','pulsefx'],['neon','Neon','neonfx']];
