@@ -1142,3 +1142,4 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 #scVid{width:100%;height:auto;aspect-ratio:900/506;border-radius:14px;border:1px solid rgba(255,200,120,.35);display:block;margin:8px 0 10px;background:#050a14}
 #scBtn svg{fill:currentColor;stroke:none}
 #scView,#settings,#upgrade,#map,#soDlg,#showcase{z-index:1100}
+#showThumb:not([src]),#showThumb[src=""]{visibility:hidden}
