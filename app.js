@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=43;let EP_place=null;
+const EP_BUILD=44;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -3309,7 +3309,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const ap=docu
  add($('#settings .set-card'),'setX',()=>{$('#settings').hidden=true;});add($('#map .map-head'),'mapX',closeMap);
  $('#map').addEventListener('click',e=>{if(e.target.id==='map')closeMap();});})();
 /* b28: Example showcase viewer · plays a finished version of the page in a dialog; never touches the user's saved coloring */
-const SHOWCASE={4:{v:'data/showcase/sc_04.mp4',p:'data/showcase/sc_04.jpg',t:'The Ember Seal · example',d:'Made in the app: Free Color by-number colors, Deep Pop moving layers on the two flaps in the page\'s own Ember glow / Wax & gold colors (breathing toward the light), a glowing ember seal, a metallic gold wax ring, small gold glitter stars, a soft shimmer on the envelope and 3D pops on the envelope and hands.'}};
+const SHOWCASE={4:{v:'data/showcase/sc_04e.mp4',p:'data/showcase/sc_04e.jpg',t:'The Ember Seal · example',d:'Made in the app with this page\'s own colors: a glowing ember seal in a metallic gold wax ring, gold glitter stars, Deep Pop carved flaps in the page\'s Parchment colors, and 3D pops on the envelope and hands.'}};
 function scBtnSync(){const b=$('#scBtn');if(b)b.hidden=!(S&&SHOWCASE[S.n]);}
 function scOpen(){const c=S&&SHOWCASE[S.n];if(!c)return;const v=$('#scVid');$('#scTitle').textContent=c.t;$('#scDesc').textContent=c.d;v.poster=c.p;if(v.getAttribute('src')!==c.v)v.src=c.v;$('#scView').hidden=false;const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{});}
 function scClose(){const v=$('#scVid');if(v)v.pause();$('#scView').hidden=true;}
