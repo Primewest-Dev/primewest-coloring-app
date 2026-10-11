@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=34;
+const EP_BUILD=35;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -2773,6 +2773,25 @@ let erCurT=0;function erCurShow(e,preview){const c=erCurEl();if(tool!=='eraser')
 stage.addEventListener('pointermove',e=>{if(tool==='eraser'&&(e.pointerType==='mouse'||down))erCurShow(e);else{const c=document.getElementById('erCur');if(c)c.hidden=true;}});
 stage.addEventListener('pointerdown',e=>{if(tool==='eraser')erCurShow(e);});
 stage.addEventListener('pointerleave',()=>{const c=document.getElementById('erCur');if(c)c.hidden=true;});
+/* b35: tool-specific mouse cursors (data-URL SVG; touch devices never show a cursor). Pencil tinted with the ink (gradient for cycle pencils), hotspot at the tip; bucket tinted; push finger; hand = grab. A size ring follows pencils/push like the eraser circle. */
+const CUR={sig:''};
+function curInkCols(){try{if(ink&&ink.ramp){const k=ink.ramp;return [0,.5,1].map(t=>{const c=rampRgb(k,t);return `rgb(${c[0]},${c[1]},${c[2]})`;});}}catch(e){}return [color||'#333'];}
+function curSvg(t){const cs=curInkCols(),c0=cs[0],grad=cs.length>1?`<defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="${cs[0]}"/><stop offset=".5" stop-color="${cs[1]}"/><stop offset="1" stop-color="${cs[2]}"/></linearGradient></defs>`:'',fillc=cs.length>1?'url(#g)':c0;
+  let b;if(t==='pencil'||t==='poppencil'){b=`${grad}<g stroke="#1b130c" stroke-width="1.3" stroke-linejoin="round"><path d="M9 23 L24 8 L28 12 L13 27 Z" fill="${fillc}"/><path d="M24 8 L26.5 5.5 Q28 4 29.5 5.5 L30.5 6.5 Q32 8 30.5 9.5 L28 12 Z" fill="#f1a7a0"/><path d="M9 23 L13 27 L3.2 30.8 Z" fill="#f3d9a8"/></g><path d="M3.2 30.8 L5.7 26.1 L7.9 28.3 Z" fill="${c0}" stroke="#1b130c" stroke-width=".8"/>${t==='poppencil'?'<path d="M18 13 l2-2 M21 16 l2-2" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>':''}`;return {svg:b,x:3,y:30};}
+  if(t==='fill'||t==='pop'){b=`<g stroke="#1b130c" stroke-width="1.4" stroke-linejoin="round"><path d="M6 13 L15 4 L26 15 L17 24 Z" fill="#f4ead8"/><path d="M6 13 L26 15 L17 24 Z" fill="${c0}"/><path d="M26 15 Q31 20 29 26 Q27 30 25.5 25 Q25 21 26 15Z" fill="${c0}"/></g><path d="M15 4 L13 1.6" stroke="#1b130c" stroke-width="1.6" stroke-linecap="round"/>${t==='pop'?'<path d="M9 13 l3-3" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/>':''}`;return {svg:b,x:27,y:29};}
+  if(t==='push'){b=`<g stroke="#1b130c" stroke-width="1.3" stroke-linejoin="round" fill="#f6dcc2"><path d="M7 30 L7 19 Q7 15 10 15 L10 6 Q10 3 12.5 3 Q15 3 15 6 L15 14 Q17.5 13 19 15 Q21.5 14 23 16.5 Q26 16 27 19 L27 25 Q27 30 22 31 Z"/></g><path d="M11 6.5 Q12.5 5.4 14 6.5" stroke="#b98b6c" stroke-width="1" fill="none"/>`;return {svg:b,x:12,y:3};}
+  return null;}
+function curUpdate(){if(!stage)return;const h=handOn&&handOn(),t=tool,sig=t+'|'+h+'|'+(ink&&ink.ramp||'')+'|'+color;if(sig===CUR.sig)return;CUR.sig=sig;
+  if(h||t==='eraser'){stage.style.cursor=h?'':'none';return;}const q=curSvg(t);if(!q){stage.style.cursor='';return;}
+  const u='data:image/svg+xml;utf8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">${q.svg}</svg>`);stage.style.cursor=`url("${u}") ${q.x} ${q.y}, crosshair`;}
+function ringEl(){let c=document.getElementById('penRing');if(!c){c=document.createElement('div');c.id='penRing';c.className='ercur penring';c.hidden=true;stage.appendChild(c);}return c;}
+function ringShow(e){const c=ringEl(),ok=e&&e.pointerType==='mouse'&&!(handOn&&handOn())&&(tool==='pencil'||tool==='poppencil'||tool==='push');if(!ok){c.hidden=true;return;}
+  const rr=zoomer.getBoundingClientRect(),cr=tool==='push'?pushR():tool==='poppencil'?ppR()/zoomSizeDiv():penR()/zoomSizeDiv(),d=Math.max(4,2*cr*rr.width/W),sr=stage.getBoundingClientRect();
+  c.style.width=c.style.height=d+'px';c.style.left=(e.clientX-sr.left-d/2)+'px';c.style.top=(e.clientY-sr.top-d/2)+'px';c.hidden=false;}
+stage.addEventListener('pointermove',e=>{if(e.pointerType==='mouse'){curUpdate();ringShow(e);}});
+stage.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')curUpdate();});
+stage.addEventListener('pointerleave',()=>{const c=document.getElementById('penRing');if(c)c.hidden=true;});
+
 function syncClip(){const b=$('#clip');b.classList.toggle('on',clip);b.setAttribute('aria-pressed',clip);b.querySelector('.llstate').textContent=clip?'On':'Off';}
 $('#clip').onclick=()=>{clip=!clip;settings.lineLock=clip;LS.set('settings',settings);syncClip();hideLLTip();toast(clip?'Line Lock on':'Line Lock off');};
 syncClip();

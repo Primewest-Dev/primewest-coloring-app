@@ -1208,3 +1208,8 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 @media (max-width:700px){.pushsheet .pmodes{grid-template-columns:repeat(5,1fr)}.pushsheet .pmode{font-size:11px;padding:7px 2px}.pushsheet .pmode svg{width:24px;height:24px}.pushsheet .psl{grid-template-columns:96px 1fr 48px;font-size:13px}}
 .tool[data-tool=push]{gap:0!important;padding-top:2px!important;padding-bottom:2px!important}.tool[data-tool=push] svg{width:17px!important;height:17px!important}.tool[data-tool=push]>span{line-height:1.1!important}
 .tool[data-tool=push] .pushm{font-size:8.5px;margin-top:1px}
+
+/* b35 cursors */
+.ercur.penring{border-width:1px;border-color:rgba(255,255,255,.85);box-shadow:0 0 0 1px rgba(20,14,8,.55)}
+#stage.handmode,#stage.handmode *{cursor:grab!important}#stage.panning,#stage.panning *{cursor:grabbing!important}
+@media (pointer:coarse){.ercur.penring{display:none}}
