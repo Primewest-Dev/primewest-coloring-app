@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=57;let EP_place=null;
+const EP_BUILD=58;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -2157,9 +2157,12 @@ function drawShine(x,r,t,style){if(!r.bb)return;const lvl=motionLvl('shimmer'),s
     PL.cx.putImageData(PL.im,0,0);gx.globalCompositeOperation='destination-out';gx.drawImage(PL.mask,0,0);gx.globalCompositeOperation='source-over';gx.drawImage(PL.c,0,0);}   /* v13: the glint follows each chrome stroke's own path (tap fills keep the diagonal) */
   gx.globalCompositeOperation='destination-in';gx.drawImage(ss.glint,0,0);
   if(!still){qx.globalCompositeOperation='lighter';qx.globalAlpha=Math.min(1,.35+.65*lvl)*(style==='metal'?.42:1);qx.drawImage(gc,0,0);if(style!=='metal'){qx.globalAlpha=Math.min(1,.6*lvl);qx.drawImage(gc,0,0);}qx.globalAlpha=1;qx.globalCompositeOperation='source-over';}
-  scx.clearRect(bx,by,bw,bh);scx.globalCompositeOperation='source-over';scx.imageSmoothingEnabled=true;scx.drawImage(Q,bx,by,bw,bh);
-  scx.globalCompositeOperation='destination-in';scx.drawImage(r.mask,bx,by,bw,bh,bx,by,bw,bh);scx.globalCompositeOperation='source-over';
-  x.save();if(add)x.globalCompositeOperation='lighter';x.drawImage(scratch,bx,by,bw,bh,bx,by,bw,bh);x.restore();
+  /* b58: composed in a canvas the size of this record (was the shared full-page scratch: every draw from it snapshotted all 1600x900 px, ~4 ms per record per frame) */
+  const SC=r.sc||(r.sc=document.createElement('canvas'));if(SC.width!==bw||SC.height!==bh){SC.width=bw;SC.height=bh;}const sx2=SC.getContext('2d');
+  sx2.globalCompositeOperation='source-over';sx2.clearRect(0,0,bw,bh);sx2.imageSmoothingEnabled=true;sx2.setTransform(1,0,0,1,0,0);sx2.globalAlpha=scx.globalAlpha;   /* same alpha the shared scratch carried, so the look is unchanged */
+  sx2.drawImage(Q,0,0,bw,bh);
+  sx2.globalCompositeOperation='destination-in';sx2.drawImage(r.mask,bx,by,bw,bh,0,0,bw,bh);sx2.globalCompositeOperation='source-over';
+  x.save();if(add)x.globalCompositeOperation='lighter';x.drawImage(SC,0,0,bw,bh,bx,by,bw,bh);x.restore();
   // 3) bloom around the hottest highlights (breathes a little), plus the glint's own glow: both summed at quarter res, one scaled draw
   const gb=r.gb||(r.gb=document.createElement('canvas'));if(gb.width!==w+8||gb.height!==h+8){gb.width=w+8;gb.height=h+8;}const gbx=gb.getContext('2d');
   gbx.globalCompositeOperation='source-over';gbx.globalAlpha=1;gbx.clearRect(0,0,w+8,h+8);
