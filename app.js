@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=40;
+const EP_BUILD=41;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -707,7 +707,7 @@ async function showScene(n){
     const b=$(`.scene[data-n="${n}"]`);if(b){b.classList.remove('nope');void b.offsetWidth;b.classList.add('nope');}return;}
   if(S&&S.n!==n)saveNow();
   if(!S||S.n!==n){mode='free';D3.want=true;D3.fresh=true;}   /* v18: a page opens in 3D Free Color (2D only where the page has no 3D) */
-  S=await loadScene(n); resetZoom(); prog.current=n; saveProg(); fxsForScene(n);setTimeout(()=>{try{dpTileSync();}catch(e){}},300);
+  deferFlush();S=await loadScene(n); resetZoom(); prog.current=n; saveProg(); fxsForScene(n);setTimeout(()=>{try{dpTileSync();}catch(e){}},300);
   {const cs=SETS[SETI.ccycle];if(cs){cs.items=ccItems(n);if(setIdx===SETI.ccycle)buildPalette();}}if(typeof scBtnSync==='function')scBtnSync();
   $$('.scene').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
   storyStrip();
@@ -716,7 +716,7 @@ async function showScene(n){
   selNum=firstOpen()||1; buildColors(); setMode(mode,true);
   needDepth(n).then(()=>{if(S.n!==n)return;cleanPops(S);apply3D(true);});
 }
-function setMode(m,force){
+function setMode(m,force){deferFlush();
   if(m===mode&&!force)return; mode=m; app.classList.toggle('cbn',m==='cbn'); app.classList.toggle('free',m==='free');
   $$('.mode').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));modeLabels();
   S.cbn.c.style.display=m==='cbn'?'':'none'; S.free.c.style.display=m==='free'?'':'none'; scheduleLineTint(); try{renderIdeas();}catch(e){} if(!linesDefault(S.lines))scheduleLines(); fxSetList(S);if(S.fxC){S.fxC.style.display='';fxDraw(performance.now());fxStart();}
@@ -1004,18 +1004,26 @@ function flush(){
   sctx.save();sctx.beginPath();sctx.rect(x,y,w,h);sctx.clip();sctx.clearRect(x,y,w,h);sctx.drawImage(covC,x,y,w,h,x,y,w,h);
   sctx.globalCompositeOperation='source-in';if(stroke.ramp)sctx.drawImage(rampC,x,y,w,h,x,y,w,h);else if(stroke.fur)sctx.drawImage(furC,x,y,w,h,x,y,w,h);else{sctx.fillStyle=grainPat;sctx.fillRect(x,y,w,h);}sctx.restore();
 }
+/* b41: work that doesn't change what you see this frame (effect masks under new paint, the Adjust-last-stroke capture, Deep Pop
+   recompose after an erase) runs right after the frame instead of inside pointerup. Anything that reads that state (undo, redo,
+   a new stroke, saving) flushes the queue first, so order is never lost. */
+const DEFQ=[];let defT=0;
+function defer(fn){DEFQ.push(fn);if(!defT)defT=setTimeout(()=>requestAnimationFrame(()=>{defT=setTimeout(defRun,0);}),0);}
+function defRun(){defT=0;const t0=performance.now();while(DEFQ.length){const f=DEFQ.shift();try{f();}catch(e){console.warn(e);}if(DEFQ.length&&performance.now()-t0>8){defT=setTimeout(defRun,16);return;}}}
+function deferFlush(){if(!DEFQ.length)return;while(DEFQ.length){const f=DEFQ.shift();try{f();}catch(e){console.warn(e);}}}
 function commitPaint(){snapFill();try{const b=stroke&&stroke.bbx;if(b&&!stroke.er&&((S.pops||[]).length||(S.pp&&S.pp.any))){   /* b40: only the areas the stroke really touched (sampled), not its whole box */
     const x0=Math.max(0,b[0]-2|0),y0=Math.max(0,b[1]-2|0),w=Math.min(W,(b[2]+3)|0)-x0,h=Math.min(H,(b[3]+3)|0)-y0;if(w>0&&h>0){const d=strokeC.getContext('2d').getImageData(x0,y0,w,h).data,L=new Set(),st=w*h>40000?3:2;
       for(let y=0;y<h;y+=st)for(let x=0;x<w;x+=st)if(d[(y*w+x)*4+3]>8){const l=S.lab[(y0+y)*W+x0+x];if(l)L.add(l);}popsRecolor(x0,y0,w,h,L);}}}catch(e){}
   let src=strokeC;if(!stroke.er&&stroke.st!=='water'){const b=stroke.bbx||[0,0,W,H],bx=b[0]-2,by=b[1]-2,bw=b[2]-b[0]+4,bh=b[3]-b[1]+4;
     if(!stroke.neon&&(fxOverlap(bx,by,bw,bh)||under3DAt(bx,by,bw,bh)))src=solidStroke(strokeC,bx,by,bw,bh);   /* v24: over 3D work / effects the colour lays on top solidly */
-    if(src!==strokeC&&stroke.region){const sx=src.getContext('2d');sx.save();sx.globalCompositeOperation='destination-in';sx.drawImage(maskC,0,0);sx.restore();}   /* b30: Line Lock also clips the solid pass, so nothing spills past the line */
-    fxCoverOld(src,bx,by,bw,bh,adjOp(),stroke.pulse);}
+    if(src!==strokeC&&stroke.region){const sx=src.getContext('2d'),q0=Math.max(0,bx|0),q1=Math.max(0,by|0),q2=Math.min(W-q0,Math.ceil(bw)),q3=Math.min(H-q1,Math.ceil(bh));sx.save();sx.globalCompositeOperation='destination-in';if(q2>0&&q3>0)sx.drawImage(maskC,q0,q1,q2,q3,q0,q1,q2,q3);sx.restore();}   /* b41: only the stroke's box */   /* b30: Line Lock also clips the solid pass, so nothing spills past the line */
+    {const cx0=Math.max(0,bx|0),cy0=Math.max(0,by|0),cw=Math.min(W-cx0,Math.ceil(bw)),ch=Math.min(H-cy0,Math.ceil(bh)),a=adjOp(),kp=stroke.pulse;
+      if(cw>0&&ch>0){const cp=document.createElement('canvas');cp.width=cw;cp.height=ch;cp.getContext('2d').drawImage(src,cx0,cy0,cw,ch,0,0,cw,ch);defer(()=>{fxCoverOld(cp,cx0,cy0,cw,ch,a,kp,cx0,cy0);fxRedrawSoon();});}}}
   if(!stroke.er){const c=stroke.pulse?pulseLayer().ctx:S.free.ctx;adjGlowDraw(c,strokeC,ink.hex);c.save();c.globalAlpha=adjOp();if(stroke.pulse){S.pulseUsed=true;dirty('pulse');}
     if(stroke.neon&&ink.kind==='glow'){haloDraw(c,strokeC,ink.hex);}
     else if(stroke.neon){c.shadowColor=ink.hex;c.shadowBlur=18;c.drawImage(strokeC,0,0);c.shadowBlur=6;c.drawImage(strokeC,0,0);c.shadowBlur=0;}
     else if(stroke.st==='water'){c.globalCompositeOperation='multiply';c.globalAlpha*=.9;}
-    c.drawImage(src,0,0);c.restore();
+    {const b=stroke.bbx;if(b&&!stroke.neon&&ink&&(ink.kind==='plain'||ink.kind==='ramp'||ink.kind==='mix')){const q0=Math.max(0,(b[0]-6)|0),q1=Math.max(0,(b[1]-6)|0),q2=Math.min(W,Math.ceil(b[2]+7))-q0,q3=Math.min(H,Math.ceil(b[3]+7))-q1;if(q2>0&&q3>0)c.drawImage(src,q0,q1,q2,q3,q0,q1,q2,q3);}else c.drawImage(src,0,0);}c.restore();   /* b41: blend only the stroke's box, not the whole page */
     if(stroke.ramp){const tm=mk(),tx=tm.getContext('2d');tx.drawImage(rampT,0,0);tx.globalCompositeOperation='destination-in';tx.drawImage(strokeC,0,0);fxAdd(['rampfx'],stroke.ramp.k,tm);}
     else fxAdd(fxKindsOf(ink),ink.hex,strokeC,0,0,stroke.path);}
 }
@@ -1032,8 +1040,8 @@ function eraserEnd(st){if(!S||mode!=='free')return;for(const r of (S.fx||[]))if(
 function popsRemoveFast(st,gone){if(!st.popSh){renderPops(st);return;}const rs=[];for(const p of gone)for(const r of (p.rs||[p.r]))rs.push(r);let x0=W,y0=H,x1=0,y1=0;for(const r of rs){const b=r*4;x0=Math.min(x0,st.bb[b]);y0=Math.min(y0,st.bb[b+1]);x1=Math.max(x1,st.bb[b+2]);y1=Math.max(y1,st.bb[b+3]);}
   const w=x1-x0+1,h=y1-y0+1;if(w<=0||h<=0)return;const c=document.createElement('canvas');c.width=w;c.height=h;const cx=c.getContext('2d'),m=cx.createImageData(w,h),D=m.data;for(const r of rs)for(let p=st.off[r];p<st.off[r+1];p++){const i=st.pix[p],x=i%W,y=(i/W)|0;D[((y-y0)*w+(x-x0))*4+3]=255;}cx.putImageData(m,0,0);
   for(const k of [st.popSh,st.popLi]){const g=k.getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(c,x0,y0);g.restore();}
-  if(gone.some(p=>p.deep))deepRender(st,true);if(st===S)scheduleLineTint();}
-function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er){eraserEnd(stroke);fxRedrawSoon();}else if(stroke.bbx){const b=stroke.bbx;lastOpCapture(stroke.pulse?S.pulse.ctx:S.free.ctx,b[0],b[1],b[2]-b[0],b[3]-b[1],'stroke');}
+  if(gone.some(p=>p.deep))defer(()=>deepRender(st,true));if(st===S)scheduleLineTint();}
+function endStroke(){ if(!stroke)return; flush(); commitPaint(); if(stroke.er){eraserEnd(stroke);fxRedrawSoon.dp=true;fxRedrawSoon();}else if(stroke.bbx){const b=stroke.bbx,st0=stroke,ik0=ink,cx=stroke.pulse?S.pulse.ctx:S.free.ctx;defer(()=>{const s1=stroke,i1=ink;stroke=st0;ink=ik0;try{lastOpCapture(cx,b[0],b[1],b[2]-b[0],b[3]-b[1],'stroke');}finally{stroke=s1;ink=i1;}});}
   dirty('free'); strokeC.style.filter='';strokeC.style.opacity='';
   cov.clearRect(0,0,W,H);sctx.clearRect(0,0,W,H);stroke=null;}
 function cancelStroke(){ if(!stroke)return; cov.clearRect(0,0,W,H);sctx.clearRect(0,0,W,H);strokeC.style.filter='';
@@ -1163,7 +1171,7 @@ const ptrs=new Map(); let pinch=null, down=null;
 function toCanvas(e){const r=zoomer.getBoundingClientRect();return [(e.clientX-r.left)*W/r.width,(e.clientY-r.top)*H/r.height];}
 stage.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse'&&e.button!==0&&e.button!==1)return; if(e.target.closest&&e.target.closest('.zoomui,.grabui,.tryrow,.nudge,.ideasbar'))return;
-  stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  deferFlush();stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(e.button===1||spaceDown){e.preventDefault();down={x:e.clientX,y:e.clientY,id:e.pointerId,pan:true,zx:Z.x,zy:Z.y};stage.classList.add('panning');return;}
   if(ptrs.size===2){cancelStroke();if(PSH)pushEnd();down=null;const [a,b]=[...ptrs.values()];const r=stage.getBoundingClientRect();
     pinch={d:Math.hypot(a.x-b.x,a.y-b.y),mx:(a.x+b.x)/2-r.left,my:(a.y+b.y)/2-r.top,z:Z.z,x:Z.x,y:Z.y};return;}
@@ -1207,7 +1215,7 @@ stage.addEventListener('pointerup',up);
 /* b40: while a pencil/eraser stroke is live, the layers that cannot change are merged into one snapshot canvas and the originals
    hidden. Without GPU canvas acceleration the browser re-uploads every visible canvas each frame (~1 ms per 1600x900 canvas),
    so 8-11 stacked layers cost more than the stroke itself. Restored on pointerup, before the stroke is committed. */
-let FLAT=null;
+let FLAT=null;const FLATPOOL=[];
 function flatOn(){if(FLAT||!S||!layers)return;try{const vol=tool==='eraser'?(mode==='free'?new Set():null):   /* eraser: every layer is erased along the path, so the merged snapshot is erased the same way (eraseFlush) */(tool==='pencil'||tool==='push')&&mode==='free'?new Set(tool==='push'?[S.free&&S.free.c,S.pulse&&S.pulse.c]:[]):null;if(!vol)return;
   const k=W/(layers.clientWidth||W),runs=[];let cur=[];const flush=()=>{if(cur.length>=2)runs.push(cur);cur=[];};
   for(const c of layers.children){if(c.tagName!=='CANVAS'||vol.has(c)){flush();continue;}const st=getComputedStyle(c);if(st.display==='none'||st.visibility==='hidden'||+st.opacity===0)continue;
@@ -1215,9 +1223,10 @@ function flatOn(){if(FLAT||!S||!layers)return;try{const vol=tool==='eraser'?(mod
     if(st.transform&&st.transform!=='none'){const m=/^matrix\(([^)]+)\)$/.exec(st.transform);if(!m){flush();continue;}const v=m[1].split(',').map(Number);if(Math.abs(v[0]-1)>1e-3||Math.abs(v[3]-1)>1e-3||Math.abs(v[1])>1e-3||Math.abs(v[2])>1e-3){flush();continue;}tx=v[4]*k;ty=v[5]*k;}
     cur.push({c,o:+st.opacity,tx,ty});}
   flush();if(!runs.length)return;FLAT=[];
-  for(const run of runs){const f=mk();f.className='flat-layer';f.style.pointerEvents='none';const x=f.getContext('2d');for(const q of run){x.globalAlpha=q.o;x.drawImage(q.c,q.tx,q.ty);}x.globalAlpha=1;layers.insertBefore(f,run[0].c);for(const q of run)q.c.style.visibility='hidden';FLAT.push({f,run});}}catch(e){flatOff();}}
-function flatOff(){if(!FLAT)return;const F=FLAT;FLAT=null;for(const {f,run} of F){for(const q of run)q.c.style.visibility='';f.remove();}}
-stage.addEventListener('pointerdown',e=>{app.classList.add('busy');if(e.isPrimary!==false&&!(handOn&&handOn()))flatOn();},true);for(const ev of ['pointerup','pointercancel'])window.addEventListener(ev,()=>{app.classList.remove('busy');flatOff();},true);window.addEventListener('blur',flatOff);stage.addEventListener('pointercancel',up);
+  for(const run of runs){const f=FLATPOOL.pop()||mk();f.className='flat-layer';f.style.pointerEvents='none';const x=f.getContext('2d');x.clearRect(0,0,W,H);for(const q of run){x.globalAlpha=q.o;x.drawImage(q.c,q.tx,q.ty);}x.globalAlpha=1;layers.insertBefore(f,run[0].c);for(const q of run)q.c.style.visibility='hidden';FLAT.push({f,run});}}catch(e){flatOff();}}
+function flatOff(){if(!FLAT)return;const F=FLAT;FLAT=null;for(const {f,run} of F){for(const q of run)q.c.style.visibility='';f.remove();if(FLATPOOL.length<2)FLATPOOL.push(f);}}
+let FLATP=null,busyRaf=0;stage.addEventListener('pointerdown',e=>{if(!busyRaf)busyRaf=requestAnimationFrame(()=>{busyRaf=0;if(perfBusy())app.classList.add('busy');});   /* b41: class flip in the next frame, so pointerdown never forces a whole-app style recalc */FLATP=e.isPrimary!==false&&!(handOn&&handOn())?[e.clientX,e.clientY]:null;},true);   /* b41: merge on the first real move (a tap never pays for it) */
+stage.addEventListener('pointermove',e=>{if(FLATP&&Math.hypot(e.clientX-FLATP[0],e.clientY-FLATP[1])>3){FLATP=null;if(perfBusy())flatOn();}},true);for(const ev of ['pointerup','pointercancel'])window.addEventListener(ev,()=>{PERF_UP=performance.now();if(app.classList.contains('busy'))setTimeout(()=>{if(!perfBusy())app.classList.remove('busy');},270);FLATP=null;flatOff();},true);window.addEventListener('blur',flatOff);stage.addEventListener('pointercancel',up);
 stage.addEventListener('contextmenu',e=>e.preventDefault());
 
 
@@ -1757,18 +1766,18 @@ function drawLightV21(x,r){if(!r.light||!r.bb||RM.matches)return;const lv=motion
   x.save();x.globalCompositeOperation='lighter';x.globalAlpha=Math.min(GL?.4:1,(.3+.5*Math.min(1,lv))*(r.kind==='twinkle'?.8:1));x.imageSmoothingEnabled=true;x.drawImage(c,X0*MQ,Y0*MQ,w*MQ,h*MQ);x.restore();}
 /* v24: new colour always sits ON TOP. Paint (2D or 3D, stroke or fill) hides the older effects under it by cutting its coverage out of their
    masks (and out of the Pulse layer when the new paint is not Pulse). The cut parts are kept in the undo entry, so undo brings them back exactly. */
-function fxCoverOld(src,bx,by,bw,bh,a=1,keepPulse=false){if(!S||mode==='cbn'||a<=0)return false;bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));if(bw<=0||bh<=0)return false;
+function fxCoverOld(src,bx,by,bw,bh,a=1,keepPulse=false,ox=0,oy=0){if(!S||mode==='cbn'||a<=0)return false;bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));if(bw<=0||bh<=0)return false;
   const u={n:undoKey(),m:[]};let ov=false;
   for(const r of (S.fx||[])){if(r.dirty)fxScan(r);if(!r.bb)continue;const [rx,ry,rw,rh]=r.bb;if(rx>bx+bw||ry>by+bh||rx+rw<bx||ry+rh<by)continue;
     const c=document.createElement('canvas');c.width=bw;c.height=bh;c.getContext('2d').drawImage(r.mask,bx,by,bw,bh,0,0,bw,bh);u.m.push([r,c,undefined,bx,by]);if(r.kind!=='cover')ov=true;
-    r.mx.save();r.mx.globalCompositeOperation='destination-out';r.mx.globalAlpha=a;r.mx.drawImage(src,bx,by,bw,bh,bx,by,bw,bh);r.mx.restore();r.dirty=true;}
+    r.mx.save();r.mx.globalCompositeOperation='destination-out';r.mx.globalAlpha=a;r.mx.drawImage(src,bx-ox,by-oy,bw,bh,bx,by,bw,bh);r.mx.restore();if(!r.dirty)r.scanLim=r.bb.slice();r.dirty=true;}   /* b41: covering only shrinks a mask, so only its old box is rescanned */
   {const near=(S.fx||[]).some(r=>r.kind!=='cover'&&r.bb&&!(r.bb[0]>bx+bw+60||r.bb[1]>by+bh+60||r.bb[0]+r.bb[2]<bx-60||r.bb[1]+r.bb[3]<by-60));
     if(near){const last=S.fx[S.fx.length-1];let rc=last&&last.kind==='cover'?last:(S.fx.length>=40?[...S.fx].reverse().find(q=>q.kind==='cover'):null);
       if(!rc){const m=mk();rc={kind:'cover',hex:'#000000',mask:m,mx:m.getContext('2d',{willReadFrequently:true}),bb:null,pts:[],parts:[],dirty:true,seed:1,ph:0,dir:0,light:null,sp:1};S.fx.push(rc);}
       const c=document.createElement('canvas');c.width=bw;c.height=bh;c.getContext('2d').drawImage(rc.mask,bx,by,bw,bh,0,0,bw,bh);u.m.push([rc,c,undefined,bx,by]);
-      rc.mx.save();rc.mx.globalAlpha=a;rc.mx.drawImage(src,bx,by,bw,bh,bx,by,bw,bh);rc.mx.restore();rc.dirty=true;}}
+      rc.mx.save();rc.mx.globalAlpha=a;rc.mx.drawImage(src,bx-ox,by-oy,bw,bh,bx,by,bw,bh);rc.mx.restore();if(!rc.dirty||rc.scanLim){const q=rc.bb,L=rc.scanLim||q;rc.scanLim=L?[Math.min(L[0],bx),Math.min(L[1],by),Math.max(L[0]+L[2],bx+bw)-Math.min(L[0],bx),Math.max(L[1]+L[3],by+bh)-Math.min(L[1],by)]:(rc.dirty&&!q?null:[bx,by,bw,bh]);}rc.dirty=true;}}
   if(u.m.length)S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);
-  if(!keepPulse&&S.pulse&&S.pulseUsed){const p=S.pulse.ctx;p.save();p.globalCompositeOperation='destination-out';p.globalAlpha=a;p.drawImage(src,bx,by,bw,bh,bx,by,bw,bh);p.restore();dirty('pulse');}
+  if(!keepPulse&&S.pulse&&S.pulseUsed){const p=S.pulse.ctx;p.save();p.globalCompositeOperation='destination-out';p.globalAlpha=a;p.drawImage(src,bx-ox,by-oy,bw,bh,bx,by,bw,bh);p.restore();dirty('pulse');}
   if(u.m.length){dirty('fx');}return ov;}
 function fxOverlap(bx,by,bw,bh){return (S.fx||[]).some(r=>{if(r.kind==='cover')return false;if(r.dirty)fxScan(r);const q=r.bb;return q&&!(q[0]>bx+bw||q[1]>by+bh||q[0]+q[2]<bx||q[1]+q[3]<by);});}
 function solidStroke(sc,bx,by,bw,bh){bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));const c=mk();if(bw<=0||bh<=0)return sc;
@@ -2242,9 +2251,9 @@ function fxSliced(now){if(!S||!S.fxC)return true;if(!FXJ){FXB=FXB||mk();const x=
 let fxMs=0,AMTC=null;
 /* b33 CPU budget: effects and Deep Pop animate at most 30 fps, back off further on slow machines (frame cost x3, up to ~8 fps),
    and pause completely while a stroke / erase / push is in progress, so input always wins. */
-const perfBusy=()=>!!(typeof stroke!=='undefined'&&stroke)||!!(typeof down!=='undefined'&&down&&!down.pan);
+let PERF_UP=0;const perfBusy=()=>!!(typeof stroke!=='undefined'&&stroke)||!!(typeof down!=='undefined'&&down&&!down.pan)||performance.now()-PERF_UP<250;   /* b41: animations also hold for 250 ms after pen-up, so the commit and the next quick stroke get the frames */
 const fxGap=()=>Math.min(2000,Math.max(33,(fxMs+(typeof DP!=='undefined'&&DP.fms?DP.fms:0))*4));   /* effects get at most ~25% of the CPU */
-let fxRS=0;function fxRedrawSoon(){if(fxRS)return;fxRS=requestAnimationFrame(()=>{fxRS=0;if(S&&S.fxC&&fxLive()){if(fxRaf&&fxNeedsLoop()){FXJ=null;fxLast=-1e9;}else fxDraw(performance.now());}   /* b36: with the loop running, the redraw is time-sliced instead of one long frame */if(S&&typeof deepRender==='function'&&(S.pops||[]).some(p=>p.deep))try{deepRender(S);}catch(e){}fxStart();});}const PARTK=k=>k==='twinkle'||k==='smoke'||k==='cloud'||k.startsWith('pt');
+let fxRS=0;function fxRedrawSoon(){if(fxRS)return;fxRS=requestAnimationFrame(()=>{fxRS=0;if(S&&S.fxC&&fxLive()){if(fxRaf&&fxNeedsLoop()){FXJ=null;fxLast=-1e9;}else fxDraw(performance.now());}   /* b36: with the loop running, the redraw is time-sliced instead of one long frame */if(fxRedrawSoon.dp&&S&&typeof deepRender==='function'&&(S.pops||[]).some(p=>p.deep)){fxRedrawSoon.dp=false;try{deepRender(S);}catch(e){}}   /* b41: Deep Pop is recomposed only after an erase, not after every paint stroke */fxStart();});}const PARTK=k=>k==='twinkle'||k==='smoke'||k==='cloud'||k.startsWith('pt');
 function mixSlotOf(k){return PARTK(k)?'part':(k==='pulsefx'||k==='glowfx'||k==='boltfx'||(k==='shimmer'&&ink.mix&&ink.mix.anim==='shimmer'))?'anim':'finish';}
 const fxLive=()=>S&&((S.fx&&S.fx.length)||(S.pp&&S.pp.any));
 const KSPD=k=>({shimmer:'shimmerSpeed',shine:'shimmerSpeed',jshine:'shimmerSpeed',mirror:'shimmerSpeed',twinkle:'twinkleSpeed',neonfx:'neonSpeed',glowfx:'glowSpeed',boltfx:'boltSpeed',pulsefx:'pulseSpeed',smoke:'smokeSpeed',cloud:'smokeSpeed'})[k]||(k&&k.startsWith('pt')?'partSpeed':null);
@@ -2876,7 +2885,7 @@ $('#showSets').onclick=()=>{$('#showcase').hidden=true;setMode('free');setIdx=SE
 setTimeout(()=>renderShowcase(),1200);
 
 /* ---------- actions ---------- */
-function undo(){
+function undo(){deferFlush();
   if(S.linesHist&&S.linesHist.length&&S.linesHist[S.linesHist.length-1].t>=lastPaintT())return undoLines();
   {const l=S.ltrUndo&&S.ltrUndo[S.ltrUndo.length-1];if(l){const f=S.free.undo[S.free.undo.length-1],c=S.cbn.hist[S.cbn.hist.length-1],pt=mode==='free'?(f&&f.t||0):(c&&c.t||0);if(l.t>=pt)return ltUndo();}}
   if(mode==='cbn'){const c=S.cbn,b=c.hist.pop();if(!b)return;
@@ -3126,7 +3135,7 @@ function fullRestore(z){if(!S||!z)return;S.free.ctx.putImageData(z.f,0,0);if(S.p
   S.lastOp=null;dirty('free');try{fxRedrawSoon();}catch(e){}try{dpTileSoon();}catch(e){}}
 function undoSig(){return [S.free.undo.length,S.fxUndo?S.fxUndo.length:0,S.linesHist?S.linesHist.length:0,S.ltrUndo?S.ltrUndo.length:0,S.cbn&&S.cbn.hist?S.cbn.hist.length:0].join(',');}
 function undoR(){if(!S)return;const before=fullSnap(),s0=undoSig();UNDOING=true;try{undo();}finally{UNDOING=false;}if(undoSig()!==s0&&before){S.redo=(S.redo||[]).concat([before]).slice(-10);}redoUI();}
-function redo(){if(!S||!S.redo||!S.redo.length){toast('Nothing to redo');return;}const z=S.redo.pop(),cur=fullSnap();REDOING=true;try{S.useq=(S.useq||0)+1;S.free.undo.push({id:S.useq,t:Date.now(),full:cur});if(S.free.undo.length>15)S.free.undo.shift();fullRestore(z);}finally{REDOING=false;}redoUI();toast('Redo');}
+function redo(){deferFlush();if(!S||!S.redo||!S.redo.length){toast('Nothing to redo');return;}const z=S.redo.pop(),cur=fullSnap();REDOING=true;try{S.useq=(S.useq||0)+1;S.free.undo.push({id:S.useq,t:Date.now(),full:cur});if(S.free.undo.length>15)S.free.undo.shift();fullRestore(z);}finally{REDOING=false;}redoUI();toast('Redo');}
 function redoUI(){const b=$('#redo');if(!b)return;const n=S&&S.redo?S.redo.length:0;b.disabled=!n;b.classList.toggle('dis',!n);b.title=n?'Redo (Ctrl+Y / Ctrl+Shift+Z)':'Nothing to redo';}
 
 $('#clear').onclick=clearAll;
@@ -3137,7 +3146,7 @@ $('#soDlg').onclick=e=>{if(e.target.id==='soDlg')$('#soDlg').hidden=true;};
 $('#soGo').onclick=async()=>{$('#soDlg').hidden=true;await startOver();};
 async function startOver(){if(!S)return;const n=S.n;clearTimeout(saveT);delete pend[n];delete pend[String(n)];
   idbGen[n]=(idbGen[n]||0)+1;for(const k of SCENE_KEYS)LS.del(k+'.'+n);await IDB.del(n);delete idbLast[n];
-  if(pps)pps=null;if(D3.band)bandView(false);delete cache[n];S=null;await showScene(n);
+  deferFlush();if(pps)pps=null;if(D3.band)bandView(false);delete cache[n];S=null;await showScene(n);
   for(const k of SCENE_KEYS)LS.del(k+'.'+n);delete pend[n];delete pend[String(n)];   // nothing from the old page gets written back
   buildScenes();toast('Started over · this page is blank again');return true;}$('#save').onclick=save;
 $('#celebrate').onclick=()=>{$('#celebrate').hidden=true;};
@@ -3147,7 +3156,7 @@ document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test((document.activ
 /* ---------- saving each scene's coloring ---------- */
 const pend={};let saveT=0;
 function dirty(kind){if(!S)return;if(kind==='free'||kind==='cbn'||kind==='pop')try{dpTileSoon();}catch(e){}if(kind==='free')dpRecolorSoon();if(kind==='free')try{scheduleIdeas();}catch(e){}if(S.ltAny&&(kind==='free'||kind==='cbn'))scheduleLineTint();if((kind==='free'||kind==='cbn')&&!linesDefault(S.lines))scheduleLines();if(kind==='cbn')linesDoneGlow();if(kind==='free'||kind==='pulse')S.envDirty=true;if(kind==='pp')S.ppV=(S.ppV||0)+1;if(kind==='pulse'){const sl=$('#saveLoop');if(sl)sl.hidden=!(S.pulseUsed&&mode==='free');}pend[S.n]=pend[S.n]||{};pend[S.n][kind]=1;clearTimeout(saveT);saveT=setTimeout(saveNow,1500);}
-function saveNow(){clearTimeout(saveT);
+function saveNow(){deferFlush();clearTimeout(saveT);
   for(const k of Object.keys(pend)){const st=cache[k];if(!st){delete pend[k];continue;}const p=pend[k];
     if(p.cbn){const ids=[];for(let r=1;r<st.N;r++)if(st.cbn.filled[r])ids.push(r);ids.length?LS.set('cbn.'+k,ids.join(',')):LS.del('cbn.'+k);}
     if(p.free&&st.rc)LS.set('rc.'+k,st.rc);
