@@ -702,7 +702,7 @@ async function showScene(n){
     const b=$(`.scene[data-n="${n}"]`);if(b){b.classList.remove('nope');void b.offsetWidth;b.classList.add('nope');}return;}
   if(S&&S.n!==n)saveNow();
   if(!S||S.n!==n){mode='free';D3.want=true;D3.fresh=true;}   /* v18: a page opens in 3D Free Color (2D only where the page has no 3D) */
-  S=await loadScene(n); resetZoom(); prog.current=n; saveProg(); fxsForScene(n);
+  S=await loadScene(n); resetZoom(); prog.current=n; saveProg(); fxsForScene(n);setTimeout(()=>{try{dpTileSync();}catch(e){}},300);
   {const cs=SETS[SETI.ccycle];if(cs){cs.items=ccItems(n);if(setIdx===SETI.ccycle)buildPalette();}}if(typeof scBtnSync==='function')scBtnSync();
   $$('.scene').forEach(b=>b.classList.toggle('on',+b.dataset.n===n));
   storyStrip();
@@ -796,7 +796,7 @@ function haloDraw(c,src,hex){c.save();c.shadowColor=hex;c.shadowBlur=34;c.global
 /* pulse inks live on their own layer, which breathes (CSS animation) in the app and is flattened into saved PNGs */
 function pulseLayer(){if(!S.pulse){const c=mk();c.className='pulse-layer';S.pulse={c,ctx:c.getContext('2d',{willReadFrequently:true})};
     c.style.setProperty('--pc','#ffb35c');under3D(c);}return S.pulse;}
-function fillFree(x,y){
+function fillFree(x,y){try{if(S)S.dpLastR=labAt(x,y);}catch(e){}
   const r=S.lab[(y|0)*W+(x|0)]; if(!r)return; if(!allowPremiumUse(3))return; snap();
   const b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;
   showTry(r); const pulse=ink.kind==='pulse', halo=ink.kind==='glow', tc=pulse?pulseLayer().ctx:S.free.ctx;
@@ -840,6 +840,7 @@ let stroke=null;
 function beginStroke(x,y,pr,ptype){
   if(tool!=='eraser'&&!allowPremiumUse(1))return;
   snap(); let r=labAt(x,y);
+  if(tool!=='eraser'&&S)S.dpLastR=r;
   const locked=tool!=='eraser'&&clip, onInk=locked&&(!r||isInk(x,y));
   if(onInk){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q){r=labAt(q[0],q[1]);x=q[0]+.5;y=q[1]+.5;}}  // started on a line: snap
   strokeC.style.opacity=tool==='eraser'?'':String(adjOp());stroke={last:[x,y],path:[[x,y]],region:locked?r:0,er:tool==='eraser',st:strokeStyle(),neon:(ink.kind==='neon'||ink.kind==='glow'||(ink.kind==='mix'&&ink.mix.finish==='neon'))&&!strokeStyle(),pulse:ink.kind==='pulse'&&!strokeStyle()&&tool!=='eraser',dirty:null,
@@ -1203,7 +1204,7 @@ function dpField(st,p){let c=dpCache.get(p);if(c&&c.field)return c.field;
   const f={x0,y0,w,h,m,d,maxD:mx,cx:n?sx/n:w/2,cy:n?sy/n:h/2,mc,n};c=c||{};c.field=f;dpCache.set(p,c);return f;}
 function dpBaseColor(st,p,f){const im=st.free.ctx.getImageData(f.x0,f.y0,f.w,f.h).data;let r=0,g=0,b=0,n=0;const step=Math.max(1,(f.n/3000)|0);let k=0;
   for(let i=0;i<f.w*f.h;i++){if(!f.m[i])continue;if((k++)%step)continue;const j=i*4;if(im[j+3]>120){r+=im[j];g+=im[j+1];b+=im[j+2];n++;}}
-  return n>k/(step*6)?[r/n,g/n,b/n]:[236,229,216];}   // unpainted: warm paper
+  return n>Math.max(2,k/(step*40))?[r/n,g/n,b/n]:[236,229,216];}   // unpainted: warm paper
 function dpHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;if(mx===mn)return [0,0,l];const d=mx-mn,s=l>.5?d/(2-mx-mn):d/(mx+mn);
   const h=mx===r?((g-b)/d+(g<b?6:0)):mx===g?(b-r)/d+2:(r-g)/d+4;return [h*60,s,l];}
 /* build (or reuse) the cached layer stack of one area */
@@ -1291,10 +1292,35 @@ function dpBuildUI(){const el=$('#dpRows');if(!el)return;const {D,p}=dpTarget();
   el.querySelectorAll('.dpopt').forEach(b=>b.onclick=e=>{e.stopPropagation();const {D,p}=dpTarget();D[b.dataset.o]=!D[b.dataset.o];dpChanged(p);dpBuildUI();});}
 function dpResetAll(){const {D,p}=dpTarget();const ph=D.ph;for(const k in DPDEF)D[k]=DPDEF[k];D.au={};if(ph!=null)D.ph=ph;dpChanged(p);dpBuildUI();}
 function dpSetCarved(v){const {D,p}=dpTarget();D.carved=v;dpChanged(p);dpBuildUI();toast(v?'Carved: layers step down into the page':'Raised: layers step up off the page');}
-function dpToggle(on){settings.deepOn=on==null?!settings.deepOn:on;LS.set('settings',settings);const b=$('#dpBtn');if(b){b.classList.toggle('deepon',!!settings.deepOn);b.setAttribute('aria-pressed',String(!!settings.deepOn));}
-  let sw=false;if(settings.deepOn&&tool!=='pop'&&typeof setTool==='function'){if(toolSet!=='3d'&&typeof setToolSet==='function')setToolSet('3d');setTool('pop');sw=tool==='pop';}if($('#deep')&&!$('#deep').hidden)dpBuildUI();toast(settings.deepOn?(sw?'Deep Pop on · switched to Pop Fill: tap an area to lift it in layers':'Deep Pop on · tap an area with Pop Fill'):'Deep Pop off');}
-(function(){const b=$('#dpBtn');if(!b)return;{const to=$('#toolopts')||b.parentNode;const w=document.createElement('span');w.className='dpwrap';w.setAttribute('role','group');w.setAttribute('aria-label','Deep Pop');w.appendChild(b);const g0=$('#dpSet');if(g0)w.appendChild(g0);to.appendChild(w);}b.classList.toggle('deepon',!!settings.deepOn);b.setAttribute('aria-pressed',String(!!settings.deepOn));
-  b.onclick=e=>{e.stopPropagation();dpToggle();};const g=$('#dpSet');if(g)g.onclick=e=>{e.stopPropagation();$('#deep').hidden?dpOpen():dpClose();};
+/* b28: Deep Pop deepens areas that are already colored (Fill, pencil or Pop Fill) without recoloring them */
+function dpColored(r,st){st=st||S;if(!st||!r)return false;if(st.cbn&&st.cbn.filled&&st.cbn.filled[r])return true;const b=r*4,bx=st.bb[b],by=st.bb[b+1],bw=st.bb[b+2]-bx+1,bh=st.bb[b+3]-by+1;if(!(bw>0&&bh>0))return false;
+  let im;try{im=st.free.ctx.getImageData(bx,by,bw,bh).data;}catch(e){return false;}const n=st.off[r+1]-st.off[r],step=Math.max(1,(n/4000)|0);let k=0,c=0;
+  for(let p=st.off[r];p<st.off[r+1];p+=step){const i=st.pix[p],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4;k++;if(im[j+3]>120)c++;}return c>=Math.min(12,k*.5)&&c>=k*.01;}
+const dpSmall=document.createElement('canvas');dpSmall.width=160;dpSmall.height=90;
+function dpAnyColored(){if(!S)return false;if(S.cbn&&S.cbn.filled&&S.cbn.filled.some&&S.cbn.filled.some(Boolean))return true;try{const x=dpSmall.getContext('2d',{willReadFrequently:true});x.clearRect(0,0,160,90);x.drawImage(S.free.c||S.free.ctx.canvas,0,0,160,90);const d=x.getImageData(0,0,160,90).data;for(let i=3;i<d.length;i+=4)if(d[i]>10)return true;}catch(e){}return false;}
+function dpPixOf(r){const n=S.off[r+1]-S.off[r];if(n<=0)return null;const i=S.pix[S.off[r]+((n/2)|0)];return [i%W,(i/W)|0];}
+/* which area to deepen when Deep Pop is switched on: the last popped/tapped area, else the area of the last stroke or fill */
+function dpLastArea(){if(!S)return 0;const sel=S.popSel&&S.popSel.r;if(sel&&dpColored(sel))return sel;const ps=S.pops||[];for(let k=ps.length-1;k>=0;k--){const r=ps[k].r;if(r&&dpColored(r))return r;}
+  if(S.dpLastR&&dpColored(S.dpLastR))return S.dpLastR;const o=S.lastOp||S.dpLastBox;if(o&&o.bw>0){const cnt=new Map();const sx=Math.max(1,o.bw/24),sy=Math.max(1,o.bh/24);let im=null;try{im=S.free.ctx.getImageData(o.bx,o.by,o.bw,o.bh).data;}catch(e){}
+    for(let y=0;y<o.bh;y+=sy)for(let x=0;x<o.bw;x+=sx){const X=(o.bx+x)|0,Y=(o.by+y)|0;if(im&&im[((Y-o.by)*o.bw+(X-o.bx))*4+3]<=120)continue;const r=labAt(X,Y);if(r)cnt.set(r,(cnt.get(r)||0)+1);}
+    let best=0,bn=0;for(const [r,n] of cnt)if(n>bn&&dpColored(r)){best=r;bn=n;}if(best)return best;}
+  return 0;}
+function dpTileSync(){const b=$('#dpBtn');if(!b)return;const any=dpAnyColored(),on=!!settings.deepOn;b.classList.toggle('deepon',on&&any);b.setAttribute('aria-pressed',String(on&&any));b.setAttribute('aria-disabled',String(!any));
+  const st=b.querySelector('.dpst');if(st)st.textContent=any?(on?'ON':'OFF'):'Color an area first';
+  b.title=any?(on?'Deep Pop is ON: tap any colored area to deepen it into 3D layers (tap to turn off)':'Deep Pop is OFF: turn on to deepen colored areas into 3D layers'):'Color an area first: Deep Pop deepens areas you have already colored';
+  const g=$('#dpSet');if(g)g.setAttribute('aria-expanded',String(!!($('#deep')&&!$('#deep').hidden)));}
+let dpTileT=0;function dpTileSoon(){clearTimeout(dpTileT);dpTileT=setTimeout(dpTileSync,160);}
+function dpToggle(on){const want=on==null?!settings.deepOn:!!on;
+  if(want&&!dpAnyColored()){dpTileSync();toast('Color an area first: fill or draw in an area, then Deep Pop deepens it into 3D layers');return;}
+  settings.deepOn=want;LS.set('settings',settings);
+  if(want){if(typeof setTool==='function'&&tool!=='pop'){if(toolSet!=='3d'&&typeof setToolSet==='function')setToolSet('3d');setTool('pop');}
+    const r=dpLastArea();let did=false;if(r){const pt=dpPixOf(r);if(pt){popTap(pt[0],pt[1],true);did=true;}}
+    toast('Deep Pop on — tap any colored area to deepen it');}
+  else toast('Deep Pop off · new taps stay flat (deepened areas keep their layers until you tap them again)');
+  dpTileSync();if($('#deep')&&!$('#deep').hidden)dpBuildUI();}
+(function(){const b=$('#dpBtn');if(!b)return;
+  b.onclick=e=>{e.stopPropagation();dpToggle();};const g=$('#dpSet');if(g)g.onclick=e=>{e.stopPropagation();$('#deep').hidden?dpOpen():dpClose();setTimeout(dpTileSync,0);};
+  setTimeout(dpTileSync,0);
   $('#dpX').onclick=dpClose;$('#dpDone').onclick=dpClose;$('#dpReset').onclick=e=>{e.stopPropagation();dpResetAll();};$('#dpOn').onclick=e=>{e.stopPropagation();dpToggle();};
   $('#dpMode').onclick=e=>{const v=e.target&&e.target.dataset&&e.target.dataset.v;dpSetCarved(v?v==='carved':!dpTarget().D.carved);};})();
 /* the tapped area = the region plus touching regions painted the same colour (e.g. an envelope split by light rays) */
@@ -1308,7 +1334,7 @@ function popAnim(p,from,to,done,ms=240){const t0=performance.now();p.k=from;
 /* v16: Pop Fill (was 3D Pop) works like Fill: one tap raises (or, with Inset, presses in) the line-enclosed area at the slider height;
    tapping it again re-applies the current direction / height; the slider then drives that last-tapped area. With Color while popping
    on, the same tap also fills the area with the current pencil or effect (Free Color) or its numbered color (Color by Number). */
-function popTap(x,y){const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];S.popNext={};const i=S.pops.findIndex(p=>(p.rs||[p.r]).includes(r));
+function popTap(x,y,noColor){const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];S.popNext={};const i=S.pops.findIndex(p=>(p.rs||[p.r]).includes(r));
   if(POP.flat){if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');toast('Flattened');}else toast('Flat: set the slider to Raise or Inset, then tap an area');S.popSel={k:'pop',r};return;}
   const T=depthOf(S),pressed=(T&&T.lv[r]<0)?true:!!POP.pressed,depth=Math.max(10,Math.round(POP.depth)),fin=()=>{renderPops();dirty('pop');if(S&&S.popSel&&S.popSel.r===r)popSelect('pop',r);};
   S.popSel={k:'pop',r};
@@ -1316,7 +1342,7 @@ function popTap(x,y){const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];S.popNext
   else{if(!Effects3D.unlocked()){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
       const l=Trials.popsLeft();toast(l?`Pop Fill · free tries: ${l} left`:'That was your last free Pop Fill ✦');}
     const p={r,rs:[r],depth,pressed,hz:null};if(settings.deepOn){p.deep=dpNew();p.deep.carved=pressed;}S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}
-  if(settings.ppColor!==false)popColor(x,y,r);}
+  if(noColor||(settings.deepOn&&dpColored(r)))return;if(settings.ppColor!==false)popColor(x,y,r);}
 function popColor(x,y,r){if(mode==='free'){if(ink&&ink.kind==='brush')return;fillFree(x,y);}else if(!S.cbn.filled[r]&&S.num[r]===selNum)tapCBN(x,y);}
 function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}}
 function popRestyle(){applySelHeight(popH());}   // v13: the slider / switch drive only the selected section
@@ -2795,7 +2821,7 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){
 
 /* ---------- saving each scene's coloring ---------- */
 const pend={};let saveT=0;
-function dirty(kind){if(!S)return;if(kind==='free')dpRecolorSoon();if(kind==='free')try{scheduleIdeas();}catch(e){}if(S.ltAny&&(kind==='free'||kind==='cbn'))scheduleLineTint();if((kind==='free'||kind==='cbn')&&!linesDefault(S.lines))scheduleLines();if(kind==='cbn')linesDoneGlow();if(kind==='free'||kind==='pulse')S.envDirty=true;if(kind==='pp')S.ppV=(S.ppV||0)+1;if(kind==='pulse'){const sl=$('#saveLoop');if(sl)sl.hidden=!(S.pulseUsed&&mode==='free');}pend[S.n]=pend[S.n]||{};pend[S.n][kind]=1;clearTimeout(saveT);saveT=setTimeout(saveNow,1500);}
+function dirty(kind){if(!S)return;if(kind==='free'||kind==='cbn'||kind==='pop')try{dpTileSoon();}catch(e){}if(kind==='free')dpRecolorSoon();if(kind==='free')try{scheduleIdeas();}catch(e){}if(S.ltAny&&(kind==='free'||kind==='cbn'))scheduleLineTint();if((kind==='free'||kind==='cbn')&&!linesDefault(S.lines))scheduleLines();if(kind==='cbn')linesDoneGlow();if(kind==='free'||kind==='pulse')S.envDirty=true;if(kind==='pp')S.ppV=(S.ppV||0)+1;if(kind==='pulse'){const sl=$('#saveLoop');if(sl)sl.hidden=!(S.pulseUsed&&mode==='free');}pend[S.n]=pend[S.n]||{};pend[S.n][kind]=1;clearTimeout(saveT);saveT=setTimeout(saveNow,1500);}
 function saveNow(){clearTimeout(saveT);
   for(const k of Object.keys(pend)){const st=cache[k];if(!st){delete pend[k];continue;}const p=pend[k];
     if(p.cbn){const ids=[];for(let r=1;r<st.N;r++)if(st.cbn.filled[r])ids.push(r);ids.length?LS.set('cbn.'+k,ids.join(',')):LS.del('cbn.'+k);}
@@ -2973,7 +2999,7 @@ function focusOn(which){const sh=$(which);if(!sh||!S)return;const box=focusTarge
   const sr=stage.getBoundingClientRect(),[sw,shh]=stageSize(),[vl,vr]=visWin(sw,shh);const sheetTop=innerHeight-sh.offsetHeight;
   let top=Math.max(sr.top,0);const tb=$('#menuBtn');if(tb&&tb.offsetParent&&tb.getBoundingClientRect().bottom<innerHeight*.25)top=Math.max(top,tb.getBoundingClientRect().bottom+4);
   const vy0=top-sr.top+8,vy1=Math.min(sr.bottom,sheetTop)-sr.top-10,vx0=vl+10,vx1=vr-10;if(vy1-vy0<60)return;
-  const k1=sw/W,pad=1.12,bw=Math.max(box[2],40)*pad,bh=Math.max(box[3],40)*pad;let z=Math.min((vx1-vx0)/(bw*k1),(vy1-vy0)/(bh*k1));z=Math.max(.2,Math.min(5,z));
+  const k1=sw/W,pad=1.12,bw=Math.max(box[2],40)*pad,bh=Math.max(box[3],40)*pad;let z=Math.min((vx1-vx0)/(bw*k1),(vy1-vy0)/(bh*k1));z=Math.max(.2,Math.min(3.5,z));
   Z.z=z;Z.x=(vx0+vx1)/2-(box[0]+box[2]/2)*k1*z;Z.y=(vy0+vy1)/2-(box[1]+box[3]/2)*k1*z;focusAnim();applyZoom();}
 function focusOff(){if(!FOC.on)return;const p=FOC.prev;FOC.prev=null;focusAnim();Z.z=p.z;Z.x=p.x;Z.y=p.y;applyZoom();FOC.on=false;applyZoom();GRAB.auto=p.auto;GRAB.lastZ=Z.z;grabUI();}
 
@@ -3095,7 +3121,8 @@ clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   zoom:()=>({z:Z.z,x:Z.x,y:Z.y,foc:typeof FOC!=='undefined'&&FOC.on}),
   mycc:()=>({cols:MYCC.cols,key:MYPEN.key,ramp:MYPEN.ramp,has:!!RAMPS[MYPEN.ramp]}),
   showcase:()=>({btn:!$('#scBtn').hidden,open:!$('#scView').hidden,src:$('#scVid').currentSrc,t:$('#scVid').currentTime,paused:$('#scVid').paused}),
-  deepInfo:()=>({fms:DP.fms,frames:DP.frames,pops:(S.pops||[]).filter(p=>p.deep).map(p=>{const c=dpCache.get(p);return {r:p.r,n:p.deep.n,carved:p.deep.carved,layers:c&&c.layers?c.layers.length:0,ms:c&&c.ms||0};}),canvas:!!(S.dpC&&S.dpC.isConnected)}),
+  dpColored:r=>dpColored(r),dpLastArea:()=>dpLastArea(),
+  deepInfo:()=>({fms:DP.fms,frames:DP.frames,pops:(S.pops||[]).filter(p=>p.deep).map(p=>{const c=dpCache.get(p);return {r:p.r,n:p.deep.n,carved:p.deep.carved,pal:p.deep.pal,cyc:p.deep.cyc,col:c&&c.col,layers:c&&c.layers?c.layers.length:0,ms:c&&c.ms||0};}),canvas:!!(S.dpC&&S.dpC.isConnected)}),
   deepSetAll:(o)=>{for(const p of S.pops||[])if(p.deep){Object.assign(p.deep,JSON.parse(JSON.stringify(o)));}deepRender(S,true);dirty('pop');},
   d3:()=>({on:D3.on,want:D3.want,band:D3.band,relief:!!(S&&S.relief)}), depth:()=>depthOf(S), tilt:(x,y)=>{tilt={x,y};D3.lastMove=performance.now();popParallax();},
   canvasToClient:(x,y)=>{const r=zoomer.getBoundingClientRect();return [r.left+x*r.width/W,r.top+y*r.height/H];},

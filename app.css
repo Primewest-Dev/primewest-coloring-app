@@ -1133,10 +1133,16 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 /* b27 audit: dimmed Mix/Chrome were dead (pointer-events:none, no reason). Now they stay dimmed but explain on click. */
 #app[data-ctx=eraser] #optbox #mixBtn,#app[data-ctx=eraser] #optbox #chromeBtn,#app[data-ctx=poperase] #optbox #mixBtn,#app[data-ctx=poperase] #optbox #chromeBtn,#app[data-ctx=pop] #optbox #chromeBtn,#app[data-ctx=poppencil] #optbox #chromeBtn,#app[data-ctx=pop] .tgrid #chromeBtn,#app[data-ctx=poppencil] .tgrid #chromeBtn{pointer-events:auto!important;cursor:help}
 #app[data-ctx] .tgrid #mixBtn,#app[data-ctx] .tgrid #chromeBtn,#app[data-ctx] #optbox #mixBtn,#app[data-ctx] #optbox #chromeBtn{pointer-events:auto!important}
-/* b28: Deep Pop + Layers… live in their own group, visible whenever the 3D tools are shown (not only with Pop Fill) */
-.dpwrap{display:none;align-items:center;flex:none;gap:0}#app.set3d .dpwrap{display:inline-flex}
-#app.set3d:not(.tool-pop) #setbar{display:flex!important}#app.set3d:not(.tool-pop) #setbar>:not(#toolopts){display:none!important}
-#app.set3d:not(.tool-pop) #toolopts>:not(.dpwrap){display:none!important}
+/* b28: Deep Pop + Layers are tiles in the tool box (with Lines, Mix, Adjust, Hints), shown whenever 3D is on */
+.tgrid>.d3tile{display:none;margin:0!important;padding:3px 2px!important;font-size:inherit;position:relative}
+#app.set3d .tgrid>.d3tile{display:flex}
+.tgrid>.dpbtn .dpst{display:block;font:800 8px/12px Poppins;letter-spacing:.06em;padding:0 5px;border-radius:6px;background:rgba(255,255,255,.08);color:#c9b190;margin-top:1px}
+.tgrid>.dpbtn.deepon{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b;border-color:transparent;box-shadow:0 0 14px rgba(255,150,60,.45)}
+.tgrid>.dpbtn.deepon .dpst{background:#1d130b;color:#ffd08a}
+.tgrid>.d3tile[aria-disabled=true]{opacity:.42;cursor:help}
+.tgrid>.d3tile[aria-disabled=true] .dpst{background:none;color:#c9b190;letter-spacing:0;font-weight:600;white-space:nowrap}
+.tgrid>.dpset[aria-expanded=true]{background:rgba(255,179,92,.22);color:#ffe2bd;border-color:rgba(255,179,92,.7)}
+@media (max-width:600px){#app.set3d[data-ph=tools] .tg-opts{display:grid!important}#app.set3d[data-ph=tools] .tg-opts>:not(.d3tile){display:none!important}}
 /* b28: Example showcase */
 .sc-card{width:min(980px,96vw)}
 #scVid{width:100%;height:auto;aspect-ratio:900/506;border-radius:14px;border:1px solid rgba(255,200,120,.35);display:block;margin:8px 0 10px;background:#050a14}
