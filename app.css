@@ -177,6 +177,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .set-card{width:min(520px,92vw);padding:24px;border-radius:20px;background:linear-gradient(180deg,#2a2119,#1b1613);border:1px solid rgba(255,179,92,.45);box-shadow:0 0 40px rgba(255,150,60,.25);display:flex;flex-direction:column;gap:12px}
 .set-card h2{margin:0 0 4px;font:600 22px Cinzel,serif;letter-spacing:.1em;color:#ffe2bd}
 .row.big{justify-content:space-between;text-align:left;padding:12px 16px;min-height:64px}
+.row.setrange{display:flex;flex-wrap:wrap;height:auto;max-height:none;flex-shrink:0;align-items:center;gap:6px 12px;cursor:default}.row.setrange span{flex:1 1 100%;min-width:0}.row.setrange input{flex:1 1 auto;min-width:90px;accent-color:#e8963c}.row.setrange b{flex:none;width:52px;text-align:right;font:600 12px Poppins;color:#ffd9a8}
 .row span{display:flex;flex-direction:column}
 .row small{font-weight:400;font-size:12px;color:var(--mute);margin-top:2px}
 .sw-toggle{width:52px;height:30px;border-radius:99px;background:#3a3129;position:relative;flex:none;transition:.2s}

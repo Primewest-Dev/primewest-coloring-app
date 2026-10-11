@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=52;let EP_place=null;
+const EP_BUILD=53;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -834,6 +834,9 @@ function fillFree(x,y){try{if(S){S.dpLastR=labAt(x,y);const r=S.dpLastR,b=r*4;if
    (stamps are pulled magnetically to the nearest inside pixel). Pushing on past the line by BREAK_PX screen px into a
    neighbouring region, or pressing a stylus harder than PRESSURE, breaks through: that region becomes the clip region. */
 const LINE_LOCK={BREAK_PX:20,PRESSURE:.75,MAGNET_PX:16,SNAP_START:24};
+/* b52: Snap strength (Settings): 0 = no pull (stamps that would cross a line are simply dropped), 50 = the old default, 100 = strong */
+function snapApply(v){v=Math.max(0,Math.min(100,v??50));LINE_LOCK.MAGNET_PX=Math.round(v*.32);LINE_LOCK.SNAP_START=4+Math.round(v*.4);LINE_LOCK.snap=v;return v;}
+snapApply(+(settings.snap??50));
 const labAt=(x,y)=>(x<0||y<0||x>=W||y>=H)?0:S.lab[(y|0)*W+(x|0)];
 /* b50: fingers are fat. A touch tap that lands on a big area but right beside a small one (smaller than the fingertip) goes to the small one
    when most of that small area sits under the fingertip; taps that land on a small area stay exactly where they are. */
@@ -3389,6 +3392,8 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
   const off=b.id==='mixBtn'?['eraser','poperase']:['eraser','poperase','pop','poppencil'];if(!off.includes(ctx))return;e.stopImmediatePropagation();e.preventDefault();
   const tn={eraser:'Eraser',poperase:'Pop Erase',pop:'Pop Fill',poppencil:'Pop Pencil'}[ctx];toast(`${b.id==='mixBtn'?'Mix':'Chrome'} isn't used by ${tn} · pick Pencil or Fill first, then tap ${b.id==='mixBtn'?'Mix':'Chrome'}`);},true);
 $('#setStory').onclick=()=>{settings.story=!settings.story;LS.set('settings',settings);applySettingsUI();buildScenes();if(S)storyStrip();};
+{const r=$('#setSnap'),lab=v=>v<=0?'Off':v<35?'Gentle':v<=65?'Normal':v<90?'Strong':'Max',sync=()=>{const v=snapApply(+r.value);$('#setSnapV').textContent=lab(v);};
+  if(r){r.value=LINE_LOCK.snap;sync();r.oninput=sync;r.onchange=()=>{settings.snap=+r.value;LS.set('settings',settings);};}}
 for(const [id,k] of [['#setCut','cutscenes'],['#setHints','hints'],['#setZoomSize','sizeZoom']])
   $(id).onclick=()=>{settings[k]=settings[k]===false;LS.set('settings',settings);applySettingsUI();if(k==='hints'&&!hintsOn()){$('#tryrow').hidden=true;$('#nudge').hidden=true;}};
 let rArm=0;
