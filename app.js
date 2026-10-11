@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=49;let EP_place=null;
+const EP_BUILD=50;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -835,6 +835,15 @@ function fillFree(x,y){try{if(S){S.dpLastR=labAt(x,y);const r=S.dpLastR,b=r*4;if
    neighbouring region, or pressing a stylus harder than PRESSURE, breaks through: that region becomes the clip region. */
 const LINE_LOCK={BREAK_PX:20,PRESSURE:.75,MAGNET_PX:16,SNAP_START:24};
 const labAt=(x,y)=>(x<0||y<0||x>=W||y>=H)?0:S.lab[(y|0)*W+(x|0)];
+/* b50: fingers are fat. A touch tap that lands on a big area but right beside a small one (smaller than the fingertip) goes to the small one
+   when most of that small area sits under the fingertip; taps that land on a small area stay exactly where they are. */
+function touchTarget(x,y){if(!S)return [x,y];const k=W/((layers&&layers.getBoundingClientRect().width)||W),R=Math.max(3,Math.min(36,8*k)),R2=R*R,disk=Math.PI*R2,r0=labAt(x,y);
+  const sz=r=>S.off[r+1]-S.off[r];if(r0&&sz(r0)<disk*1.5)return [x,y];
+  const hit=new Map(),pt=new Map(),st=R>12?2:1;
+  for(let v=-R;v<=R;v+=st)for(let u=-R;u<=R;u+=st){const q=u*u+v*v;if(q>R2)continue;const r=labAt(x+u,y+v);if(!r||r===r0||sz(r)>=disk*1.5)continue;
+    hit.set(r,(hit.get(r)||0)+st*st);const p=pt.get(r);if(!p||q<p[2])pt.set(r,[x+u,y+v,q]);}
+  let best=0,bf=0;for(const [r,h] of hit){const f=h/sz(r),near=pt.get(r)[2]<=R2*.25,sc=f+(near?1:0);if((f>=.25||near)&&sc>bf){bf=sc;best=r;}}
+  return best?[pt.get(best)[0],pt.get(best)[1]]:[x,y];}
 function nearestPx(x,y,rad,ok){x|=0;y|=0;if(ok(labAt(x,y),x,y))return [x,y];let best=null,bd=1e9;
   for(let d=1;d<=rad;d++){for(let i=-d;i<=d;i++){for(const [u,v] of [[x+i,y-d],[x+i,y+d],[x-d,y+i],[x+d,y+i]]){
       if(ok(labAt(u,v),u,v)){const q=(u-x)*(u-x)+(v-y)*(v-y);if(q<bd){bd=q;best=[u,v];}}}}
@@ -1210,7 +1219,7 @@ function up(e){
   if(down.lt){if(down.lt===1){if(e.type==='pointerup')ltUp();else{LTS=null;ltRender();}}down=null;return;}
   if(pps){ppEnd();if(stroke){const r=stroke.region||labAt(down.cx,down.cy);endStroke();helperAfterColor(r);}down=null;return;}
   if(stroke){const r=stroke.region||labAt(down.cx,down.cy);if(stroke.er&&mode==='free'&&e.type==='pointerup'&&moved<4)eraseRegionAt(down.cx,down.cy);endStroke();helperAfterColor(r);}   /* b30: Eraser click (<4px movement) = clear that whole area, drag = erase along the path */
-  else if(e.type==='pointerup'&&moved<14){ if(mode==='cbn'&&tool==='pop')popTap(down.cx,down.cy); else if(mode==='cbn'&&tool==='poperase')popErase(down.cx,down.cy); else if(mode==='cbn'&&tool!=='poppencil')tapCBN(down.cx,down.cy); else if(mode==='cbn'){} else if(tool==='fill')fillFree(down.cx,down.cy); else if(tool==='pop')popTap(down.cx,down.cy); else if(tool==='poperase')popErase(down.cx,down.cy); }
+  else if(e.type==='pointerup'&&moved<14){ if(e.pointerType==='touch'){const q=touchTarget(down.cx,down.cy);down.cx=q[0];down.cy=q[1];} if(mode==='cbn'&&tool==='pop')popTap(down.cx,down.cy); else if(mode==='cbn'&&tool==='poperase')popErase(down.cx,down.cy); else if(mode==='cbn'&&tool!=='poppencil')tapCBN(down.cx,down.cy); else if(mode==='cbn'){} else if(tool==='fill')fillFree(down.cx,down.cy); else if(tool==='pop')popTap(down.cx,down.cy); else if(tool==='poperase')popErase(down.cx,down.cy); }
   down=null;
 }
 stage.addEventListener('pointerup',up);
@@ -2714,8 +2723,10 @@ function placeTry(){const el=$('#tryrow');if(!el||el.hidden)return;const phone=m
 addEventListener('resize',()=>placeTry());
 /* b48: the colour coach ("Nice gold! Try …") sits in the free column beside the page (under the Try column) instead of over the art; phones / no room keep the old spot */
 function placeNudge(){const el=$('#nudge');if(!el||el.hidden)return;const phone=matchMedia('(max-width:600px)').matches;
-  const home=()=>{if(el.parentNode!==stage)stage.appendChild(el);el.classList.remove('col');el.style.cssText='';};
-  if(phone)return home();
+  const home=()=>{if(el.parentNode!==stage)stage.appendChild(el);el.classList.remove('col','ph');el.style.cssText='';};
+  const tx=$('#nudgeTxt');if(tx&&el.dataset.full)tx.textContent=phone&&el.dataset.short?el.dataset.short:el.dataset.full;
+  if(phone){if(el.parentNode!==document.body)document.body.appendChild(el);el.classList.remove('col');el.classList.add('ph');el.style.cssText='';return;}   /* b50: phones: a compact strip over the top bar, never over the art */
+  el.classList.remove('ph');
   const r=stage.getBoundingClientRect(),roomL=r.left-16,roomR=innerWidth-r.right-16;const side=roomL>=96?'L':roomR>=96?'R':null;if(!side)return home();
   const w=Math.round(Math.min(150,side==='L'?roomL:roomR));if(el.parentNode!==document.body)document.body.appendChild(el);el.classList.add('col');el.style.width=w+'px';
   const tr=$('#tryrow');let top=r.top;if(tr&&!tr.hidden&&tr.classList.contains('col')){const q=tr.getBoundingClientRect();if((side==='L')===(q.right<=r.left+1))top=Math.max(top,q.bottom+10);}
@@ -2809,7 +2820,7 @@ function helperAfterColor(r){if(mode!=='free'||!S||!r)return;S.rc=S.rc||{};
 function showNudge(c,why){lastHint=performance.now();const [h,s,l]=rgb2hsl(hex2rgb(c));
   const sug=[hsl2hex(h+(h<60?-14:180),Math.max(.35,s*.9),Math.max(.22,l-.2)),hsl2hex(h+150,Math.max(.3,s*.7),Math.min(.62,l)),hsl2hex(h+210,Math.max(.3,s*.7),Math.max(.25,l-.1))];
   const nm=colorName(c),first=colorName(sug[0]);
-  const sugN=first===nm?'deeper '+nm:first;$('#nudgeTxt').textContent=`Nice ${nm}! Try ${/^[aeiou]/.test(sugN)?'an':'a'} ${sugN} on the next piece for contrast`;
+  const sugN=first===nm?'deeper '+nm:first;$('#nudgeTxt').textContent=$('#nudge').dataset.full=`Nice ${nm}! Try ${/^[aeiou]/.test(sugN)?'an':'a'} ${sugN} on the next piece for contrast`;$('#nudge').dataset.short=`Nice ${nm}! Try for contrast:`;
   $('#nudge .nsw').innerHTML=sug.map(x=>`<button style="background:${x}" data-c="${x}" title="${colorName(x)}"></button>`).join('');
   $$('#nudge .nsw button').forEach(b=>b.onclick=e=>{e.stopPropagation();pickColor(b.dataset.c);$('#nudge').hidden=true;});
   $('#nudge').dataset.why=why;$('#nudge').hidden=false;placeNudge();clearTimeout(nudgeT);nudgeT=setTimeout(()=>$('#nudge').hidden=true,10000);}

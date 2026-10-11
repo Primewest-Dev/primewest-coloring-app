@@ -364,6 +364,8 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .nudge.col{position:fixed;bottom:auto;transform:none;z-index:30;flex-direction:column;align-items:stretch;max-width:none;box-sizing:border-box;padding:12px 8px 10px;gap:8px;font-size:11.5px;line-height:1.35;text-align:center}
 .nudge.col .nsw{justify-content:center;flex-wrap:wrap}.nudge.col .nsw button{width:28px;height:28px}
 .nudge.col .nx{position:absolute;top:2px;right:2px;width:22px;height:22px;font-size:11px}
+.nudge.ph{position:fixed;top:calc(6px + env(safe-area-inset-top));left:8px;right:8px;bottom:auto;transform:none;max-width:none;z-index:80;min-height:48px;box-sizing:border-box;padding:4px 6px 4px 12px;gap:8px;font-size:12.5px}
+.nudge.ph #nudgeTxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nudge.ph .nsw button{width:32px;height:32px}.nudge.ph .nx{width:32px;height:32px}
 #ideaC{pointer-events:none;opacity:0;transition:opacity .5s}
 #ideaC.show{opacity:1}#ideaC.fade{opacity:0}
 .cbn #ideaC{display:none}
