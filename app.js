@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=53;let EP_place=null;
+const EP_BUILD=54;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -804,7 +804,7 @@ function cpart(c,b){const P=80,x=Math.max(0,Math.floor(b[0])-P),y=Math.max(0,Mat
 function snapFill(){const u=S&&S.free.undo[S.free.undo.length-1];if(!u||!u.lz)return;const b=stroke&&stroke.bbx&&stroke.st!=='water'?stroke.bbx:null;u.f=b?cpart(S.free.ctx.canvas,b):ccopy(S.free.ctx.canvas);u.p=S.pulseUsed?(b?cpart(S.pulse.ctx.canvas,b):ccopy(S.pulse.ctx.canvas)):null;u.lz=0;if(!u.f)u.lz=1;}   /* b36: only the stroke's box (+80 px for glows) is copied */   /* b36: pencil strokes only touch the layers at commit, so the undo copy is taken then (pointerdown stays instant) */
 const undoKey=()=>{const u=S&&S.free&&S.free.undo[S.free.undo.length-1];return u?u.id:0;};
 function unsnap(u){if(u.full){fullRestore(u.full);return;}if(u.lz)return;   /* b36: a lazy (never committed) stroke changed nothing */
-cput(S.free.ctx,u.f);if(u.x){const X=u.x;if(X.l&&S.ltr){cput(S.ltr.getContext('2d'),X.l);dirty('ltr');if(typeof ltRender==='function')ltRender();}if(X.rx&&S.pp){cput(S.pp.rx,X.rx);cput(S.pp.ix,X.ix);ppRender(S);dirty('pp');}const ps=JSON.parse(X.pops||'[]');if(ps.length!==(S.pops||[]).length){S.pops=ps;renderPops();dirty('pop');}}if(S.pulse){if(u.p)cput(S.pulse.ctx,u.p);else S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}}
+cput(S.free.ctx,u.f);if(u.x){const X=u.x;if(X.l&&S.ltr){cput(S.ltr.getContext('2d'),X.l);dirty('ltr');if(typeof ltRender==='function')ltRender();}if(X.rx&&S.pp){cput(S.pp.rx,X.rx);cput(S.pp.ix,X.ix);ppRender(S);dirty('pp');}const ps=JSON.parse(X.pops||'[]');if((X.pops||'[]')!==JSON.stringify((S.pops||[]).map(({k,anim,...p})=>p))){S.pops=ps;renderPops();dirty('pop');}}if(S.pulse){if(u.p)cput(S.pulse.ctx,u.p);else S.pulse.ctx.clearRect(0,0,W,H);dirty('pulse');}}
 /* glow inks: soft light halo spilling around the colour (committed with blurred shadows in 'screen') */
 function haloDraw(c,src,hex){c.save();c.shadowColor=hex;c.shadowBlur=34;c.globalAlpha=.9;c.drawImage(src,0,0);c.shadowBlur=14;c.globalAlpha=1;c.drawImage(src,0,0);
   c.globalCompositeOperation='screen';c.shadowBlur=0;c.globalAlpha=.35;c.drawImage(src,0,0);c.restore();}
@@ -887,7 +887,7 @@ function stamp(x,y,pr){
   const p=(pr>0&&pr!==.5)?pr:.5;
   if(stroke.er){const R=eraR()/zoomSizeDiv();   /* b33: the eraser runs the pencil's fast path: stamps only build coverage; flush() clears the layers once per move, in the dirty rect */
     cov.save();cov.globalAlpha=1;cov.globalCompositeOperation='source-over';cov.fillStyle='#000';cov.beginPath();cov.arc(x,y,R,0,6.2832);cov.fill();cov.restore();
-    {const r=S.lab[(y|0)*W+(x|0)];if(r)(stroke.erR||(stroke.erR=new Set())).add(r);}
+    {const r=S.lab[(y|0)*W+(x|0)];if(r)(stroke.erR||(stroke.erR=new Set())).add(r);stroke.drag=1;}
     const d=stroke.dirty,a=[x-R-2,y-R-2,x+R+2,y+R+2];stroke.dirty=d?[Math.min(d[0],a[0]),Math.min(d[1],a[1]),Math.max(d[2],a[2]),Math.max(d[3],a[3])]:a;
     {const q=stroke.bbx;stroke.bbx=q?[Math.min(q[0],a[0]),Math.min(q[1],a[1]),Math.max(q[2],a[2]),Math.max(q[3],a[3])]:a.slice();}return;}
   let R=penR()*(.65+.7*p)/zoomSizeDiv();
@@ -1007,7 +1007,7 @@ function eraseFlush(x,y,w,h){if(!S)return;const cs=[S.free.ctx];if(FLAT)for(cons
       if(!stroke.fxT)stroke.fxT=new Set();if(!stroke.fxT.has(r)){stroke.fxT.add(r);if(!u){u=stroke.fxu={n:undoKey(),m:[]};S.fxUndo=(S.fxUndo||[]).concat([u]).slice(-300);}
         const c=document.createElement('canvas');c.width=b[2];c.height=b[3];c.getContext('2d').drawImage(r.mask,b[0],b[1],b[2],b[3],0,0,b[2],b[3]);u.m.push([r,c,undefined,b[0],b[1]]);r.scanLim=b.slice();}
       r.mx.save();r.mx.globalCompositeOperation='destination-out';r.mx.drawImage(covC,x,y,w,h,x,y,w,h);r.mx.restore();r.erD=true;}}
-  for(const el of [S.fxC,S.dpC])if(el&&el.isConnected){const g=el.getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(covC,x,y,w,h,x,y,w,h);g.restore();}   /* instant visual: effects vanish under the eraser right away */
+  for(const el of [S.fxC,S.dpC,S.popSh,S.popLi])if(el&&el.isConnected){const g=el.getContext('2d');g.save();g.globalCompositeOperation='destination-out';g.drawImage(covC,x,y,w,h,x,y,w,h);g.restore();}   /* instant visual: effects vanish under the eraser right away */
   if(S.pulse)dirty('pulse');if(stroke.ltEr)dirty('ltr');}
 function flush(){
   const d=stroke.dirty; if(!d)return; stroke.dirty=null;
@@ -1047,10 +1047,29 @@ function eraseRegionAt(x,y){const r=labAt(x,y);if(!r||!S)return false;const b=r*
   const c=document.createElement('canvas');c.width=bw;c.height=bh;const cx=c.getContext('2d'),m=cx.createImageData(bw,bh);for(let p=S.off[r];p<S.off[r+1];p++){const q=S.pix[p];m.data[(((q/W)|0)-by)*bw*4+((q%W)-bx)*4+3]=255;}cx.putImageData(m,0,0);
   cx.filter='blur(1.2px)';cx.drawImage(c,0,0);cx.drawImage(c,0,0);cx.filter='none';
   const cs=[S.free.ctx];if(S.pulse)cs.push(S.pulse.ctx);for(const q of cs){q.save();q.globalCompositeOperation='destination-out';q.drawImage(c,bx,by);q.restore();}if(S.pulse)dirty('pulse');
-  try{fxEraseRegion(r);}catch(e){}try{ppEraseAt(r);}catch(e){}if(stroke)(stroke.erR||(stroke.erR=new Set())).add(r);dirty('free');return true;}
+  try{fxEraseRegion(r);}catch(e){}try{ppEraseAt(r);}catch(e){}if(stroke){(stroke.erR||(stroke.erR=new Set())).add(r);stroke.clickR=1;}dirty('free');return true;}
 function eraserEnd(st){if(!S||mode!=='free')return;for(const r of (S.fx||[]))if(r.erD){r.erD=false;r.dirty=true;}else r.scanLim=null;   /* v25: rescan erased masks once, when the stroke ends */
   if(st.ppEr)ppRender(S);if(st.ltEr&&typeof ltRender==='function')ltRender();
-  if(st.erR&&S.pops&&S.pops.length){const gone=S.pops.filter(p=>(p.rs||[p.r]).some(r=>st.erR.has(r)));if(gone.length){S.pops=S.pops.filter(p=>!gone.includes(p));popsRemoveFast(S,gone);dirty('pop');}}}
+  if(st.erR&&S.pops&&S.pops.length){let gone,cutP=[];if(st.drag&&!st.clickR&&st.bbx){const o=popsCut(S,st.bbx,st.erR);gone=o.gone;cutP=o.cut;}else gone=S.pops.filter(p=>(p.rs||[p.r]).some(r=>st.erR.has(r)));
+    if(gone.length){S.pops=S.pops.filter(p=>!gone.includes(p));popsRemoveFast(S,gone);}if(cutP.length)defer(()=>renderPops(S));if(gone.length||cutP.length)dirty('pop');}}
+/* b55: Deep Pop / Pop Fill partial erase. A drag eraser cuts only the part it passes over: the pop keeps a cut mask
+   (p.cut = "x,y,w,h:" + base-36 run lengths, so it saves with the pop and in undo) and is rebuilt around the rest, so its bevel
+   and Deep Pop layers follow the new edge. Click = clear the whole area, as before. */
+const cutCache=new WeakMap();
+function cutGet(p){if(!p||!p.cut)return null;const c=cutCache.get(p);if(c&&c.s===p.cut)return c;const [hd,rl]=p.cut.split(':'),[x,y,w,h]=hd.split(',').map(Number),b=new Uint8Array(w*h);let i=0,v=0;
+  for(const t of (rl||'').split('.')){const n=parseInt(t,36)||0;if(v)b.fill(1,i,Math.min(w*h,i+n));i+=n;v^=1;}const o={s:p.cut,x,y,w,h,b};cutCache.set(p,o);return o;}
+function cutEnc(x,y,w,h,b){const r=[];let v=0,n=0;for(let i=0;i<b.length;i++){if(b[i]!==v){r.push(n.toString(36));n=0;v^=1;}n++;}r.push(n.toString(36));return x+','+y+','+w+','+h+':'+r.join('.');}
+function cutApply(p,m,x0,y0,w,h){const c=cutGet(p);if(!c)return;for(let y=Math.max(c.y,y0);y<Math.min(c.y+c.h,y0+h);y++){const o=(y-c.y)*c.w-c.x,q=(y-y0)*w-x0;for(let x=Math.max(c.x,x0);x<Math.min(c.x+c.w,x0+w);x++)if(c.b[o+x])m[q+x]=0;}}
+function popsCut(st,bb,erR){const out={cut:[],gone:[]};if(!st.pops||!st.pops.length)return out;const x0=Math.max(0,Math.floor(bb[0])),y0=Math.max(0,Math.floor(bb[1])),w=Math.min(W,Math.ceil(bb[2]))-x0,h=Math.min(H,Math.ceil(bb[3]))-y0;if(w<=0||h<=0)return out;
+  const cv=cov.getImageData(x0,y0,w,h).data;
+  for(const p of st.pops){const rs=p.rs||[p.r];if(!rs.some(r=>erR.has(r)))continue;let ax0=W,ay0=H,ax1=-1,ay1=-1;for(const r of rs){const b=r*4;if(st.bb[b+2]<0)continue;ax0=Math.min(ax0,st.bb[b]);ay0=Math.min(ay0,st.bb[b+1]);ax1=Math.max(ax1,st.bb[b+2]);ay1=Math.max(ay1,st.bb[b+3]);}
+    const ix0=Math.max(ax0,x0),iy0=Math.max(ay0,y0),ix1=Math.min(ax1,x0+w-1),iy1=Math.min(ay1,y0+h-1);if(ix1<ix0||iy1<iy0)continue;
+    const o=cutGet(p),nx0=o?Math.min(o.x,ix0):ix0,ny0=o?Math.min(o.y,iy0):iy0,nx1=o?Math.max(o.x+o.w-1,ix1):ix1,ny1=o?Math.max(o.y+o.h-1,iy1):iy1,nw=nx1-nx0+1,nh=ny1-ny0+1,b=new Uint8Array(nw*nh);
+    if(o)for(let y=0;y<o.h;y++)for(let x=0;x<o.w;x++)if(o.b[y*o.w+x])b[(y+o.y-ny0)*nw+x+o.x-nx0]=1;
+    let add=0;for(let y=iy0;y<=iy1;y++)for(let x=ix0;x<=ix1;x++)if(cv[((y-y0)*w+x-x0)*4+3]>127){const k=(y-ny0)*nw+x-nx0;if(!b[k]){b[k]=1;add++;}}
+    if(!add)continue;let tot=0,left=0;for(const r of rs)for(let q=st.off[r];q<st.off[r+1];q++){const i=st.pix[q],x=i%W,y=(i/W)|0;tot++;if(x<nx0||y<ny0||x>nx1||y>ny1||!b[(y-ny0)*nw+x-nx0])left++;}
+    if(left<Math.max(60,tot*.04)){out.gone.push(p);continue;}p.cut=cutEnc(nx0,ny0,nw,nh,b);const c=dpCache.get(p);if(c){c.field=null;c.layers=null;c.key=null;}out.cut.push(p);}
+  return out;}
 /* b36: erasing a pop clears just its areas from the pop layers (pops are clipped to their own areas) instead of re-rendering every pop */
 function popsRemoveFast(st,gone){if(!st.popSh){renderPops(st);return;}const rs=[];for(const p of gone)for(const r of (p.rs||[p.r]))rs.push(r);let x0=W,y0=H,x1=0,y1=0;for(const r of rs){const b=r*4;x0=Math.min(x0,st.bb[b]);y0=Math.min(y0,st.bb[b+1]);x1=Math.max(x1,st.bb[b+2]);y1=Math.max(y1,st.bb[b+3]);}
   const w=x1-x0+1,h=y1-y0+1;if(w<=0||h<=0)return;const c=document.createElement('canvas');c.width=w;c.height=h;const cx=c.getContext('2d'),m=cx.createImageData(w,h),D=m.data;for(const r of rs)for(let p=st.off[r];p<st.off[r+1];p++){const i=st.pix[p],x=i%W,y=(i/W)|0;D[((y-y0)*w+(x-x0))*4+3]=255;}cx.putImageData(m,0,0);
@@ -1301,6 +1320,7 @@ function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and ligh
     const R=5,cham=(src)=>{const o=new Float32Array(w*h);for(let i=0;i<w*h;i++)o[i]=src(i)?1e9:0;chamfer(o,w,h);return o;};
     const dOut=cham(i=>!m[i]),dil=new Uint8Array(w*h);for(let i=0;i<w*h;i++)dil[i]=dOut[i]<=R;
     const dIn=cham(i=>dil[i]);for(let i=0;i<w*h;i++)if(!m[i]&&dIn[i]>R)m[i]=1;}
+  cutApply(pop,m,x0,y0,w,h);
   const d=new Float32Array(w*h),INF=1e9;for(let i=0;i<w*h;i++)d[i]=m[i]?INF:0;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!d[i])continue;let v=d[i];
     if(x>0)v=Math.min(v,d[i-1]+1);if(y>0){v=Math.min(v,d[i-w]+1);if(x>0)v=Math.min(v,d[i-w-1]+1.414);if(x<w-1)v=Math.min(v,d[i-w+1]+1.414);}d[i]=v;}
@@ -1362,6 +1382,7 @@ function dpVal(p,k,t){const D=p.deep,a=D.au&&D.au[k],def=DPK.find(q=>q[0]===k);l
 function dpField(st,p){let c=dpCache.get(p);if(c&&c.field)return c.field;
   const rs=p.rs||[p.r];let x0=W,y0=H,x1=-1,y1=-1;for(const r of rs){const b=r*4;if(st.bb[b+2]<0)continue;x0=Math.min(x0,st.bb[b]);y0=Math.min(y0,st.bb[b+1]);x1=Math.max(x1,st.bb[b+2]);y1=Math.max(y1,st.bb[b+3]);}
   if(x1<0)return null;const w=x1-x0+1,h=y1-y0+1,m=new Uint8Array(w*h);for(const r of rs)for(let q=st.off[r];q<st.off[r+1];q++){const i=st.pix[q];m[(((i/W)|0)-y0)*w+(i%W-x0)]=1;}
+  cutApply(p,m,x0,y0,w,h);
   const d=new Float32Array(w*h);for(let i=0;i<w*h;i++)d[i]=m[i]?1e9:0;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!m[i])continue;if(x===0||y===0||x===w-1||y===h-1)d[i]=1;}
   chamfer(d,w,h);let mx=0,sx=0,sy=0,n=0;for(let i=0;i<w*h;i++)if(m[i]){if(d[i]>mx)mx=d[i];sx+=i%w;sy+=(i/w)|0;n++;}
