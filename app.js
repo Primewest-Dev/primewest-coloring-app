@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=56;let EP_place=null;
+const EP_BUILD=57;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1302,11 +1302,22 @@ const PAPER=[251,248,240];
 function baseRGBA(st,x0,y0,w,h){try{if(mode==='cbn'&&st.cbn&&st.cbn.ctx)return st.cbn.ctx.getImageData(x0,y0,w,h).data;return st.free.ctx.getImageData(x0,y0,w,h).data;}catch(e){return new Uint8ClampedArray(w*h*4);}}
 const baseAt=(B,j,o)=>{const a=B[j+3];if(a>=250){o[0]=B[j];o[1]=B[j+1];o[2]=B[j+2];return o;}const k=a/255;o[0]=B[j]*k+PAPER[0]*(1-k);o[1]=B[j+1]*k+PAPER[1]*(1-k);o[2]=B[j+2]*k+PAPER[2]*(1-k);o[0]|=0;o[1]|=0;o[2]|=0;return o;};
 /* colours changed under a popped area -> re-shade those pops (debounced) */
+/* b57: each Pop Fill keeps its rendered shading as a small tile (light + drop shadow, at its own box), keyed by its height,
+   direction, areas, erase cut and animation step. renderPops only re-shades pops whose key changed (or whose colour underneath
+   changed: popsRecolor drops their tiles) and stamps the rest, so a tap or a rising animation no longer re-shades every pop. */
+const popTile=new WeakMap();
+function popTileKey(p){return [p.depth,p.pressed?1:0,p.hz,p.k==null?'':(+p.k).toFixed(3),(p.rs||[p.r]).join('.'),p.cut||''].join('|');}
+function popTileOf(st,p){const key=popTileKey(p);let t=popTile.get(p);if(t&&t.key===key&&t.st===st)return t;t={key,st,li:null,sh:null};
+  popRender(st,p,{drawImage:(c,x,y)=>{t.sh=[c,x,y];}},{drawImage:(c,x,y)=>{t.li=[c,x,y];}});popTile.set(p,t);return t;}
+function popStamp(st,p,sh,li){const t=popTileOf(st,p);if(t.li)li.drawImage(t.li[0],t.li[1],t.li[2]);if(t.sh)sh.drawImage(t.sh[0],t.sh[1],t.sh[2]);}
+let popRM={st:null,k:'',c:null};
+function popRegionMask(st){const ids=[];for(const p of st.pops||[])for(const q of (p.rs||[p.r]))ids.push(q);ids.sort((a,b)=>a-b);const k=ids.join(',');
+  if(popRM.st===st&&popRM.k===k&&popRM.c)return popRM.c;const mark=new Uint8Array(st.N);for(const q of ids)mark[q]=1;popRM={st,k,c:regionMask(st,mark)};return popRM.c;}
 function popsRerenderSome(list){const st=S,mark=new Uint8Array(st.N);for(const p of list)for(const r of (p.rs||[p.r]))mark[r]=1;const rm=regionMask(st,mark),sh=st.popSh.getContext('2d'),li=st.popLi.getContext('2d');
-  const t1=mk(),t2=mk(),a=t1.getContext('2d'),b=t2.getContext('2d');for(const p of list){const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;a.globalAlpha=b.globalAlpha=k;popRender(st,p,a,b);}
+  const t1=mk(),t2=mk(),a=t1.getContext('2d'),b=t2.getContext('2d');for(const p of list){popTile.delete(p);const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;a.globalAlpha=b.globalAlpha=k;popStamp(st,p,a,b);}
   for(const [c,t] of [[sh,t1],[li,t2]]){const tx=t.getContext('2d');tx.globalAlpha=1;tx.globalCompositeOperation='destination-in';tx.drawImage(rm,0,0);c.save();c.globalCompositeOperation='destination-out';c.drawImage(rm,0,0);c.restore();c.drawImage(t,0,0);}}
 let popRecolT=0,popRecolL=null;function popsRecolor(bx,by,bw,bh,labs){if(!S||!(S.pops||[]).length&&!(S.pp&&S.pp.any))return;if(labs){if(!labs.size)return;popRecolL=popRecolL||new Set();for(const l of labs)popRecolL.add(l);}else popRecolL=null;clearTimeout(popRecolT);const R=[bx,by,bx+bw,by+bh];
-  popRecolT=setTimeout(()=>{if(!S)return;const LL=popRecolL;popRecolL=null;let any=false,deep=false;for(const p of S.pops||[])for(const r of (p.rs||[p.r])){if(LL&&!LL.has(r))continue;const b=r*4;if(S.bb[b+2]<R[0]||S.bb[b]>R[2]||S.bb[b+3]<R[1]||S.bb[b+1]>R[3])continue;if(p.deep){const c=dpCache.get(p);if(c){c.col=null;c.key=null;}deep=true;}else any=true;}
+  popRecolT=setTimeout(()=>{if(!S)return;const LL=popRecolL;popRecolL=null;let any=false,deep=false;for(const p of S.pops||[])for(const r of (p.rs||[p.r])){if(LL&&!LL.has(r))continue;const b=r*4;if(S.bb[b+2]<R[0]||S.bb[b]>R[2]||S.bb[b+3]<R[1]||S.bb[b+1]>R[3])continue;if(p.deep){const c=dpCache.get(p);if(c){c.col=null;c.key=null;}deep=true;}else{any=true;popTile.delete(p);}}
     if(any){const aff=(S.pops||[]).filter(p=>!p.deep&&(p.rs||[p.r]).some(r=>LL?LL.has(r):true));if(LL&&aff.length&&aff.length<(S.pops||[]).filter(p=>!p.deep).length&&S.popSh)popsRerenderSome(aff);else renderPops();}if(deep)deepRender(S,true);if(S.pp&&S.pp.any)ppRender(S,[Math.max(0,R[0]),Math.max(0,R[1]),Math.min(W-1,R[2]),Math.min(H-1,R[3])]);if(any||deep)dirty('pop');},160);}
 function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and light ctx `li` (both W×H)
   const rs0=pop.rs||[pop.r],inG=new Set(rs0),A=adjacency(st),rs=rs0.slice();
@@ -1349,9 +1360,9 @@ function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and ligh
     sx.globalCompositeOperation='destination-out';sx.drawImage(mk2,0,0);sh.drawImage(s2,x0,y0);}}
 function popCanvases(st){if(!st.popSh){st.popSh=mk();st.popLi=mk();st.popSh.className='pop-sh';st.popLi.className='pop-li';}return st;}
 function renderPops(st=S){if(!st)return;popCanvases(st);const sh=st.popSh.getContext('2d'),li=st.popLi.getContext('2d');sh.clearRect(0,0,W,H);li.clearRect(0,0,W,H);
-  for(const p of st.pops||[]){if(p.deep)continue;const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;sh.globalAlpha=li.globalAlpha=k;popRender(st,p,sh,li);}
+  for(const p of st.pops||[]){if(p.deep)continue;const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;sh.globalAlpha=li.globalAlpha=k;popStamp(st,p,sh,li);}
   sh.globalAlpha=li.globalAlpha=1;
-  if((st.pops||[]).length){const mark=new Uint8Array(st.N);for(const p of st.pops)for(const q of (p.rs||[p.r]))mark[q]=1;const rm=regionMask(st,mark);for(const c of [sh,li]){c.save();c.globalCompositeOperation='destination-in';c.drawImage(rm,0,0);c.restore();}}   // v12: strictly inside the popped areas
+  if((st.pops||[]).length){const rm=popRegionMask(st);for(const c of [sh,li]){c.save();c.globalCompositeOperation='destination-in';c.drawImage(rm,0,0);c.restore();}}   // v12: strictly inside the popped areas
   if(st===S&&!st.popSh.isConnected){layers.appendChild(st.popSh);layers.appendChild(st.popLi);}popParallax();deepRender(st,true);if(st===S)scheduleLineTint();}
 function savePops(st){(st.pops||[]).length?LS.set('pop.'+st.n,st.pops.map(({k,anim,...p})=>p)):LS.del('pop.'+st.n);}
 /* ---------- v26 Deep Pop (Miles's 24/32-layer neumorphic depth engine, adapted to any line-enclosed shape) ----------
