@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=27;
+const EP_BUILD=28;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1247,8 +1247,8 @@ function dpBuildUI(){const el=$('#dpRows');if(!el)return;const {D,p}=dpTarget();
 function dpResetAll(){const {D,p}=dpTarget();const ph=D.ph;for(const k in DPDEF)D[k]=DPDEF[k];D.au={};if(ph!=null)D.ph=ph;dpChanged(p);dpBuildUI();}
 function dpSetCarved(v){const {D,p}=dpTarget();D.carved=v;dpChanged(p);dpBuildUI();toast(v?'Carved: layers step down into the page':'Raised: layers step up off the page');}
 function dpToggle(on){settings.deepOn=on==null?!settings.deepOn:on;LS.set('settings',settings);const b=$('#dpBtn');if(b){b.classList.toggle('deepon',!!settings.deepOn);b.setAttribute('aria-pressed',String(!!settings.deepOn));}
-  if(settings.deepOn&&tool!=='pop'&&mode==='free'&&typeof setTool==='function')setTool('pop');if($('#deep')&&!$('#deep').hidden)dpBuildUI();toast(settings.deepOn?'Deep Pop on · tap an area with Pop Fill':'Deep Pop off');}
-(function(){const b=$('#dpBtn');if(!b)return;b.classList.toggle('deepon',!!settings.deepOn);b.setAttribute('aria-pressed',String(!!settings.deepOn));
+  let sw=false;if(settings.deepOn&&tool!=='pop'&&typeof setTool==='function'){if(toolSet!=='3d'&&typeof setToolSet==='function')setToolSet('3d');setTool('pop');sw=tool==='pop';}if($('#deep')&&!$('#deep').hidden)dpBuildUI();toast(settings.deepOn?(sw?'Deep Pop on · switched to Pop Fill: tap an area to lift it in layers':'Deep Pop on · tap an area with Pop Fill'):'Deep Pop off');}
+(function(){const b=$('#dpBtn');if(!b)return;{const to=$('#toolopts')||b.parentNode;const w=document.createElement('span');w.className='dpwrap';w.setAttribute('role','group');w.setAttribute('aria-label','Deep Pop');w.appendChild(b);const g0=$('#dpSet');if(g0)w.appendChild(g0);to.appendChild(w);}b.classList.toggle('deepon',!!settings.deepOn);b.setAttribute('aria-pressed',String(!!settings.deepOn));
   b.onclick=e=>{e.stopPropagation();dpToggle();};const g=$('#dpSet');if(g)g.onclick=e=>{e.stopPropagation();$('#deep').hidden?dpOpen():dpClose();};
   $('#dpX').onclick=dpClose;$('#dpDone').onclick=dpClose;$('#dpReset').onclick=e=>{e.stopPropagation();dpResetAll();};$('#dpOn').onclick=e=>{e.stopPropagation();dpToggle();};
   $('#dpMode').onclick=e=>{const v=e.target&&e.target.dataset&&e.target.dataset.v;dpSetCarved(v?v==='carved':!dpTarget().D.carved);};})();

@@ -1133,3 +1133,7 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 /* b27 audit: dimmed Mix/Chrome were dead (pointer-events:none, no reason). Now they stay dimmed but explain on click. */
 #app[data-ctx=eraser] #optbox #mixBtn,#app[data-ctx=eraser] #optbox #chromeBtn,#app[data-ctx=poperase] #optbox #mixBtn,#app[data-ctx=poperase] #optbox #chromeBtn,#app[data-ctx=pop] #optbox #chromeBtn,#app[data-ctx=poppencil] #optbox #chromeBtn,#app[data-ctx=pop] .tgrid #chromeBtn,#app[data-ctx=poppencil] .tgrid #chromeBtn{pointer-events:auto!important;cursor:help}
 #app[data-ctx] .tgrid #mixBtn,#app[data-ctx] .tgrid #chromeBtn,#app[data-ctx] #optbox #mixBtn,#app[data-ctx] #optbox #chromeBtn{pointer-events:auto!important}
+/* b28: Deep Pop + Layers… live in their own group, visible whenever the 3D tools are shown (not only with Pop Fill) */
+.dpwrap{display:none;align-items:center;flex:none;gap:0}#app.set3d .dpwrap{display:inline-flex}
+#app.set3d:not(.tool-pop) #setbar{display:flex!important}#app.set3d:not(.tool-pop) #setbar>:not(#toolopts){display:none!important}
+#app.set3d:not(.tool-pop) #toolopts>:not(.dpwrap){display:none!important}
