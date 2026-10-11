@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=25;
+const EP_BUILD=26;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -132,13 +132,22 @@ function lightPulse(d,t,speed,count,dir){let best=0;for(let p=0;p<count;p++){let
 function lightPulseE(d,t,speed,count,dir){let best=0;for(let p=0;p<count;p++){const u=((t*speed)+p/count)%1;let pos=u*u*(3-2*u);if(dir==='reverse')pos=1-pos;else if(dir==='bounce')pos=pos<.5?pos*2:2-pos*2;
   const e=d-pos,env=Math.sin(Math.PI*u);best=Math.max(best,Math.exp(-e*e*24)*env);}return best;}
 const RAMP_WAVE={rainbow:'sawtooth',aurora:'smooth',cyber:'triangle',vaporwave:'smooth',miami:'triangle'};
-const RAMP_LUT={};function rampLUT(k){if(RAMP_LUT[k])return RAMP_LUT[k];const cs=(RAMPS[k]||METAL[k]||RAMPS.rainbow).map(hex2rgb),L=new Uint8ClampedArray(256*3);
+const DPAL={sunset:{n:'Sunset',h:[50,30,15,350,330,310,290,270,250,230],s:70},ocean:{n:'Ocean',h:[180,195,210,220,230,240,250,260,270,280],s:55},
+  fire:{n:'Fire',h:[50,40,30,20,15,10,5,0,350,340],s:85},cyber:{n:'Cyber',h:[180,200,260,290,320,350,20,50,80,120],s:80},
+  toxic:{n:'Toxic',h:[80,90,100,70,60,50,40,30,20,10],s:90},rainbow:{n:'Rainbow',h:[0,30,60,120,180,210,270,300,330,360],s:75},
+  electric:{n:'Electric',h:[270,250,230,210,190,170,290,310,330,350],s:90}};
+/* v26 Color Cycle: Miles's palettes as closed colour loops (cc-<palette>[-<lightness 2..8>]); strokes and Adjust Hue cycle flow through them */
+function ccEnsure(k){if(typeof k!=='string'||!k.startsWith('cc-')||RAMPS[k])return;const [,p,l]=k.split('-'),P=DPAL[p];if(!P)return;const L=l?(+l)/10:.55;
+  RAMPS[k]=P.h.concat([P.h[0]]).map(h=>hsl2hex(h,P.s/100,L));RAMP_WAVE[k]='sawtooth';}
+for(const k of Object.keys(DPAL))ccEnsure('cc-'+k);
+const RAMP_LUT={};function rampLUT(k){ccEnsure(k);if(RAMP_LUT[k])return RAMP_LUT[k];const cs=(RAMPS[k]||METAL[k]||RAMPS.rainbow).map(hex2rgb),L=new Uint8ClampedArray(256*3);
   for(let i=0;i<256;i++){const pos=Math.min(.9999,i/255)*(cs.length-1),j=pos|0,f=pos-j,a=cs[j],b=cs[j+1];for(let c=0;c<3;c++)L[i*3+c]=a[c]+(b[c]-a[c])*f;}return RAMP_LUT[k]=L;}
 const rampRgb=(k,t)=>{const L=rampLUT(k),i=Math.max(0,Math.min(255,Math.round(t*255)))*3;return [L[i],L[i+1],L[i+2]];};
 const pingpong=t=>{t-=Math.floor(t);return t<.5?t*2:2-t*2;};
 const RAMP_LEN=320;   // px of stroke per full run through the ramp
 for(const [k,n] of [['rainbow','Rainbow'],['tropical','Tropical'],['ocean','Ocean'],['fire','Fire'],['sunset','Sunset'],['aurora','Aurora'],['cyber','Cyber'],['vaporwave','Vaporwave'],
   ['miami','Miami'],['gold','Gold ramp'],['chrome','Chrome ramp'],['copper','Copper ramp']])PREMIUM.splice(PREMIUM.length-2,0,{id:'r-'+k,kind:'ramp',ramp:k,hex:RAMPS[k][Math.floor(RAMPS[k].length/2)],name:n});
+for(const k of Object.keys(DPAL))PREMIUM.splice(PREMIUM.length-2,0,{id:'cc-'+k,kind:'ramp',ramp:'cc-'+k,cc:true,hex:RAMPS['cc-'+k][3],name:DPAL[k].n+' cycle'});
 const PREM={};PREMIUM.forEach(p=>PREM[p.id]=p);
 PREM['c-any']={id:'c-any',kind:'chrome',hex:'#d9dde3',name:'Chrome finish'};
 const ANY_KINDS={metal:'Metallic',chrome:'Chrome',glitter:'Glitter',jewel:'Jewel',neon:'Neon',lightning:'Lightning',wood:'Wood',brick:'Brick',stone:'Stone',flower:'Flowers',fur:'Fur & Hair',glow:'Glowing',pulse:'Pulse',smoke:'Smoke',cloud:'Cloud'};
@@ -475,7 +484,8 @@ const THEMES=[
 const SETS=[{id:'book',name:'Book palette',product:null,type:'plain',colors:EXTRA}]
   .concat(THEMES.map(t=>({id:t.id,name:t.name,product:'palettes',type:'plain',colors:t.colors})))
   .concat([['metal','Metallic'],['chrome','Chrome'],['glitter','Glitter'],['jewel','Jewel'],['neon','Neon'],['lightning','Lightning'],['glow','Glowing'],['pulse','Pulse'],['ramp','Gradients','gradients'],['smoke','Smoke','smoke'],['cloud','Clouds','clouds'],['wood','Wood'],['brick','Brick'],['stone','Stone'],['flower','Flowers'],['fur','Fur & Hair'],['brush','Brushes']]
-    .map(([k,n,pr])=>({id:k,name:n,product:pr||'pencils',type:'ink',items:PREMIUM.filter(p=>p.kind===k)})));
+    .map(([k,n,pr])=>({id:k,name:n,product:pr||'pencils',type:'ink',items:PREMIUM.filter(p=>p.kind===k&&!p.cc)})))
+  .concat([{id:'ccycle',name:'Color Cycle',product:'gradients',type:'ink',items:PREMIUM.filter(p=>p.cc)}]);
 const SETI={};SETS.forEach((t,i)=>SETI[t.id]=i);
 let setIdx=SETI[settings.pset];if(!(setIdx>=0&&setIdx<SETS.length)||!((SETS[setIdx].colors||SETS[setIdx].items||[]).length)){setIdx=0;settings.pset=SETS[0].id;}   // unknown / old saved set -> default
 /* free samples (kept outside ep.v1 so "Reset progress" doesn't refill them). Owner code bypasses everything. */
@@ -1097,11 +1107,131 @@ function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and ligh
     sx.globalCompositeOperation='destination-out';sx.drawImage(mk2,0,0);sh.drawImage(s2,x0,y0);}}
 function popCanvases(st){if(!st.popSh){st.popSh=mk();st.popLi=mk();st.popSh.className='pop-sh';st.popLi.className='pop-li';}return st;}
 function renderPops(st=S){if(!st)return;popCanvases(st);const sh=st.popSh.getContext('2d'),li=st.popLi.getContext('2d');sh.clearRect(0,0,W,H);li.clearRect(0,0,W,H);
-  for(const p of st.pops||[]){const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;sh.globalAlpha=li.globalAlpha=k;popRender(st,p,sh,li);}
+  for(const p of st.pops||[]){if(p.deep)continue;const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;sh.globalAlpha=li.globalAlpha=k;popRender(st,p,sh,li);}
   sh.globalAlpha=li.globalAlpha=1;
   if((st.pops||[]).length){const mark=new Uint8Array(st.N);for(const p of st.pops)for(const q of (p.rs||[p.r]))mark[q]=1;const rm=regionMask(st,mark);for(const c of [sh,li]){c.save();c.globalCompositeOperation='destination-in';c.drawImage(rm,0,0);c.restore();}}   // v12: strictly inside the popped areas
-  if(st===S&&!st.popSh.isConnected){layers.appendChild(st.popSh);layers.appendChild(st.popLi);}popParallax();if(st===S)scheduleLineTint();}
+  if(st===S&&!st.popSh.isConnected){layers.appendChild(st.popSh);layers.appendChild(st.popLi);}popParallax();deepRender(st,true);if(st===S)scheduleLineTint();}
 function savePops(st){(st.pops||[]).length?LS.set('pop.'+st.n,st.pops.map(({k,anim,...p})=>p)):LS.del('pop.'+st.n);}
+/* ---------- v26 Deep Pop (Miles's 24/32-layer neumorphic depth engine, adapted to any line-enclosed shape) ----------
+   Pop Fill with Deep Pop on stacks 8-64 inset contour layers built from the area's distance field (geometric steps, so any shape works).
+   Each layer gets Miles's dual shadow: dark +x/+y and white -x/-y (light from the top-left, like the rest of the 3D), a tighter dark L2,
+   a thin outline and a small lightness ramp. Raised = outer to inner (inner on top); Carved = his reversed order, inner to outer, as rings.
+   Each area keeps its own Layers / Depth / Shadow L1 / Shadow L2 / Blur (+ AUTO curve and speed, own random phase), palette and hue.
+   Layer stacks are cached per area (one small canvas per layer) and only rebuilt when that area's values change; motion (breathing drift
+   toward the light, slow rotation) is composed from the cache at <=30 fps. */
+function dpHue(pal,i){const H=pal.h,n=H.length,c=((i%n)+n)%n,lo=Math.floor(c)%n,hi=(lo+1)%n,f=c-Math.floor(c);let d=H[hi]-H[lo];if(d>180)d-=360;if(d<-180)d+=360;return (H[lo]+d*f+360)%360;}
+const DPRAND=n=>{const s=Math.sin(n*12.9898)*43758.5453;return s-Math.floor(s);};
+const DCURVE={smooth:x=>(Math.sin(x)+1)/2,bounce:x=>{const o=(x/Math.PI)%2;return o<1?o:2-o;},pulse:x=>Math.pow((Math.sin(x)+1)/2,4),
+  random:x=>{x*=.5;const i=Math.floor(x),f=x-i,a=DPRAND(i),b=DPRAND(i+1),u=f*f*(3-2*f);return a+(b-a)*u;}};   // Miles's smooth random noise
+const DPK=[['n','Layers',8,64,1,''],['d','Depth',0,100,1,''],['l1','Shadow L1',.05,.3,.01,'%'],['l2','Shadow L2',.05,.5,.01,'%'],['bl','Blur',1,5,.1,'×'],['hs','Hue Shift',0,360,1,'°']];
+const DPDEF={n:24,d:55,l1:.16,l2:.3,bl:2,hs:0,carved:false,drift:true,rot:false,pal:null,cyc:false};
+const DPMAX=64;
+function dpDefaults(){const s=settings.dp||{};const o={...DPDEF};for(const k in DPDEF)if(s[k]!=null&&typeof s[k]===typeof DPDEF[k]||(k==='pal'&&s[k]!==undefined))o[k]=s[k];o.au={};if(s.au)for(const k in s.au)o.au[k]={...s.au[k]};return o;}
+function dpNew(){const d=dpDefaults();d.ph=Math.random()*1000;return d;}
+const dpCache=new WeakMap();   // pop -> {field, layers, key}
+let dpRaf=0,dpLast=0,dpT0=performance.now();
+const dpTime=()=>RM.matches?0:(performance.now()-dpT0)/1000;
+function dpVal(p,k,t){const D=p.deep,a=D.au&&D.au[k],def=DPK.find(q=>q[0]===k);let v=D[k]!=null?D[k]:DPDEF[k];
+  if(a&&a.on&&!RM.matches){const f=DCURVE[a.c]||DCURVE.smooth,ph=(D.ph||0)+DPK.findIndex(q=>q[0]===k)*17.3;const u=f(t*(a.sp||.5)+ph);
+    if(k==='hs')v=(v+u*360)%360;else{const lo=k==='n'?Math.max(def[2],Math.round(v*.5)):def[2],hi=k==='n'?Math.min(DPMAX,v):def[3];v=k==='n'?lo+u*(hi-lo):def[2]+u*(def[3]-def[2]);if(k!=='n'&&k!=='d'){v=Math.max(def[2],Math.min(def[3],v));}}}
+  const q=a&&a.on&&!RM.matches;if(q&&k==='d')v=Math.round(v/4)*4;else if(q&&(k==='l1'||k==='l2'))v=Math.round(v*50)/50;else if(q&&k==='bl')v=Math.round(v*5)/5;else if(q&&k==='hs')v=Math.round(v/6)*6;
+  return k==='n'?Math.round(Math.max(8,Math.min(DPMAX,v))):k==='d'||k==='hs'?Math.round(v):Math.round(v*100)/100;}
+function dpField(st,p){let c=dpCache.get(p);if(c&&c.field)return c.field;
+  const rs=p.rs||[p.r];let x0=W,y0=H,x1=-1,y1=-1;for(const r of rs){const b=r*4;if(st.bb[b+2]<0)continue;x0=Math.min(x0,st.bb[b]);y0=Math.min(y0,st.bb[b+1]);x1=Math.max(x1,st.bb[b+2]);y1=Math.max(y1,st.bb[b+3]);}
+  if(x1<0)return null;const w=x1-x0+1,h=y1-y0+1,m=new Uint8Array(w*h);for(const r of rs)for(let q=st.off[r];q<st.off[r+1];q++){const i=st.pix[q];m[(((i/W)|0)-y0)*w+(i%W-x0)]=1;}
+  const d=new Float32Array(w*h);for(let i=0;i<w*h;i++)d[i]=m[i]?1e9:0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!m[i])continue;if(x===0||y===0||x===w-1||y===h-1)d[i]=1;}
+  chamfer(d,w,h);let mx=0,sx=0,sy=0,n=0;for(let i=0;i<w*h;i++)if(m[i]){if(d[i]>mx)mx=d[i];sx+=i%w;sy+=(i/w)|0;n++;}
+  const mc=document.createElement('canvas');mc.width=w;mc.height=h;const mi=mc.getContext('2d').createImageData(w,h);for(let i=0;i<w*h;i++)if(m[i])mi.data[i*4+3]=255;mc.getContext('2d').putImageData(mi,0,0);
+  const f={x0,y0,w,h,m,d,maxD:mx,cx:n?sx/n:w/2,cy:n?sy/n:h/2,mc,n};c=c||{};c.field=f;dpCache.set(p,c);return f;}
+function dpBaseColor(st,p,f){const im=st.free.ctx.getImageData(f.x0,f.y0,f.w,f.h).data;let r=0,g=0,b=0,n=0;const step=Math.max(1,(f.n/3000)|0);let k=0;
+  for(let i=0;i<f.w*f.h;i++){if(!f.m[i])continue;if((k++)%step)continue;const j=i*4;if(im[j+3]>120){r+=im[j];g+=im[j+1];b+=im[j+2];n++;}}
+  return n>k/(step*6)?[r/n,g/n,b/n]:[236,229,216];}   // unpainted: warm paper
+function dpHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;if(mx===mn)return [0,0,l];const d=mx-mn,s=l>.5?d/(2-mx-mn):d/(mx+mn);
+  const h=mx===r?((g-b)/d+(g<b?6:0)):mx===g?(b-r)/d+2:(r-g)/d+4;return [h*60,s,l];}
+/* build (or reuse) the cached layer stack of one area */
+function dpBuild(st,p,t){const f=dpField(st,p);if(!f||f.maxD<2)return null;const c=dpCache.get(p),D=p.deep;
+  const N=dpVal(p,'n',t),dep=dpVal(p,'d',t),l1=dpVal(p,'l1',t),l2=dpVal(p,'l2',t),bl=dpVal(p,'bl',t),hs=dpVal(p,'hs',t),cyc=D.cyc&&!RM.matches?Math.floor(t*1.2+(D.ph||0))/12:0;
+  if(!c.col)c.col=dpBaseColor(st,p,f);
+  const key=[N,dep,l1,l2,bl,hs,D.carved,D.pal,cyc.toFixed(3),c.col.map(Math.round).join()].join('|');if(c.layers&&c.key===key)return c;
+  const t0=performance.now(),[bh,bs,bL]=dpHsl(...c.col),pal=D.pal&&DPAL[D.pal];
+  const minIn=Math.max(1.5,f.maxD*.04),ratio=Math.pow(minIn/f.maxD,1/(N-1)),layers=[],amp=.06+.16*dep/100;
+  for(let i=0;i<N;i++){const th=f.maxD*(1-Math.pow(ratio,i)),th2=i<N-1?f.maxD*(1-Math.pow(ratio,i+1)):1e9;
+    let x0=f.w,y0=f.h,x1=-1,y1=-1;for(let y=0;y<f.h;y++){const o=y*f.w;for(let x=0;x<f.w;x++){if(f.d[o+x]>th){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}}}
+    if(x1<0)break;
+    const df=1-i/(N-1),rad=Math.max(1,f.maxD-th),off=Math.min(16,Math.max(1.2,rad*.13*dep/50)),sd=off*bl*.6,boost=1+df*.4,P=Math.ceil(off*boost*1.5+sd*2*boost)+3;
+    const lw=x1-x0+1,lh=y1-y0+1,cw=lw+P*2,ch=lh+P*2;
+    const sh=document.createElement('canvas');sh.width=lw;sh.height=lh;const sx=sh.getContext('2d'),si=sx.createImageData(lw,lh),sd8=si.data;
+    for(let y=0;y<lh;y++){const o=(y+y0)*f.w+x0;for(let x=0;x<lw;x++){const v=f.d[o+x];if(v>th&&!(D.carved&&v>th2+.5))sd8[(y*lw+x)*4+3]=v>th+1?255:Math.round((v-th)*255);}}
+    sx.putImageData(si,0,0);
+    let hue=bh,sat=bs,lit=bL;const ramp=(i/(N-1)-.5)*2;
+    if(pal){hue=dpHue(pal,i*pal.h.length/N+cyc*pal.h.length);sat=Math.min(1,pal.s/100);lit=.62;}
+    hue=(hue+hs)%360;lit=Math.max(.06,Math.min(.95,lit+(D.carved?-1:1)*ramp*amp));
+    const fill=`hsl(${hue.toFixed(1)},${(sat*100).toFixed(1)}%,${(lit*100).toFixed(1)}%)`;
+    sx.globalCompositeOperation='source-in';sx.fillStyle=fill;sx.fillRect(0,0,lw,lh);
+    const lc=document.createElement('canvas');lc.width=cw;lc.height=ch;const x=lc.getContext('2d');
+    const sh1=(col,blur,ox,oy)=>{x.save();x.shadowColor=col;x.shadowBlur=blur;x.shadowOffsetX=ox;x.shadowOffsetY=oy;x.drawImage(sh,P,P);x.restore();};
+    sh1(`rgba(24,16,10,${Math.min(.9,l1*2.8).toFixed(3)})`,sd*2*boost,off*boost,off*boost);       // L1 dark, +x/+y
+    sh1(`rgba(255,255,255,${Math.min(.95,.35+l1*2.6).toFixed(3)})`,sd*2*boost,-off*boost,-off*boost);   // white, -x/-y
+    sh1(`rgba(24,16,10,${Math.min(.92,l2*1.7).toFixed(3)})`,sd*1.4,off*.5,off*.5);                  // L2 tighter dark
+    sh1(`hsla(${hue.toFixed(1)},${(sat*100).toFixed(1)}%,${(Math.max(.05,lit-.18)*100).toFixed(1)}%,.38)`,1,0,0);   // thin outline
+    x.drawImage(sh,P,P);
+    layers.push({c:lc,x:f.x0+x0-P,y:f.y0+y0-P,df,i});}
+  if(D.carved)layers.reverse();   // Miles's reversed order: inner first, outer on top
+  c.layers=layers;c.key=key;c.ms=performance.now()-t0;c.bt=performance.now();return c;}
+function dpAnimated(p){const D=p.deep;return !RM.matches&&(D.drift||D.rot||D.cyc||Object.values(D.au||{}).some(a=>a&&a.on));}
+function dpCanvas(st){if(!st.dpC){st.dpC=mk();st.dpC.className='deep-pop';st.dpC.style.pointerEvents='none';}return st.dpC;}
+function dpAttach(st){if(st!==S||!st.dpC)return;const ref=S.pulse?S.pulse.c:S.free.c;if(st.dpC.previousSibling!==ref||st.dpC.parentNode!==layers)layers.insertBefore(st.dpC,ref.nextSibling);}
+/* compose every Deep Pop area from its cached layers; `rebuild` lets AUTO values re-render the cache (throttled by build cost) */
+function deepRender(st=S,force){if(!st)return;const P=(st.pops||[]).filter(p=>p.deep);if(!P.length){if(st.dpC){st.dpC.getContext('2d').clearRect(0,0,W,H);st.dpC.remove();}return;}
+  const C=dpCanvas(st),x=C.getContext('2d'),t=dpTime(),[lx,ly]=lightAt(t);x.clearRect(0,0,W,H);let built=0;const tf0=performance.now();
+  for(const p of P){let c=dpCache.get(p);if(!c){c={};dpCache.set(p,c);}
+    const can=force||!c.layers||!dpAnimated(p)||(!built&&performance.now()-(c.bt||0)>Math.max(250,(c.fms||0)*4));let did=false;if(can){const k0=c.key;dpBuild(st,p,t);did=c.key!==k0;if(did)built++;}c=dpCache.get(p);if(!c||!c.layers||!c.field)continue;
+    const f=c.field,D=p.deep,k=p.k==null?1:Math.max(0,Math.min(1,p.k)),anim=dpAnimated(p);
+    if(!c.T){c.T=document.createElement('canvas');c.T.width=f.w;c.T.height=f.h;}const T=c.T,tx=T.getContext('2d');tx.globalCompositeOperation='source-over';tx.clearRect(0,0,f.w,f.h);   // per-area compose, then clip to the area
+    const br=anim&&D.drift?.5+.5*Math.sin(t*.7+(D.ph||0)):0,amp=anim&&D.drift?(1.5+3.5*dpVal(p,'d',t)/100):0,rot=anim&&D.rot?Math.sin(t*.25+(D.ph||0))*.14:0;
+    for(const L of c.layers){const inner=1-L.df,dx=-lx*amp*inner*(.4+.6*br),dy=-ly*amp*inner*(.4+.6*br);
+      if(rot){tx.save();tx.translate(f.cx,f.cy);tx.rotate(rot*inner*(L.i%2?1:-1));tx.translate(-f.cx,-f.cy);tx.drawImage(L.c,L.x-f.x0+dx,L.y-f.y0+dy);tx.restore();}
+      else tx.drawImage(L.c,L.x-f.x0+dx,L.y-f.y0+dy);}
+    tx.globalCompositeOperation='destination-in';tx.drawImage(f.mc,0,0);
+    x.globalAlpha=k;x.drawImage(T,f.x0,f.y0);x.globalAlpha=1;if(did)c.fms=performance.now()-tf0;}
+  dpAttach(st);if(st===S&&P.some(dpAnimated)&&!dpRaf)dpRaf=requestAnimationFrame(dpTick);}
+function dpTick(now){dpRaf=0;if(!S||document.hidden){return;}const P=(S.pops||[]).filter(p=>p.deep&&dpAnimated(p));if(!P.length)return;
+  if(now-dpLast>=33){dpLast=now;const t0=performance.now();deepRender(S);DP.fms=DP.fms*.9+(performance.now()-t0)*.1;DP.frames++;}if(!dpRaf)dpRaf=requestAnimationFrame(dpTick);}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S&&!dpRaf)deepRender(S);});
+const DP={fms:0,frames:0};
+let dpColT=0;function dpRecolorSoon(){if(!S||!(S.pops||[]).some(p=>p.deep))return;clearTimeout(dpColT);dpColT=setTimeout(()=>{if(!S)return;let ch=false;for(const p of S.pops||[]){if(!p.deep)continue;const c=dpCache.get(p),f=c&&c.field;if(!f)continue;const n=dpBaseColor(S,p,f);if(!c.col||n.some((v,i)=>Math.abs(v-c.col[i])>3)){c.col=n;ch=true;}}if(ch)deepRender(S,true);},250);}
+function dpSel(){if(!S||!S.popSel||S.popSel.k!=='pop')return null;const r=S.popSel.r;return (S.pops||[]).find(q=>q.deep&&(q.rs||[q.r]).includes(r))||null;}
+/* ---- Deep Pop panel: per-area sliders, each with Reset + AUTO (curve + speed) ---- */
+function dpTarget(){const p=dpSel();return p?{D:p.deep,p}:{D:(settings.dp=settings.dp||{...DPDEF,au:{}}),p:null};}
+function dpChanged(p){if(p){const c=dpCache.get(p);deepRender(S,true);dirty('pop');}else LS.set('settings',settings);}
+function dpOpen(){const el=$('#deep');if(!el)return;adjClose();if(!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();el.hidden=false;$('#dpBtn')&&$('#dpBtn').classList.add('on');dpBuildUI();}
+function dpClose(){const el=$('#deep');if(el)el.hidden=true;$('#dpBtn')&&$('#dpBtn').classList.remove('on');}
+function dpFmt(k,v){const d=DPK.find(q=>q[0]===k);return k==='l1'||k==='l2'?Math.round(v*100)+'%':k==='bl'?(+v).toFixed(1)+'×':k==='hs'?Math.round(v)+'°':String(Math.round(v));}
+function dpBuildUI(){const el=$('#dpRows');if(!el)return;const {D,p}=dpTarget();D.au=D.au||{};
+  $('#dpName').textContent=p?'This area · own settings':'Next Deep Pop tap · tap a Deep Pop area to edit it';
+  $('#dpOn').classList.toggle('on',!!settings.deepOn);$('#dpOn').setAttribute('aria-pressed',String(!!settings.deepOn));
+  $('#dpMode').querySelectorAll('i').forEach(b=>b.classList.toggle('on',(b.dataset.v==='carved')===!!D.carved));
+  el.innerHTML=DPK.map(([k,lab,mn,mx,stp])=>{const v=D[k]!=null?D[k]:DPDEF[k],a=D.au[k]||{};return `<div class="dpr" data-k="${k}"><label class="adjr"><span>${lab}</span><input type="range" class="dpv" min="${mn}" max="${mx}" step="${stp}" value="${v}" aria-label="${lab}"><em>${dpFmt(k,v)}</em></label>
+    <div class="dpa"><button type="button" class="chip dpauto${a.on?' on':''}" aria-pressed="${!!a.on}" title="AUTO: let ${lab} move by itself">AUTO</button><select class="dpc" aria-label="${lab} AUTO curve">${Object.keys(DCURVE).map(c=>`<option value="${c}"${(a.c||'random')===c?' selected':''}>${c[0].toUpperCase()+c.slice(1)}</option>`).join('')}</select><input type="range" class="dps" min="0.05" max="2" step="0.05" value="${a.sp||.4}" aria-label="${lab} AUTO speed" title="AUTO speed"></div></div>`;}).join('')
+    +`<div class="dpr dpopts"><span class="dplab">Palette</span><div class="adjfxb">${[['','Own color']].concat(Object.keys(DPAL).map(k=>[k,DPAL[k].n])).map(([k,n])=>`<button type="button" class="chip dppal${(D.pal||'')===k?' on':''}" data-pal="${k}">${n}</button>`).join('')}</div>
+    <div class="adjfxb"><button type="button" class="chip dpopt${D.cyc?' on':''}" data-o="cyc" title="Color cycle: hues flow through the layers">Color cycle</button><button type="button" class="chip dpopt${D.drift?' on':''}" data-o="drift" title="Layers breathe and drift toward the light">Breathe</button><button type="button" class="chip dpopt${D.rot?' on':''}" data-o="rot" title="Slow rotation of the layers">Rotate</button></div></div>`;
+  el.querySelectorAll('.dpr[data-k]').forEach(row=>{const k=row.dataset.k,i=row.querySelector('.dpv'),em=row.querySelector('em');
+    i.oninput=()=>{const {D,p}=dpTarget();D[k]=+i.value;em.textContent=dpFmt(k,+i.value);dpChanged(p);};
+    const lab=row.querySelector('label');lab.appendChild(rstBtn(()=>{const {D,p}=dpTarget();D[k]=DPDEF[k];if(D.au)delete D.au[k];dpChanged(p);dpBuildUI();},'Reset '+DPK.find(q=>q[0]===k)[1]));
+    const au=()=>{const {D}=dpTarget();D.au=D.au||{};return D.au[k]=D.au[k]||{on:false,c:'random',sp:.4};};
+    row.querySelector('.dpauto').onclick=e=>{e.stopPropagation();const a=au();a.on=!a.on;e.currentTarget.classList.toggle('on',a.on);e.currentTarget.setAttribute('aria-pressed',String(a.on));dpChanged(dpTarget().p);};
+    row.querySelector('.dpc').onchange=e=>{au().c=e.target.value;dpChanged(dpTarget().p);};row.querySelector('.dps').oninput=e=>{au().sp=+e.target.value;dpChanged(dpTarget().p);};});
+  el.querySelectorAll('.dppal').forEach(b=>b.onclick=e=>{e.stopPropagation();const {D,p}=dpTarget();D.pal=b.dataset.pal||null;dpChanged(p);dpBuildUI();});
+  el.querySelectorAll('.dpopt').forEach(b=>b.onclick=e=>{e.stopPropagation();const {D,p}=dpTarget();D[b.dataset.o]=!D[b.dataset.o];dpChanged(p);dpBuildUI();});}
+function dpResetAll(){const {D,p}=dpTarget();const ph=D.ph;for(const k in DPDEF)D[k]=DPDEF[k];D.au={};if(ph!=null)D.ph=ph;dpChanged(p);dpBuildUI();}
+function dpSetCarved(v){const {D,p}=dpTarget();D.carved=v;dpChanged(p);dpBuildUI();toast(v?'Carved: layers step down into the page':'Raised: layers step up off the page');}
+function dpToggle(on){settings.deepOn=on==null?!settings.deepOn:on;LS.set('settings',settings);const b=$('#dpBtn');if(b){b.classList.toggle('deepon',!!settings.deepOn);b.setAttribute('aria-pressed',String(!!settings.deepOn));}
+  if(settings.deepOn&&tool!=='pop'&&mode==='free'&&typeof setTool==='function')setTool('pop');if($('#deep')&&!$('#deep').hidden)dpBuildUI();toast(settings.deepOn?'Deep Pop on · tap an area with Pop Fill':'Deep Pop off');}
+(function(){const b=$('#dpBtn');if(!b)return;b.classList.toggle('deepon',!!settings.deepOn);b.setAttribute('aria-pressed',String(!!settings.deepOn));
+  b.onclick=e=>{e.stopPropagation();dpToggle();};const g=$('#dpSet');if(g)g.onclick=e=>{e.stopPropagation();$('#deep').hidden?dpOpen():dpClose();};
+  $('#dpX').onclick=dpClose;$('#dpDone').onclick=dpClose;$('#dpReset').onclick=e=>{e.stopPropagation();dpResetAll();};$('#dpOn').onclick=e=>{e.stopPropagation();dpToggle();};
+  $('#dpMode').onclick=e=>{const v=e.target&&e.target.dataset&&e.target.dataset.v;dpSetCarved(v?v==='carved':!dpTarget().D.carved);};})();
 /* the tapped area = the region plus touching regions painted the same colour (e.g. an envelope split by light rays) */
 function popGroup(r){const c=S.rc&&S.rc[r];if(!c)return [r];const A=adjacency(),seen=new Set([r]),q=[r];let area=S.cnt[r];
   while(q.length&&seen.size<80){const a=q.shift();for(const b of A[a])if(!seen.has(b)&&S.rc[b]===c&&area+S.cnt[b]<W*H*.45){seen.add(b);area+=S.cnt[b];q.push(b);}}return [...seen];}
@@ -1117,17 +1247,17 @@ function popTap(x,y){const r=labAt(x,y);if(!r)return;S.pops=S.pops||[];S.popNext
   if(POP.flat){if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');toast('Flattened');}else toast('Flat: set the slider to Raise or Inset, then tap an area');S.popSel={k:'pop',r};return;}
   const T=depthOf(S),pressed=(T&&T.lv[r]<0)?true:!!POP.pressed,depth=Math.max(10,Math.round(POP.depth)),fin=()=>{renderPops();dirty('pop');if(S&&S.popSel&&S.popSel.r===r)popSelect('pop',r);};
   S.popSel={k:'pop',r};
-  if(i>=0){const p=S.pops[i];if(p.anim)return;const same=p.pressed===pressed&&p.depth===depth;p.pressed=pressed;p.depth=depth;if(same)fin();else{p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}}
+  if(i>=0){const p=S.pops[i];if(p.anim)return;if(settings.deepOn&&!p.deep){p.deep=dpNew();p.deep.carved=pressed;}else if(!settings.deepOn&&p.deep){delete p.deep;}const same=p.pressed===pressed&&p.depth===depth;p.pressed=pressed;p.depth=depth;if(same)fin();else{p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}}
   else{if(!Effects3D.unlocked()){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
       const l=Trials.popsLeft();toast(l?`Pop Fill · free tries: ${l} left`:'That was your last free Pop Fill ✦');}
-    const p={r,rs:[r],depth,pressed,hz:null};S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}
+    const p={r,rs:[r],depth,pressed,hz:null};if(settings.deepOn){p.deep=dpNew();p.deep.carved=pressed;}S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}
   if(settings.ppColor!==false)popColor(x,y,r);}
 function popColor(x,y,r){if(mode==='free'){if(ink&&ink.kind==='brush')return;fillFree(x,y);}else if(!S.cbn.filled[r]&&S.num[r]===selNum)tapCBN(x,y);}
 function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}}
 function popRestyle(){applySelHeight(popH());}   // v13: the slider / switch drive only the selected section
 /* v13: the Pop height slider follows the section you last drew in or tapped (Pop Pencil, 3D Pop, Pop Erase). Moving it sets
    that one section's height (whole line-enclosed area, + raise / - inset / 0 flat); other sections keep their own heights. */
-function popSelect(k,r){if(!S||!r)return;S.popSel={k,r};const h=selHeight();if(h!=null){POP.hv=Math.abs(h)||POP.hv;if(h){POP.pressed=h<0;POP.flat=false;}popUI(Math.round(h*100));}}
+function popSelect(k,r){if(!S||!r)return;S.popSel={k,r};if($('#deep')&&!$('#deep').hidden)setTimeout(dpBuildUI,0);const h=selHeight();if(h!=null){POP.hv=Math.abs(h)||POP.hv;if(h){POP.pressed=h<0;POP.flat=false;}popUI(Math.round(h*100));}}
 function selHeight(){if(!S||!S.popSel)return null;const {k,r}=S.popSel;
   if(k==='pop'){const p=(S.pops||[]).find(q=>(q.rs||[q.r]).includes(r));return p?(p.pressed?-1:1)*Math.min(1,p.depth/100):0;}
   const P=S.pp;if(!P)return 0;const b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;if(bw<=0)return 0;
@@ -1522,7 +1652,7 @@ function fxDrawRec(x,r,t){ // t in seconds
   if(r.kind==='mirror'){drawMirror(x,r,t);return;}if(r.kind==='shine'){drawShine(x,r,t,'metal');return;}if(r.kind==='jshine'){drawShine(x,r,t,'jewel');return;}
   if(r.kind==='rampfx'){ // colour shift: the gradient flows through the stroke (ping-pong), ~12 fps is plenty for this slow drift
     if(!r.td){r.td=r.mx.getImageData(bx,by,bw,bh).data;r.out=new ImageData(bw,bh);r.oc=Object.assign(document.createElement('canvas'),{width:bw,height:bh});r.ft=-1;}
-    if(r.ft<0||Math.abs(t-r.ft)>=.08){r.ft=t;const L=rampLUT(r.hex),wv=WAVES[RAMP_WAVE[r.hex]||'sine'],ph=RM.matches?0:(RAMP_WAVE[r.hex]==='sawtooth'?t/9:.5+.5*wv(t,.35)),td=r.td,o=r.out.data;
+    if(r.ft<0||Math.abs(t-r.ft)>=.08){r.ft=t;const L=rampLUT(r.hex),wv=WAVES[RAMP_WAVE[r.hex]||'sine'],ph=RM.matches?0:(String(r.hex).startsWith('cc-')?t/9*(r.sp||1)+(r.ph||0)*.05:RAMP_WAVE[r.hex]==='sawtooth'?t/9:.5+.5*wv(t,.35)),td=r.td,o=r.out.data;
       for(let i=0;i<td.length;i+=4){const a=td[i+3];if(!a){o[i+3]=0;continue;}const v=td[i]/255+ph,q=v-Math.floor(v),k=Math.round((q<.5?q*2:2-q*2)*255)*3;o[i]=L[k];o[i+1]=L[k+1];o[i+2]=L[k+2];o[i+3]=a;}
       r.oc.getContext('2d').putImageData(r.out,0,0);}
     x.drawImage(r.oc,bx,by);return;}
@@ -2416,6 +2546,7 @@ function composite(phase=.5,m=mode){
   x.drawImage(m==='cbn'?S.cbn.c:S.free.c,0,0);
   if(m==='free'&&S.pulse&&S.pulseUsed){const b=.5+.5*Math.sin(phase*Math.PI*2);x.save();x.globalAlpha=.7+.3*b;x.drawImage(S.pulse.c,0,0);
     x.globalCompositeOperation='screen';x.globalAlpha=.25+.45*b;x.filter='blur(6px)';x.drawImage(S.pulse.c,0,0);x.restore();}
+  if(S.dpC&&S.dpC.isConnected)x.drawImage(S.dpC,0,0);
   if(D3.on&&S.relief){x.drawImage(S.relief.sh,0,0);x.drawImage(S.relief.li,0,0);}
   if(!D3.on&&S.pops&&S.pops.length&&S.popSh){x.drawImage(S.popSh,0,0);x.drawImage(S.popLi,0,0);}
   if(S.pp&&S.pp.any){x.drawImage(S.pp.sh,0,0);x.drawImage(S.pp.li,0,0);}
@@ -2474,8 +2605,8 @@ $('#idea3d').onclick=()=>idea3d();$('#idea3dApply').onclick=idea3dApply;
 /* v20: Mix opens as an overlay on the bottom section only (same footprint as the pencil and tool boxes; the picture never moves).
    Accept keeps the mix and returns to the bar; Cancel puts everything back as it was */
 let mixPrev=null;
-function openMix(){adjClose();mixPrev={on:MIX.on,finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:{...MIX.amt}};$('#mxOff').hidden=!MIX.on;if(MIX.on){buildMixer();$('#mixer').hidden=false;}else setMix(true);}
-function adjOpen(){const el=$('#adjust');if(!el)return;if(!$('#mixer').hidden)mixCancel&&mixCancel();el.hidden=false;$('#adjBtn')&&$('#adjBtn').classList.add('on');adjBuild();adjFlash();}
+function openMix(){adjClose();if(typeof dpClose==='function')dpClose();mixPrev={on:MIX.on,finish:MIX.finish,anim:MIX.anim,part:MIX.part,amt:{...MIX.amt}};$('#mxOff').hidden=!MIX.on;if(MIX.on){buildMixer();$('#mixer').hidden=false;}else setMix(true);}
+function adjOpen(){const el=$('#adjust');if(!el)return;if(typeof dpClose==='function')dpClose();if(!$('#mixer').hidden)mixCancel&&mixCancel();el.hidden=false;$('#adjBtn')&&$('#adjBtn').classList.add('on');adjBuild();adjFlash();}
 function adjClose(){const el=$('#adjust');if(el)el.hidden=true;$('#adjBtn')&&$('#adjBtn').classList.remove('on');if(phP==='adjust'){phP=null;app.dataset.ph='';phSync();}}
 function adjBuild(){const el=$('#adjRows');if(!el)return;const L=S&&S.lastOp,a=L?L.a:{},fmt=(d,v)=>(d[0]==='h'||d[0]==='b'||d[0]==='w')&&v>0?'+'+v+d[6]:v+d[6];
   el.innerHTML=ADJDEF.map(d=>{const v=adjVal(a,d[0]);return `<label class="adjr" title="${esc(d[7])}"><span>${d[1]}</span><input type="range" data-k="${d[0]}" min="${d[2]}" max="${d[3]}" step="${d[5]}" value="${v}" aria-label="${esc(d[1])}"${L?'':' disabled'}><em>${fmt(d,v)}</em></label>`;}).join('');
@@ -2495,13 +2626,25 @@ function adjSetFx(id){const L=S&&S.lastOp;if(!L)return;
     const r=Object.assign({kind:d[2],hex:opHex(L,opAdj()),mask:m,mx,bb:null,pts:[],parts:[],dirty:true},fxParams(L.path||null));if(FINK.has(d[2])){lightN21=(lightN21+1)%7;r.light=LIGHTS21[lightN21];}
     r.sp0=r.sp;if(L.spd)r.sp=r.sp0*L.spd;S.fx.push(r);L.fxAdd={id,recs:[r]};L.recs=(L.recs||[]).concat([[r,L.hex]]);S.fxUndo=(S.fxUndo||[]).concat([{n:L.n,m:[[r,null]]}]).slice(-300);fxAttach();fxStart();}
   dirty('fx');fxDraw(performance.now());adjBuild();}
+function hexLight(h){const c=hex2rgb(h);return (Math.max(...c)+Math.min(...c))/510;}
+/* v26: Hue cycle on the last stroke only: its colour flows slowly through one of Miles's palettes, keeping the stroke's lightness */
+function adjSetHue(pal){const L=S&&S.lastOp;if(!L)return;
+  if(L.hueAdd){const gone=new Set(L.hueAdd.recs);S.fx=S.fx.filter(r=>!gone.has(r));L.recs=(L.recs||[]).filter(q=>!gone.has(q[0]));if(S.fxL)S.fxL[mode]=S.fx;L.hueAdd=null;}
+  if(pal&&DPAL[pal]){fxSetList(S);const m=mk(),mx=m.getContext('2d',{willReadFrequently:true}),im=new ImageData(L.bw,L.bh);
+    for(let y=0;y<L.bh;y++)for(let x=0;x<L.bw;x++){const i=y*L.bw+x;if(L.M[i]){im.data[i*4]=Math.round((x/L.bw+y/L.bh)*30);im.data[i*4+3]=L.A.data[i*4+3];}}mx.putImageData(im,L.bx,L.by);
+    const lq=Math.max(2,Math.min(8,Math.round(hexLight(opHex(L,opAdj()))*10)));
+    const r=Object.assign({kind:'rampfx',hex:'cc-'+pal+'-'+lq,mask:m,mx,bb:null,pts:[],parts:[],dirty:true},fxParams(L.path||null));r.sp0=1;r.sp=L.spd||1;
+    S.fx.push(r);L.hueAdd={pal,recs:[r]};L.recs=(L.recs||[]).concat([[r,L.hex]]);S.fxUndo=(S.fxUndo||[]).concat([{n:L.n,m:[[r,null]]}]).slice(-300);fxAttach();fxStart();}
+  dirty('fx');fxDraw(performance.now());adjBuild();}
 function adjSetSpeed(v){const L=S&&S.lastOp;if(!L)return;L.spd=v;for(const r of adjFxRecs(L)){if(r.sp0==null)r.sp0=r.sp||1;r.sp=r.sp0*v;}dirty('fx');}
 function adjFxRow(el,L){const cur=L&&L.fxAdd?L.fxAdd.id:'none',has=L&&adjFxRecs(L).length,v=L&&L.spd||1;
   const w=document.createElement('div');w.className='adjfx';w.innerHTML=`<span>Effect</span><div class="adjfxb">${ADJFX.map(d=>`<button type="button" class="chip${d[0]===cur?' on':''}" data-fx="${d[0]}"${L?'':' disabled'}>${d[1]}</button>`).join('')}</div>`;
   w.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();adjSetFx(b.dataset.fx);});el.appendChild(w);
+  {const hc=L&&L.hueAdd?L.hueAdd.pal:'';const h=document.createElement('div');h.className='adjfx adjhue';h.innerHTML=`<span>Hue Shift AUTO · cycle through</span><div class="adjfxb">${[['','Off']].concat(Object.keys(DPAL).map(k=>[k,DPAL[k].n])).map(([k,n])=>`<button type="button" class="chip${k===hc?' on':''}" data-hue="${k}"${L?'':' disabled'}>${n}</button>`).join('')}</div>`;
+  h.querySelectorAll('button').forEach(b=>b.onclick=e=>{e.stopPropagation();adjSetHue(b.dataset.hue||null);});el.appendChild(h);}
   const l=document.createElement('label');l.className='adjr';l.title='Effect speed for this stroke only';l.innerHTML=`<span>Effect speed</span><input class="adjsp" type="range" min="0.1" max="3" step="0.05" value="${v}"${has?'':' disabled'} aria-label="Effect speed for this stroke"><em>${v.toFixed(2)}×</em>`;
   const i=l.querySelector('input');i.oninput=()=>{adjSetSpeed(+i.value);l.querySelector('em').textContent=(+i.value).toFixed(2)+'×';};el.appendChild(l);}
-function adjReset(){adjCarry={};if(S&&S.lastOp){if(S.lastOp.fxAdd)adjSetFx('none');if(S.lastOp.spd)adjSetSpeed(1);S.lastOp.spd=null;}LS.set('adjCarry',adjCarry);if(S&&S.lastOp){S.lastOp.a={};lastOpRender();}adjBuild();adjFlash();}
+function adjReset(){adjCarry={};if(S&&S.lastOp){if(S.lastOp.fxAdd)adjSetFx('none');if(S.lastOp.hueAdd)adjSetHue(null);if(S.lastOp.spd)adjSetSpeed(1);S.lastOp.spd=null;}LS.set('adjCarry',adjCarry);if(S&&S.lastOp){S.lastOp.a={};lastOpRender();}adjBuild();adjFlash();}
 (function(){const b=$('#adjBtn');if(!b)return;b.onclick=e=>{e.stopPropagation();$('#adjust').hidden?adjOpen():adjClose();};$('#adjX').onclick=adjClose;$('#adjDone').onclick=adjClose;$('#adjReset').onclick=adjReset;
   ['pointerdown','click'].forEach(ev=>$('#adjust').addEventListener(ev,e=>e.stopPropagation()));})();
 function closeMix(){$('#mixer').hidden=true;mixPrev=null;if(phP==='mix'){phP=null;app.dataset.ph='';phSync();}}
@@ -2574,7 +2717,7 @@ document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='z'){
 
 /* ---------- saving each scene's coloring ---------- */
 const pend={};let saveT=0;
-function dirty(kind){if(!S)return;if(kind==='free')try{scheduleIdeas();}catch(e){}if(S.ltAny&&(kind==='free'||kind==='cbn'))scheduleLineTint();if((kind==='free'||kind==='cbn')&&!linesDefault(S.lines))scheduleLines();if(kind==='cbn')linesDoneGlow();if(kind==='free'||kind==='pulse')S.envDirty=true;if(kind==='pp')S.ppV=(S.ppV||0)+1;if(kind==='pulse'){const sl=$('#saveLoop');if(sl)sl.hidden=!(S.pulseUsed&&mode==='free');}pend[S.n]=pend[S.n]||{};pend[S.n][kind]=1;clearTimeout(saveT);saveT=setTimeout(saveNow,1500);}
+function dirty(kind){if(!S)return;if(kind==='free')dpRecolorSoon();if(kind==='free')try{scheduleIdeas();}catch(e){}if(S.ltAny&&(kind==='free'||kind==='cbn'))scheduleLineTint();if((kind==='free'||kind==='cbn')&&!linesDefault(S.lines))scheduleLines();if(kind==='cbn')linesDoneGlow();if(kind==='free'||kind==='pulse')S.envDirty=true;if(kind==='pp')S.ppV=(S.ppV||0)+1;if(kind==='pulse'){const sl=$('#saveLoop');if(sl)sl.hidden=!(S.pulseUsed&&mode==='free');}pend[S.n]=pend[S.n]||{};pend[S.n][kind]=1;clearTimeout(saveT);saveT=setTimeout(saveNow,1500);}
 function saveNow(){clearTimeout(saveT);
   for(const k of Object.keys(pend)){const st=cache[k];if(!st){delete pend[k];continue;}const p=pend[k];
     if(p.cbn){const ids=[];for(let r=1;r<st.N;r++)if(st.cbn.filled[r])ids.push(r);ids.length?LS.set('cbn.'+k,ids.join(',')):LS.del('cbn.'+k);}
@@ -2808,6 +2951,8 @@ clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   ents:()=>Object.fromEntries(Object.entries(ENT).map(([k,e])=>[k,e.unlocked()])),
   cutscene:(a,b)=>playCutscene(a,b), cutState:()=>cutRun&&{t:cutRun.t,phase:$('#cutscene').dataset.phase},
   pops:()=>S.pops,
+  deepInfo:()=>({fms:DP.fms,frames:DP.frames,pops:(S.pops||[]).filter(p=>p.deep).map(p=>{const c=dpCache.get(p);return {r:p.r,n:p.deep.n,carved:p.deep.carved,layers:c&&c.layers?c.layers.length:0,ms:c&&c.ms||0};}),canvas:!!(S.dpC&&S.dpC.isConnected)}),
+  deepSetAll:(o)=>{for(const p of S.pops||[])if(p.deep){Object.assign(p.deep,JSON.parse(JSON.stringify(o)));}deepRender(S,true);dirty('pop');},
   d3:()=>({on:D3.on,want:D3.want,band:D3.band,relief:!!(S&&S.relief)}), depth:()=>depthOf(S), tilt:(x,y)=>{tilt={x,y};D3.lastMove=performance.now();popParallax();},
   canvasToClient:(x,y)=>{const r=zoomer.getBoundingClientRect();return [r.left+x*r.width/W,r.top+y*r.height/H];},
   leakCheck:()=>{ // every filled CBN pixel must belong to a filled region

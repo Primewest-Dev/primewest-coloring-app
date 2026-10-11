@@ -1080,3 +1080,19 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 .buildno{margin:10px 0 4px;text-align:center;font:600 11px Poppins;color:var(--mute);letter-spacing:.06em}
 .adjfx{display:flex;flex-direction:column;gap:6px;margin-top:6px}.adjfx>span{font:600 12px Poppins;color:var(--mute)}
 .adjfxb{display:flex;flex-wrap:wrap;gap:6px}.adjfxb .chip{height:28px;padding:0 10px;font-size:11px}.adjfxb .chip.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b}
+
+/* v26 Deep Pop */
+.dpbtn.deepon{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b}
+.dpbtn,.dpset{height:30px;padding:0 10px;font-size:12px;margin-left:6px;flex:none}
+.dpsw{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}.dpsw #dpOn.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b}
+.dpname{display:block;font:500 11px Poppins;color:var(--mute);margin-bottom:4px}
+.dpr{display:flex;flex-direction:column;gap:2px;min-width:0}.dpr .adjr .rstb{flex:none}
+.dpa{display:flex;align-items:center;gap:6px;padding-left:86px}.dpa .chip{height:24px;padding:0 8px;font-size:10.5px}.dpa .chip.on{background:linear-gradient(180deg,#f0a24a,#b8641f);color:#1d130b}
+.dpa select{height:24px;font:500 11px Poppins;background:#2b2119;color:#ffd9a6;border:1px solid rgba(255,179,92,.35);border-radius:8px}.dpa input{flex:1 1 auto;min-width:40px;accent-color:#ffb35c}
+.dpopts{grid-column:1/-1;gap:6px}.dplab{font:600 11px Poppins;letter-spacing:.06em;text-transform:uppercase;color:#ffd9a6}
+.deep-pop{pointer-events:none}
+@media (max-width:600px){#colors>.deep .dprows{display:flex;flex-direction:column;gap:8px}.dpa{padding-left:0}.dpa .chip,.dpa select{height:36px}#app[data-ph=tools] #colors:has(#deep:not([hidden]))>.bx{display:none}}
+#colors>.deep .dprows{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));align-content:start;gap:6px 18px}
+.dpr .adjr{height:26px}.dpr .adjr .rstb{padding:0 6px;height:24px}.dpr .adjr .rstb span{display:none}.dpr .adjr em{flex:0 0 40px}
+.deep .dpsw .chip{height:28px;padding:0 10px;font-size:12px}.deep .dpsw .popsw i{padding:0 6px}
+@media (max-width:600px){.dpr .adjr{height:40px}}
