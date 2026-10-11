@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=38;
+const EP_BUILD=39;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -808,7 +808,7 @@ function haloDraw(c,src,hex){c.save();c.shadowColor=hex;c.shadowBlur=34;c.global
 /* pulse inks live on their own layer, which breathes (CSS animation) in the app and is flattened into saved PNGs */
 function pulseLayer(){if(!S.pulse){const c=mk();c.className='pulse-layer';S.pulse={c,ctx:c.getContext('2d',{willReadFrequently:true})};
     c.style.setProperty('--pc','#ffb35c');under3D(c);}return S.pulse;}
-function fillFree(x,y){try{if(S)S.dpLastR=labAt(x,y);}catch(e){}
+function fillFree(x,y){try{if(S){S.dpLastR=labAt(x,y);const r=S.dpLastR,b=r*4;if(r&&!(S.pops||[]).some(p=>p.anim))popsRecolor(S.bb[b],S.bb[b+1],S.bb[b+2]-S.bb[b]+1,S.bb[b+3]-S.bb[b+1]+1);}}catch(e){}
   const r=S.lab[(y|0)*W+(x|0)]; if(!r)return; if(!allowPremiumUse(3))return; snap();
   const b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;
   showTry(r); const pulse=ink.kind==='pulse', halo=ink.kind==='glow', tc=pulse?pulseLayer().ctx:S.free.ctx;
@@ -1004,7 +1004,7 @@ function flush(){
   sctx.save();sctx.beginPath();sctx.rect(x,y,w,h);sctx.clip();sctx.clearRect(x,y,w,h);sctx.drawImage(covC,x,y,w,h,x,y,w,h);
   sctx.globalCompositeOperation='source-in';if(stroke.ramp)sctx.drawImage(rampC,x,y,w,h,x,y,w,h);else if(stroke.fur)sctx.drawImage(furC,x,y,w,h,x,y,w,h);else{sctx.fillStyle=grainPat;sctx.fillRect(x,y,w,h);}sctx.restore();
 }
-function commitPaint(){snapFill();
+function commitPaint(){snapFill();try{const b=stroke&&stroke.bbx;if(b&&!stroke.er)popsRecolor(b[0]-2,b[1]-2,b[2]-b[0]+4,b[3]-b[1]+4);}catch(e){}
   let src=strokeC;if(!stroke.er&&stroke.st!=='water'){const b=stroke.bbx||[0,0,W,H],bx=b[0]-2,by=b[1]-2,bw=b[2]-b[0]+4,bh=b[3]-b[1]+4;
     if(!stroke.neon&&(fxOverlap(bx,by,bw,bh)||under3DAt(bx,by,bw,bh)))src=solidStroke(strokeC,bx,by,bw,bh);   /* v24: over 3D work / effects the colour lays on top solidly */
     if(src!==strokeC&&stroke.region){const sx=src.getContext('2d');sx.save();sx.globalCompositeOperation='destination-in';sx.drawImage(maskC,0,0);sx.restore();}   /* b30: Line Lock also clips the solid pass, so nothing spills past the line */
@@ -1218,6 +1218,34 @@ function chamfer(d,w,h){for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;i
     if(x>0)v=Math.min(v,d[i-1]+1);if(y>0){v=Math.min(v,d[i-w]+1);if(x>0)v=Math.min(v,d[i-w-1]+1.414);if(x<w-1)v=Math.min(v,d[i-w+1]+1.414);}d[i]=v;}
   for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){const i=y*w+x;if(!d[i])continue;let v=d[i];
     if(x<w-1)v=Math.min(v,d[i+1]+1);if(y<h-1){v=Math.min(v,d[i+w]+1);if(x<w-1)v=Math.min(v,d[i+w+1]+1.414);if(x>0)v=Math.min(v,d[i+w-1]+1.414);}d[i]=v;}}
+/* ---------- b39 colour-aware shading. Shadows are the same colour made darker and a touch cooler/richer (yellows go ochre,
+   never olive), contact shadows are warm-dark, lit sides get a warm light tint of the same hue, plus a tiny specular.
+   Worked out in OKLab once per distinct colour (cached), so per-pixel cost is just a blend. ---------- */
+const OKLIN=new Float32Array(256);for(let i=0;i<256;i++){const c=i/255;OKLIN[i]=c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4);}
+const okS=v=>{v=v<=.0031308?12.92*v:1.055*Math.pow(Math.max(0,v),1/2.4)-.055;return v<=0?0:v>=1?255:Math.round(v*255);};
+function toOk(r,g,b){const R=OKLIN[r],G=OKLIN[g],B=OKLIN[b];const l=Math.cbrt(.4122214708*R+.5363325363*G+.0514459929*B),m=Math.cbrt(.2119034982*R+.6806995451*G+.1073969566*B),q=Math.cbrt(.0883024619*R+.2817188376*G+.6299787005*B);
+  return [.2104542553*l+.7936177850*m-.0040720468*q,1.9779984951*l-2.4285922050*m+.4505937099*q,.0259040371*l+.7827717662*m-.8086757660*q];}
+function fromOk(L,a,b){let l=L+.3963377774*a+.2158037573*b,m=L-.1055613458*a-.0638541728*b,q=L-.0894841775*a-1.2914855480*b;l=l*l*l;m=m*m*m;q=q*q*q;
+  return [okS(4.0767416621*l-3.3077115913*m+.2309699292*q),okS(-1.2684380046*l+2.6097574011*m-.3413193965*q),okS(-.0041960863*l-.7034186147*m+1.7076147010*q)];}
+function okLch(L,C,hDeg){const h=hDeg*Math.PI/180;return fromOk(L,C*Math.cos(h),C*Math.sin(h));}
+const hueToward=(h,tg,maxD)=>{let d=((tg-h+540)%360)-180;return h+Math.max(-maxD,Math.min(maxD,d));};
+const OKE=new Map();
+function okEnds(r,g,b){const key=(r>>2)<<12|(g>>2)<<6|(b>>2);let e=OKE.get(key);if(e)return e;
+  const [L,A,B]=toOk(r,g,b),C=Math.hypot(A,B),h=(Math.atan2(B,A)*180/Math.PI+360)%360,neut=C<.025;
+  const yel=h>70&&h<135;   // yellows/limes shade toward ochre instead of muddy olive
+  const s1=okLch(L*.5,neut?.018:Math.min(.3,C*1.18+.01),neut?262:hueToward(h,yel?55:262,yel?22:16));      // cool, same-hue shadow
+  const s2=okLch(L*.38,neut?.02:Math.min(.26,C*1.08+.01),neut?48:hueToward(h,42,24));                     // warm contact / deep rim
+  const lt=okLch(L+(1-L)*.62,neut?.012:C*.72,neut?85:hueToward(h,85,14));                                  // warm light tint
+  const sp=okLch(Math.min(.99,L+(1-L)*.93),neut?.008:Math.min(.03,C*.2),85);                                // tiny specular
+  e={s1,s2,lt,sp};OKE.set(key,e);if(OKE.size>6000)OKE.clear();return e;}
+const PAPER=[251,248,240];
+/* the colour under a box (CBN layer in Color by Number, the free layer otherwise); uncoloured = paper */
+function baseRGBA(st,x0,y0,w,h){try{if(mode==='cbn'&&st.cbn&&st.cbn.ctx)return st.cbn.ctx.getImageData(x0,y0,w,h).data;return st.free.ctx.getImageData(x0,y0,w,h).data;}catch(e){return new Uint8ClampedArray(w*h*4);}}
+const baseAt=(B,j,o)=>{const a=B[j+3];if(a>=250){o[0]=B[j];o[1]=B[j+1];o[2]=B[j+2];return o;}const k=a/255;o[0]=B[j]*k+PAPER[0]*(1-k);o[1]=B[j+1]*k+PAPER[1]*(1-k);o[2]=B[j+2]*k+PAPER[2]*(1-k);o[0]|=0;o[1]|=0;o[2]|=0;return o;};
+/* colours changed under a popped area -> re-shade those pops (debounced) */
+let popRecolT=0;function popsRecolor(bx,by,bw,bh){if(!S||!(S.pops||[]).length&&!(S.pp&&S.pp.any))return;clearTimeout(popRecolT);const R=[bx,by,bx+bw,by+bh];
+  popRecolT=setTimeout(()=>{if(!S)return;let any=false,deep=false;for(const p of S.pops||[])for(const r of (p.rs||[p.r])){const b=r*4;if(S.bb[b+2]<R[0]||S.bb[b]>R[2]||S.bb[b+3]<R[1]||S.bb[b+1]>R[3])continue;if(p.deep){const c=dpCache.get(p);if(c){c.col=null;c.key=null;}deep=true;}else any=true;}
+    if(any)renderPops();if(deep)deepRender(S,true);if(S.pp&&S.pp.any)ppRender(S,[Math.max(0,R[0]),Math.max(0,R[1]),Math.min(W-1,R[2]),Math.min(H-1,R[3])]);if(any||deep)dirty('pop');},160);}
 function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and light ctx `li` (both W×H)
   const rs0=pop.rs||[pop.r],inG=new Set(rs0),A=adjacency(st),rs=rs0.slice();
   const one=rs0.length===1;   // v13: a single line-enclosed area keeps its holes, so enclosed shapes (clouds, lightning, stars) get a clean frame
@@ -1237,17 +1265,24 @@ function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and ligh
     if(x<w-1)v=Math.min(v,d[i+1]+1);if(y<h-1){v=Math.min(v,d[i+w]+1);if(x<w-1)v=Math.min(v,d[i+w+1]+1.414);if(x>0)v=Math.min(v,d[i+w-1]+1.414);}d[i]=v;}
   const hg=new Float32Array(w*h);for(let i=0;i<w*h;i++){const t=Math.min(1,d[i]/D);hg[i]=t*t*(3-2*t);}
   const im=new ImageData(w,h),P=im.data,sg=pop.pressed?-1:1,bw=bx1-bx0+1,bh=by1-by0+1,bgp=one&&isBackdrop(st,rs0[0]);
+  /* b39: stacked contour colour layers (deep shadow at the outer contour -> true colour -> light tint on top), adaptive band count,
+     each band shaded from the colour underneath; directional light adds a cool same-hue shadow side, a warm tint and a tiny specular. */
+  const BA=baseRGBA(st,x0,y0,w,h),NB=D<7?2:D<14?3:D<24?4:5,o3=[0,0,0];
   for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(!m[i])continue;
     const gx=(hg[i+1]-hg[i-1])*.5,gy=(hg[i+w]-hg[i-w])*.5,dot=sg*(gx+gy)*.7071*D*.9;   // light from the top-left
-    const j=i*4,u=((x+x0-bx0)/bw+(y+y0-by0)/bh)/2,amb=sg*(.5-u)*.16;       // soft top-left sheen across the face
-    const v=dot+amb-(pop.pressed&&!bgp?.28*hg[i]:0);   // inset: darker toward the middle (the pressed background keeps the older even look)
-    if(v>0){P[j]=255;P[j+1]=250;P[j+2]=240;P[j+3]=Math.min(28,v*60);}   /* v16: lit side shows the real color (faint sheen only), shadow side stays dark */else{P[j]=16;P[j+1]=10;P[j+2]=5;P[j+3]=Math.min(165,-v*230);}}
+    const j=i*4,u=((x+x0-bx0)/bw+(y+y0-by0)/bh)/2,amb=sg*(.5-u)*.12;
+    const q=hg[i]*NB,fq=Math.min(NB-1,Math.floor(q)),fr=q-fq,st2=fq+(fr>.82?ease((fr-.82)/.18):0),tc=Math.min(1,st2/(NB-1||1));   // terraced contour level
+    let rim,top;if(pop.pressed){rim=bgp?0:-.34*tc;top=bgp?0:.1*(1-tc)*(1-tc);}else{rim=-.5*Math.pow(1-tc,1.6);top=.2*tc*tc;}
+    const dirv=dot+amb,v=rim+top+dirv*.9,E=okEnds(...baseAt(BA,j,o3));
+    if(v<0){const w2=Math.min(1,Math.max(0,-rim/(-v+1e-3)));const c0=E.s1,c1=E.s2;P[j]=c0[0]+(c1[0]-c0[0])*w2;P[j+1]=c0[1]+(c1[1]-c0[1])*w2;P[j+2]=c0[2]+(c1[2]-c0[2])*w2;P[j+3]=Math.min(205,-v*300);}
+    else{const spc=!pop.pressed&&dot>.38&&tc>.6?Math.min(1,(dot-.38)*3):0;if(spc>.05){P[j]=E.sp[0];P[j+1]=E.sp[1];P[j+2]=E.sp[2];P[j+3]=Math.min(110,40+spc*80);}
+      else{P[j]=E.lt[0];P[j+1]=E.lt[1];P[j+2]=E.lt[2];P[j+3]=Math.min(150,v*260);}}}
   const t=document.createElement('canvas');t.width=w;t.height=h;t.getContext('2d').putImageData(im,0,0);li.drawImage(t,x0,y0);
   if(!pop.pressed){ // soft drop shadow outside the region only
     const mk2=document.createElement('canvas');mk2.width=w;mk2.height=h;const mx=mk2.getContext('2d'),mi=mx.createImageData(w,h);
     for(let i=0;i<w*h;i++)if(m[i])mi.data[i*4+3]=255;mx.putImageData(mi,0,0);
     const s2=document.createElement('canvas');s2.width=w;s2.height=h;const sx=s2.getContext('2d');
-    sx.shadowColor=`rgba(40,24,10,${.28+pop.depth*.003})`;sx.shadowBlur=D*1.1;sx.shadowOffsetX=D*.35+5000;sx.shadowOffsetY=D*.55;sx.drawImage(mk2,-5000,0);
+    sx.shadowColor=`rgba(38,26,30,${.26+pop.depth*.003})`;sx.shadowBlur=D*1.1;sx.shadowOffsetX=D*.35+5000;sx.shadowOffsetY=D*.55;sx.drawImage(mk2,-5000,0);
     sx.globalCompositeOperation='destination-out';sx.drawImage(mk2,0,0);sh.drawImage(s2,x0,y0);}}
 function popCanvases(st){if(!st.popSh){st.popSh=mk();st.popLi=mk();st.popSh.className='pop-sh';st.popLi.className='pop-li';}return st;}
 function renderPops(st=S){if(!st)return;popCanvases(st);const sh=st.popSh.getContext('2d'),li=st.popLi.getContext('2d');sh.clearRect(0,0,W,H);li.clearRect(0,0,W,H);
@@ -1297,7 +1332,7 @@ function dpHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(
 /* build (or reuse) the cached layer stack of one area */
 function dpBuild(st,p,t){const f=dpField(st,p);if(!f||f.maxD<2)return null;const c=dpCache.get(p),D=p.deep;
   const N=dpVal(p,'n',t),dep=dpVal(p,'d',t),l1=dpVal(p,'l1',t),l2=dpVal(p,'l2',t),bl=dpVal(p,'bl',t),hs=dpVal(p,'hs',t),cyc=D.cyc&&!RM.matches?Math.floor(t*1.2+(D.ph||0))/12:0;
-  if(!c.col)c.col=dpBaseColor(st,p,f);
+  if(!c.col)c.col=dpBaseColor(st,p,f);   /* b39: popsRecolor clears this when the colour underneath changes */
   const key=[N,dep,l1,l2,bl,hs,D.carved,D.pal,cyc.toFixed(3),c.col.map(Math.round).join()].join('|');if(c.layers&&c.key===key)return c;
   const t0=performance.now(),[bh,bs,bL]=dpHsl(...c.col),pk=D.pal||(D.cyc?picKeys(st.n)[0]:null),pal=pk&&DPAL[pk];
   const minIn=Math.max(1.5,f.maxD*.04),ratio=Math.pow(minIn/f.maxD,1/(N-1)),layers=[],amp=.06+.16*dep/100;
@@ -1312,13 +1347,17 @@ function dpBuild(st,p,t){const f=dpField(st,p);if(!f||f.maxD<2)return null;const
     let hue=bh,sat=bs,lit=bL;const ramp=(i/(N-1)-.5)*2;
     if(pal){[hue,sat]=dpHS(pal,(pal.pic?i*1.5/N:i*pal.h.length/N)+cyc*pal.h.length);lit=pal.pic?(bL>.85&&bs<.3?pal.L:bL):.62;}
     hue=(hue+hs)%360;lit=Math.max(.06,Math.min(.95,lit+(D.carved?-1:1)*ramp*amp));
-    const fill=`hsl(${hue.toFixed(1)},${(sat*100).toFixed(1)}%,${(lit*100).toFixed(1)}%)`;
+    let fill=`hsl(${hue.toFixed(1)},${(sat*100).toFixed(1)}%,${(lit*100).toFixed(1)}%)`;
+    /* b39: without a palette the stack runs deep shadow -> true colour -> light tint of the area's own colour (OKLab), instead of plain lighter/darker */
+    const E9=okEnds(...c.col.map(v=>Math.max(0,Math.min(255,Math.round(v))))),tn=(D.carved?-1:1)*ramp*Math.min(1,amp*3.2),mixc=(a,b,k)=>a.map((v,q)=>Math.round(v+(b[q]-v)*k)),cb=c.col.map(Math.round);
+    let rgbL=cb;if(!pal&&!hs){rgbL=tn<0?mixc(cb,E9.s1,Math.min(.85,-tn)):mixc(cb,E9.lt,Math.min(.75,tn*.9));fill=`rgb(${rgbL.join(',')})`;}
+    const T9=okEnds(...rgbL),rs=a=>a.join(',');
     sx.globalCompositeOperation='source-in';sx.fillStyle=fill;sx.fillRect(0,0,lw,lh);
     const lc=document.createElement('canvas');lc.width=cw;lc.height=ch;const x=lc.getContext('2d');
     const sh1=(col,blur,ox,oy)=>{x.save();x.shadowColor=col;x.shadowBlur=blur;x.shadowOffsetX=ox;x.shadowOffsetY=oy;x.drawImage(sh,P,P);x.restore();};
-    sh1(`rgba(24,16,10,${Math.min(.9,l1*2.8).toFixed(3)})`,sd*2*boost,off*boost,off*boost);       // L1 dark, +x/+y
-    sh1(`rgba(255,255,255,${Math.min(.95,.35+l1*2.6).toFixed(3)})`,sd*2*boost,-off*boost,-off*boost);   // white, -x/-y
-    sh1(`rgba(24,16,10,${Math.min(.92,l2*1.7).toFixed(3)})`,sd*1.4,off*.5,off*.5);                  // L2 tighter dark
+    sh1(`rgba(${rs(T9.s1)},${Math.min(.9,l1*3).toFixed(3)})`,sd*2*boost,off*boost,off*boost);       // L1: cool same-hue shadow, +x/+y
+    sh1(`rgba(${rs(T9.lt)},${Math.min(.95,.4+l1*2.6).toFixed(3)})`,sd*2*boost,-off*boost,-off*boost);   // warm light tint, -x/-y
+    sh1(`rgba(${rs(T9.s2)},${Math.min(.92,l2*1.9).toFixed(3)})`,sd*1.4,off*.5,off*.5);                  // L2: warm-dark contact shadow (dual tint)
     sh1(`hsla(${hue.toFixed(1)},${(sat*100).toFixed(1)}%,${(Math.max(.05,lit-.18)*100).toFixed(1)}%,.38)`,1,0,0);   // thin outline
     x.drawImage(sh,P,P);
     layers.push({c:lc,x:f.x0+x0-P,y:f.y0+y0-P,df,i});}
@@ -2415,20 +2454,23 @@ function ppRender(st,rect){const P=st.pp;if(!P)return;const t0=performance.now()
     const dd=E.d[(ry0+y-E.by)*E.bw+(rx0+x-E.bx)]||0,t=Math.min(1,dd/E.rim),u=1-t,av=Math.abs(v),e=av>=.3?1:(av/.3)*(av/.3)*(3-2*av/.3);Hh[i]=v*e*(1-u*u*u);}   /* e: the brush edge becomes a crisp shoulder instead of a soft blur */
   /* lighting: top-left key light, crisp rim (height drops to 0 across the line), small specular on raised tops, carved areas get occlusion */
   const lw=X1-X0+1,lh=Y1-Y0+1,im=lx.createImageData(lw,lh),D=im.data,HS=18,lxv=-.48,lyv=-.56,lzv=.675,hxv=lxv*.5,hyv=lyv*.5,hzv=(lzv+1)*.5,hn0=Math.hypot(hxv,hyv,hzv);
+  const BA=baseRGBA(st,rx0,ry0,rw,rh),o3=[0,0,0];
   for(let y=Y0;y<=Y1;y++)for(let x=X0;x<=X1;x++){const ly=y-ry0,lxx=x-rx0,i=ly*rw+lxx,l=L[i];if(!l)continue;const c=Hh[i];
     const g=(k,ok)=>ok&&L[k]===l?Hh[k]:0,a=g(i-1,lxx>0),bb=g(i+1,lxx<rw-1),u=g(i-rw,ly>0),dn=g(i+rw,ly<rh-1);if(!c&&!a&&!bb&&!u&&!dn)continue;
     const gx=(bb-a)*.5*HS,gy=(dn-u)*.5*HS,nl=Math.hypot(gx,gy,1),nx=-gx/nl,ny=-gy/nl,nz=1/nl,lam=nx*lxv+ny*lyv+nz*lzv-lzv,j=((y-Y0)*lw+(x-X0))*4;
     let sp=c>0?Math.pow(Math.max(0,(nx*hxv+ny*hyv+nz*hzv)/hn0),60)*(1-nz):0;
     const occ=c<0?-c*.1:0;
-    if(lam>0.004||sp>.01){const al=Math.min(.55,lam*1.25)+Math.min(.4,sp*3);D[j]=255;D[j+1]=249;D[j+2]=236;D[j+3]=Math.min(150,al*255);}
-    else if(lam<-0.004||occ){const al=Math.min(.66,-Math.min(0,lam)*1.7+occ);D[j]=22;D[j+1]=13;D[j+2]=6;D[j+3]=al*255;}}
+    if(!(lam>0.004||sp>.01||lam<-0.004||occ))continue;const E=okEnds(...baseAt(BA,i*4,o3));
+    if(sp>.06){const al=Math.min(.45,lam*1.2)+Math.min(.4,sp*3);D[j]=E.sp[0];D[j+1]=E.sp[1];D[j+2]=E.sp[2];D[j+3]=Math.min(150,al*255);}
+    else if(lam>0.004){const al=Math.min(.6,lam*1.4);D[j]=E.lt[0];D[j+1]=E.lt[1];D[j+2]=E.lt[2];D[j+3]=Math.min(155,al*255);}
+    else{const sv=-Math.min(0,lam)*1.9,al=Math.min(.8,sv+occ*1.6),w2=al>0?Math.min(1,occ*1.6/al):0,a1=E.s1,a2=E.s2;D[j]=a1[0]+(a2[0]-a1[0])*w2;D[j+1]=a1[1]+(a2[1]-a1[1])*w2;D[j+2]=a1[2]+(a2[2]-a1[2])*w2;D[j+3]=al*255;}}
   lx.putImageData(im,X0,Y0);
   /* crisp contact shadow from raised areas onto lower popped areas (never onto lines or untouched neighbours) */
   const mc=document.createElement('canvas');mc.width=rw;mc.height=rh;const mx=mc.getContext('2d'),m=mx.createImageData(rw,rh),M=m.data;let anyUp=false;
   for(let i=0;i<N;i++)if(Hh[i]>.03){M[i*4+3]=Math.min(255,Hh[i]*500);anyUp=true;}
   sx.clearRect(X0,Y0,lw,lh);
   if(anyUp){mx.putImageData(m,0,0);const tc=document.createElement('canvas');tc.width=rw;tc.height=rh;const tx=tc.getContext('2d');
-    tx.save();tx.shadowColor='rgba(34,20,8,.38)';tx.shadowBlur=2.5;tx.shadowOffsetX=3+rw*2;tx.shadowOffsetY=5;tx.drawImage(mc,-rw*2,0);tx.restore();
+    tx.save();tx.shadowColor='rgba(36,24,30,.36)';tx.shadowBlur=2.5;tx.shadowOffsetX=3+rw*2;tx.shadowOffsetY=5;tx.drawImage(mc,-rw*2,0);tx.restore();
     tx.globalCompositeOperation='destination-out';tx.drawImage(mc,0,0);
     const pm=tx.createImageData(rw,rh),PM=pm.data;for(let i=0;i<N;i++)if(L[i]&&(h[i]||Hh[i]))PM[i*4+3]=255;
     /* only on areas that are themselves popped */
