@@ -1218,3 +1218,30 @@ svg.lock{position:absolute;left:50%;top:50%;width:22px;height:22px;transform:tra
 /* b36 perf: pause decorative animations while drawing */
 #app.busy *,#app.busy *::before,#app.busy *::after{animation-play-state:paused!important}
 #lineTint{display:none}
+
+/* b37 Mix v2: effect layer list */
+.mixer .mxlist{display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:40vh;padding-right:4px}
+.mxl{display:grid;grid-template-columns:26px 110px 44px 1fr 1fr;align-items:center;gap:8px;padding:4px 8px;border-radius:10px;border:1px solid rgba(255,233,204,.1);background:rgba(255,255,255,.03)}
+.mxl.on{border-color:rgba(255,179,92,.45);background:rgba(255,179,92,.08)}.mxl.lk{opacity:.75}
+.mxl>b{font:600 12px Poppins;color:#ffe9cc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mxl>b svg{width:11px;height:11px}
+.mxl .mxi{width:24px;height:24px;fill:#ffd9a6;stroke:#ffd9a6;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.55}.mxl.on .mxi{opacity:1;fill:#ffb35c;stroke:#ffb35c}
+.mxl .mxi g,.mxl .mxi path,.mxl .mxi circle{transform-box:fill-box;transform-origin:center}
+.mxl.on .ia-pulse{animation:iaPulse 1.6s ease-in-out infinite}.mxl.on .ia-glow{animation:iaGlow 2s ease-in-out infinite}.mxl.on .ia-sheen{animation:iaSheen 1.8s linear infinite}.mxl.on .ia-flash{animation:iaFlash 2.4s steps(1) infinite}
+.mxl.on .ia-tw{animation:iaTw 1.4s ease-in-out infinite}.mxl.on .ia-drift{animation:iaDrift 3s ease-in-out infinite alternate}.mxl.on .ia-fall{animation:iaFall 1.6s ease-in infinite}.mxl.on .ia-flick{animation:iaFlick .7s ease-in-out infinite alternate}
+.mxl.on .ia-spin{animation:iaSpin 6s linear infinite}.mxl.on .ia-rise{animation:iaRise 2.2s ease-in infinite}.mxl.on .ia-sway{animation:iaSway 2.4s ease-in-out infinite alternate}
+@keyframes iaPulse{50%{transform:scale(.6)}}@keyframes iaGlow{50%{opacity:.2;transform:scale(1.15)}}@keyframes iaSheen{from{transform:translate(-6px,6px)}to{transform:translate(6px,-6px)}}@keyframes iaFlash{0%,100%{opacity:.35}8%,14%{opacity:1}}
+@keyframes iaTw{50%{transform:scale(.55) rotate(25deg);opacity:.5}}@keyframes iaDrift{to{transform:translateX(3px) translateY(-2px)}}@keyframes iaFall{from{transform:translateY(-3px);opacity:.4}to{transform:translateY(3px);opacity:1}}
+@keyframes iaFlick{to{transform:scaleY(.86) translateY(1px)}}@keyframes iaSpin{to{transform:rotate(360deg)}}@keyframes iaRise{from{transform:translateY(4px);opacity:.3}to{transform:translateY(-4px);opacity:1}}@keyframes iaSway{to{transform:rotate(-12deg)}}
+.mxtog{width:40px;height:22px;border-radius:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,233,204,.25);position:relative;padding:0}
+.mxtog i{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#cdb89e;transition:left .15s}
+.mxtog[aria-checked=true]{background:#ffb35c;border-color:transparent}.mxtog[aria-checked=true] i{left:20px;background:#2a1608}
+.mxl label{display:flex;align-items:center;gap:6px;min-width:0}.mxl label span{font:600 10px Poppins;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;flex:none}
+.mxl label input{flex:1 1 auto;min-width:50px;accent-color:#ffb35c}.mxl label em{font:600 11px Poppins;color:#ffd9a6;font-style:normal;width:52px;text-align:right;flex:none}
+.mixer .mxpre .mxo{font-size:11px;height:28px}
+@media (max-width:760px){.mxl{grid-template-columns:24px 1fr 44px;grid-template-areas:"i n t" "a a a" "s s s"}.mxl .mxi{grid-area:i}.mxl>b{grid-area:n}.mxl .mxtog{grid-area:t}.mxl .mxl-a{grid-area:a}.mxl .mxl-s{grid-area:s}.mixer .mxlist{max-height:none}}
+.mixer .mxrows{overflow-y:auto;justify-content:flex-start;max-height:min(62vh,560px)}
+.mixer .mxpre,.mixer .mxfin{flex:none;min-height:34px}
+.mixer .mxlist{max-height:none;overflow:visible}
+@media (max-width:760px){.mixer .mxrows{order:1;max-height:52vh}.mixer .mxpre,.mixer .mxfin{flex-wrap:nowrap!important;overflow-x:auto}.mixer .mxpre>b,.mixer .mxfin>b{flex:none!important}.mixer .mxpre .mxo,.mixer .mxfin .mxo{flex:none;height:36px}}
+@media (max-width:600px){#colors>#mixer:not([hidden]){display:flex;flex-direction:column}#colors>#mixer .mxside{order:0;position:static}#colors>#mixer .mxrows{order:1;flex:1 1 auto;overflow-y:auto;max-height:none}
+  #colors>#mixer .mxpre,#colors>#mixer .mxfin{flex-wrap:nowrap;overflow-x:auto}#colors>#mixer .mxpre>b,#colors>#mixer .mxfin>b{flex:none}}
