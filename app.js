@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=50;let EP_place=null;
+const EP_BUILD=51;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1237,7 +1237,8 @@ function flatOn(){if(FLAT||!S||!layers)return;try{const vol=tool==='eraser'?(mod
   flush();if(!runs.length)return;FLAT=[];
   for(const run of runs){const f=FLATPOOL.pop()||mk();f.className='flat-layer';f.style.pointerEvents='none';const x=f.getContext('2d');x.clearRect(0,0,W,H);for(const q of run){x.globalAlpha=q.o;x.drawImage(q.c,q.tx,q.ty);}x.globalAlpha=1;layers.insertBefore(f,run[0].c);for(const q of run)q.c.style.visibility='hidden';FLAT.push({f,run});}}catch(e){flatOff();}}
 function flatOff(){if(!FLAT)return;const F=FLAT;FLAT=null;for(const {f,run} of F){for(const q of run)q.c.style.visibility='';f.remove();if(FLATPOOL.length<2)FLATPOOL.push(f);}}
-let FLATP=null,busyRaf=0;stage.addEventListener('pointerdown',e=>{if(!busyRaf)busyRaf=requestAnimationFrame(()=>{busyRaf=0;if(perfBusy())app.classList.add('busy');});   /* b41: class flip in the next frame, so pointerdown never forces a whole-app style recalc */FLATP=e.isPrimary!==false&&!(handOn&&handOn())?[e.clientX,e.clientY]:null;},true);   /* b41: merge on the first real move (a tap never pays for it) */
+let FLATP=null,busyRaf=0,busyT=0;const busyWatch=()=>{clearTimeout(busyT);busyT=setTimeout(function chk(){if(perfBusy())busyT=setTimeout(chk,150);else app.classList.remove('busy');},270);};   /* b51: a quick tap could lift before the next frame added 'busy', which then stayed on and froze every CSS animation (Try row / coach stuck invisible) */
+stage.addEventListener('pointerdown',e=>{if(!busyRaf)busyRaf=requestAnimationFrame(()=>{busyRaf=0;if(perfBusy()){app.classList.add('busy');busyWatch();}});   /* b41: class flip in the next frame, so pointerdown never forces a whole-app style recalc */FLATP=e.isPrimary!==false&&!(handOn&&handOn())?[e.clientX,e.clientY]:null;},true);   /* b41: merge on the first real move (a tap never pays for it) */
 stage.addEventListener('pointermove',e=>{if(FLATP&&Math.hypot(e.clientX-FLATP[0],e.clientY-FLATP[1])>3){FLATP=null;if(perfBusy())flatOn();}},true);for(const ev of ['pointerup','pointercancel'])window.addEventListener(ev,()=>{PERF_UP=performance.now();if(app.classList.contains('busy'))setTimeout(()=>{if(!perfBusy())app.classList.remove('busy');},270);FLATP=null;flatOff();},true);window.addEventListener('blur',flatOff);stage.addEventListener('pointercancel',up);
 stage.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -2713,8 +2714,9 @@ function suggestFor(r){const out=[],add=h=>{h=h.toLowerCase();if(!out.includes(h
   add(hsl2hex(h,s*1.05,l-.16));add(hsl2hex(h,s*.8,l+.16));return out.slice(0,5);}
 /* v24 (desktop): the color suggestions sit in a column OUTSIDE the picture, on its left (right side only if the left has no room),
    so they never cover the drawing. Phone keeps its strip above the tab bar. */
+function phoneSlotBottom(){const t=[...document.querySelectorAll('.zoomui,.grabui')].filter(e=>e.getClientRects().length&&getComputedStyle(e).visibility!=='hidden').map(e=>e.getBoundingClientRect()).filter(q=>q.height>0&&q.top>innerHeight*.4).map(q=>q.top);return t.length?Math.round(innerHeight-Math.min(...t)+8):0;}
 function placeTry(){const el=$('#tryrow');if(!el||el.hidden)return;const phone=matchMedia('(max-width:600px)').matches;
-  if(phone){if(el.parentNode!==stage)stage.appendChild(el);el.classList.remove('col','slim');el.style.cssText='';return;}
+  if(phone){if(el.parentNode!==stage)stage.appendChild(el);el.classList.remove('col','slim');el.style.cssText='';const b=phoneSlotBottom();if(b)el.style.bottom=b+'px';return;}   /* b51: above the zoom / grab buttons, never on top of them */
   if(el.parentNode!==document.body)document.body.appendChild(el);el.classList.add('col');el.classList.remove('slim');el.style.visibility='hidden';el.style.left='0px';el.style.top='0px';
   const r=stage.getBoundingClientRect();let w=el.offsetWidth,h=el.offsetHeight;const roomL=r.left-12,roomR=innerWidth-r.right-12;
   if(Math.max(roomL,roomR)<w){el.classList.add('slim');w=el.offsetWidth;h=el.offsetHeight;}
@@ -2725,7 +2727,7 @@ addEventListener('resize',()=>placeTry());
 function placeNudge(){const el=$('#nudge');if(!el||el.hidden)return;const phone=matchMedia('(max-width:600px)').matches;
   const home=()=>{if(el.parentNode!==stage)stage.appendChild(el);el.classList.remove('col','ph');el.style.cssText='';};
   const tx=$('#nudgeTxt');if(tx&&el.dataset.full)tx.textContent=phone&&el.dataset.short?el.dataset.short:el.dataset.full;
-  if(phone){if(el.parentNode!==document.body)document.body.appendChild(el);el.classList.remove('col');el.classList.add('ph');el.style.cssText='';return;}   /* b50: phones: a compact strip over the top bar, never over the art */
+  if(phone){if(el.parentNode!==document.body)document.body.appendChild(el);el.classList.remove('col');el.classList.add('ph');el.style.cssText='';const b=phoneSlotBottom();el.style.bottom=(b||Math.round(innerHeight*.18))+'px';const tr=$('#tryrow');if(tr)tr.hidden=true;return;}   /* b51: phones: the coach takes the Try row's slot above the zoom buttons (the Try row steps aside), so no control is ever covered */
   el.classList.remove('ph');
   const r=stage.getBoundingClientRect(),roomL=r.left-16,roomR=innerWidth-r.right-16;const side=roomL>=96?'L':roomR>=96?'R':null;if(!side)return home();
   const w=Math.round(Math.min(150,side==='L'?roomL:roomR));if(el.parentNode!==document.body)document.body.appendChild(el);el.classList.add('col');el.style.width=w+'px';
