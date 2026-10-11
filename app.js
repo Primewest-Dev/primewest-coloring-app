@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=44;let EP_place=null;
+const EP_BUILD=45;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -172,6 +172,7 @@ const RAMP_LUT={};function rampLUT(k){ccEnsure(k);if(RAMP_LUT[k])return RAMP_LUT
 const rampRgb=(k,t)=>{const L=rampLUT(k),i=Math.max(0,Math.min(255,Math.round(t*255)))*3;return [L[i],L[i+1],L[i+2]];};
 const pingpong=t=>{t-=Math.floor(t);return t<.5?t*2:2-t*2;};
 const RAMP_LEN=320;   // px of stroke per full run through the ramp
+const rampL=(bw,bh)=>Math.max(RAMP_LEN,2*(bw+bh*.6));   /* b45: a filled area runs through the gradient once (a big sky was 6+ hard stripes) */
 for(const [k,n] of [['rainbow','Rainbow'],['tropical','Tropical'],['ocean','Ocean'],['fire','Fire'],['sunset','Sunset'],['aurora','Aurora'],['cyber','Cyber'],['vaporwave','Vaporwave'],
   ['miami','Miami'],['gold','Gold ramp'],['chrome','Chrome ramp'],['copper','Copper ramp']])PREMIUM.splice(PREMIUM.length-2,0,{id:'r-'+k,kind:'ramp',ramp:k,hex:RAMPS[k][Math.floor(RAMPS[k].length/2)],name:n});
 for(const k of Object.keys(DPAL))PREMIUM.splice(PREMIUM.length-2,0,DPAL[k].pic?{id:'pc-'+k,kind:'ramp',ramp:'cc-'+k,cc:true,page:DPAL[k].pic,hex:DPAL[k].c[2],name:DPAL[k].n+' cycle'}:{id:'cc-'+k,kind:'ramp',ramp:'cc-'+k,cc:true,hex:RAMPS['cc-'+k][3],name:DPAL[k].n+' cycle'});
@@ -361,7 +362,7 @@ function setInkPattern(){adjSync();const st=strokeStyle();const ftx=ink&&ink.kin
 /* fill shading for the tap-to-fill tool (premium inks get a metallic gradient + highlight, sparkle, or a neon core) */
 function shader(bx,by,bw,bh){const rgb=hex2rgb(ink.hex),K=inkKind();
   if(TEXK.has(K)){const D=texTile(K,texVariant(K,ink.hex),rgb,true).data,fa=ink.kind==='mix'&&ink.mix&&ink.mix.amt?ink.mix.amt.finish||1:1;return (x,y)=>{x=(x/fa)|0;y=(y/fa)|0;const j=(Math.min(H-1,Math.max(0,y))*W+Math.min(W-1,Math.max(0,x)))*4;return [D[j],D[j+1],D[j+2]];};}   /* v14: textures are page-anchored, so fills and strokes line up */
-  if(K==='ramp'){const k=ink.ramp;return (x,y)=>rampRgb(k,pingpong(((x-bx)+(y-by)*.6)/RAMP_LEN));}
+  if(K==='ramp'){const k=ink.ramp,L=rampL(bw,bh);return (x,y)=>rampRgb(k,pingpong(((x-bx)+(y-by)*.6)/L));}
   if(K==='jewel'){const hx=bx+bw*.3,hy=by+bh*.25,sx=Math.max(6,bw*.12),sy=Math.max(6,bh*.1);
     const wj=bnoise(61,170,130);return (x,y)=>{const q=4*(wj(x,y)-.5),f=Math.abs(Math.sin(((x-bx)*.9+(y-by)*.45)*.045+q))*.6+Math.abs(Math.sin(((x-bx)*.3-(y-by)*.8)*.06-q))*.4;   /* v16: facets warped by non-repeating noise */
       const c=f>.92?mix(rgb,WHITE,.7):mix(rgb.map(v=>v*.55),mix(rgb,WHITE,.3),f);const hl=Math.exp(-(((x-hx)/sx)**2+((y-hy)/sy)**2));return mix(c,WHITE,hl*.7);};}
@@ -784,7 +785,7 @@ function cbnFinishKinds(){if(!ink||ink.kind==='plain'||ink.kind==='brush')return
 function cbnFinish(rs){const ks=cbnFinishKinds();if(!ks.length||!rs.length)return;
   const byHex={};for(const r of rs){const h=ink.kind==='ramp'?'r:'+ink.ramp:S.d.palette[S.num[r]-1]||ink.hex;(byHex[h]=byHex[h]||[]).push(r);}
   for(const h of Object.keys(byHex)){const m=new ImageData(W,H);
-    for(const r of byHex[h]){const b=r*4,bx=S.bb[b],by=S.bb[b+1];for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p],j=i*4;if(ink.kind==='ramp'){const X=i%W,Y=(i/W)|0;m.data[j]=Math.round(pingpong(((X-bx)+(Y-by)*.6)/RAMP_LEN)*255);}m.data[j+3]=255;}}
+    for(const r of byHex[h]){const b=r*4,bx=S.bb[b],by=S.bb[b+1],rL=rampL(S.bb[b+2]-bx+1,S.bb[b+3]-by+1);for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p],j=i*4;if(ink.kind==='ramp'){const X=i%W,Y=(i/W)|0;m.data[j]=Math.round(pingpong(((X-bx)+(Y-by)*.6)/rL)*255);}m.data[j+3]=255;}}
     const mc=mk();mc.getContext('2d').putImageData(m,0,0);
     if(ink.kind==='ramp')fxAdd(['rampfx'],ink.ramp,mc);else fxAdd(ks,h,mc);}}
 function cbnErase(r){const c=S.cbn;if(!c.filled[r])return;c.filled[r]=0;paintRegion(r,[0,0,0],0);if(S.tgt[r]){c.doneT[S.num[r]]--;c.done--;}c.complete=false;
@@ -821,7 +822,7 @@ function fillFree(x,y){try{if(S){S.dpLastR=labAt(x,y);const r=S.dpLastR,b=r*4;if
   else tc.putImageData(im,bx,by);
   {const a=curAdj();if(a&&adjVal(a,'g')>0){const m=new ImageData(bw,bh);for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4;m.data[j+3]=255;}const t=mk();t.getContext('2d').putImageData(m,bx,by);adjGlowDraw(tc,t,ink.hex);}}
   if(pulse){S.pulseUsed=true;dirty('pulse');} dirty('free');
-  if(ink.kind==='ramp'){const m=new ImageData(bw,bh);for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p],X=i%W,Y=(i/W)|0,j=((Y-by)*bw+(X-bx))*4;m.data[j]=Math.round(pingpong(((X-bx)+(Y-by)*.6)/RAMP_LEN)*255);m.data[j+3]=255;}
+  if(ink.kind==='ramp'){const m=new ImageData(bw,bh),rL=rampL(bw,bh);for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p],X=i%W,Y=(i/W)|0,j=((Y-by)*bw+(X-bx))*4;m.data[j]=Math.round(pingpong(((X-bx)+(Y-by)*.6)/rL)*255);m.data[j+3]=255;}
     const mc=mk();mc.getContext('2d').putImageData(m,bx,by);fxAdd(['rampfx'],ink.ramp,mc);}
   {const ks=fxKindsOf(ink);if(ks.length){const m=new ImageData(bw,bh);for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p];m.data[(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3]=255;}
     const mc=mk();mc.getContext('2d').putImageData(m,bx,by);fxAdd(ks,ink.hex,mc);}}
@@ -3309,7 +3310,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const ap=docu
  add($('#settings .set-card'),'setX',()=>{$('#settings').hidden=true;});add($('#map .map-head'),'mapX',closeMap);
  $('#map').addEventListener('click',e=>{if(e.target.id==='map')closeMap();});})();
 /* b28: Example showcase viewer · plays a finished version of the page in a dialog; never touches the user's saved coloring */
-const SHOWCASE={4:{v:'data/showcase/sc_04e.mp4',p:'data/showcase/sc_04e.jpg',t:'The Ember Seal · example',d:'Made in the app with this page\'s own colors: a glowing ember seal in a metallic gold wax ring, gold glitter stars, Deep Pop carved flaps in the page\'s Parchment colors, and 3D pops on the envelope and hands.'}};
+const SHOWCASE={4:{v:'data/showcase/sc_04e.mp4',p:'data/showcase/sc_04e.jpg',t:'The Ember Seal · example',d:'Made in the app with this page\'s own colors: a glowing ember seal in a metallic gold wax ring, gold glitter stars, Deep Pop carved flaps in the page\'s Parchment colors, and 3D pops on the envelope and hands.'},101:{v:'data/showcase/sc_101.mp4',p:'data/showcase/sc_101.jpg',t:'Ninja Kat · example',d:'Made in the app with this page\'s own colors: a drifting Sunset sky color cycle, an iridescent Moon silver sash, glowing amber lanterns, metallic gold paw medallions and granite steps.'}};
 function scBtnSync(){const b=$('#scBtn');if(b)b.hidden=!(S&&SHOWCASE[S.n]);}
 function scOpen(){const c=S&&SHOWCASE[S.n];if(!c)return;const v=$('#scVid');$('#scTitle').textContent=c.t;$('#scDesc').textContent=c.d;v.poster=c.p;if(v.getAttribute('src')!==c.v)v.src=c.v;$('#scView').hidden=false;const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{});}
 function scClose(){const v=$('#scVid');if(v)v.pause();$('#scView').hidden=true;}
