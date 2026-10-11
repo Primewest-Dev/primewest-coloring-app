@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=33;
+const EP_BUILD=34;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -657,7 +657,7 @@ function pickColor(h){try{grabToDraw();}catch(e){}color=h;ink=settings.chromeFin
    Pop Fill (pencils too, for Color while popping) / Eraser / Pop Erase their options. Each of Pencil (incl. brushes), Fill and Pop Pencil remembers its last pencil or color. */
 let TMEM={};const TMEMS={'2d':TMEM,'3d':{}},LASTT={},CTX={pencil:['Pencil','Drawing pencils · flip sets with ‹ ›, hover a pencil for its name, or pick any color with the wheel'],fill:['Fill','Fill colors · pick a color here, then tap an area to fill it'],
   poppencil:['Pop Pencil','Paint over an area to lift it or press it in · with Color while popping on, it also paints with the pencil you pick'],pop:['Pop Fill','Tap an area to raise it (or press it in with Inset) · stays inside the lines like Fill · the slider sets the area you last tapped · Color while popping fills it too'],
-  eraser:['Eraser','Click = clear area · Drag = erase · set the size with the Size slider · Undo brings it back'],poperase:['Pop Erase','Tap a raised or inset part to flatten it · tap Pop Erase again, any pencil or any tool to go back']};
+  push:['Push','Drag over your color to smudge, blend, ripple, wave, twirl, scrunch or bloat it · tap Push again to change the mode · never moves the line art'],eraser:['Eraser','Click = clear area · Drag = erase · set the size with the Size slider · Undo brings it back'],poperase:['Pop Erase','Tap a raised or inset part to flatten it · tap Pop Erase again, any pencil or any tool to go back']};
 const LASTD={};const isEr=t=>t==='eraser'||t==='poperase';const backTool=()=>LASTD[toolSet]&&inToolSet(LASTD[toolSet])?LASTD[toolSet]:drawTool();
 const toolGroup=t=>PREM[t]?'pencil':(t==='pencil'||t==='fill'||t==='poppencil'||t==='pop')?t:null;
 const sameInk=(a,b)=>a&&b&&a.kind===b.kind&&a.hex===b.hex&&(a.id||null)===(b.id||null)&&JSON.stringify(a.mix||null)===JSON.stringify(b.mix||null)&&(a.ramp||null)===(b.ramp||null);
@@ -667,7 +667,7 @@ function ctxBar(t,anim){const g=toolGroup(t)||t,c=CTX[g]||CTX.pencil,prev=app.da
 /* v17: 2D and 3D have separate tool sets. 2D: Pencil, Fill, Eraser (+ brushes). 3D: Fill, Pop Fill, Pop Pencil, Pop Erase, Eraser.
    The 2D / 3D switch at the left of the pencil bar swaps the toolbar and pencils; each set remembers its own tool and colors. */
 let toolSet='2d';
-const SET_TOOLS={'2d':['pencil','fill','eraser'],'3d':['pop','poppencil','eraser']};   /* b33: no plain Fill in 3D: Pop Fill at height 0 is the flat color fill */   /* b30: Pop Erase merged into the one Eraser */
+const SET_TOOLS={'2d':['pencil','fill','push','eraser'],'3d':['pop','poppencil','push','eraser']};   /* b33: no plain Fill in 3D (Pop Fill at height 0 = flat fill); b34: Push in both */
 const inToolSet=(t,s=toolSet)=>PREM[t]?true:SET_TOOLS[s].includes(t);   /* v24: brushes work over 3D too */
 const setOK=i=>true;   /* v24: every set (brushes too) is usable in 3D */   // brushes are 2D only (they can't color through Pop Fill)
 const drawTool=()=>toolSet==='3d'?'pop':'pencil';
@@ -700,7 +700,7 @@ function setTool(t){if(t==='poperase')t='eraser';if(t==='fill'&&toolSet==='3d')t
   ctxBar(t,true);if(!isEr(t))LASTD[toolSet]=t;
   tool=t;$$('.tool').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));app.classList.toggle('tool-pop',t==='pop'||t==='poppencil');app.classList.toggle('tool-pp',t==='poppencil');
   if(t!=='pop'&&t!=='poppencil'&&$('#idea3d').classList.contains('on'))idea3d(false);
-  if(t==='pop'||t==='poppencil'){enableTilt();refreshPremiumUI();}else if(rebuild)buildPalette();setInkPattern();if(S)markColor();fitSoon();{const bk=$('#ctxBack');if(bk)bk.hidden=!isEr(t);}sizeUI();}
+  if(t==='pop'||t==='poppencil'){enableTilt();refreshPremiumUI();}else if(rebuild)buildPalette();setInkPattern();if(S)markColor();fitSoon();{const bk=$('#ctxBack');if(bk)bk.hidden=!isEr(t);}sizeUI();try{pushToolHook(t);}catch(e){}}
 
 async function showScene(n){
   if(!isUnlocked(n)){const i=IDS.indexOf(n),prev=IDS[i-1];toast(`Locked · finish Chapter ${prev} to unlock`);
@@ -872,7 +872,7 @@ function stamp(x,y,pr){
   else if(stroke.st==='water'){R*=2.3;cov.globalAlpha=.09;cov.drawImage(tip,x-R,y-R,2*R,2*R);}
   else{const j=R*.15,rich=['metal','glitter','neon','jewel','chrome','lightning'].includes(inkKind())||TEXK.has(inkKind());if(ink.kind==='smoke'||ink.kind==='cloud'){R*=1.5;cov.globalAlpha=ink.kind==='smoke'?.4+.3*p:.5+.35*p;cov.drawImage(tip,x-R,y-R,2*R,2*R);}else{
     const solid=inkKind()==='plain';if(solid){const P=stroke.ps||(stroke.ps=psParams(psGet()));if(P.taper>0){const lp=stroke.lp||[x,y];stroke.len=(stroke.len||0)+Math.hypot(x-lp[0],y-lp[1]);stroke.lp=[x,y];R*=1-P.taper*.55*Math.max(0,1-stroke.len/(R*4+20));}
-      cov.globalAlpha=P.a;cov.drawImage(psTip(P.hard),x-R,y-R,2*R,2*R);}else cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);if(stroke.fur)furStamp(x,y,R);}
+      cov.globalAlpha=P.a;if(R<6){cov.fillStyle='#000';cov.beginPath();cov.arc(x,y,Math.max(.8,R*(.86+.12*P.hard)),0,6.2832);cov.fill();}else cov.drawImage(psTip(P.hard),x-R,y-R,2*R,2*R);}   /* b34: small tips are true anti-aliased circles (a downscaled 64px tip stair-stepped) */else cov.drawImage(tip,x-R+(Math.random()-.5)*j,y-R+(Math.random()-.5)*j,2*R,2*R);}if(stroke.ramp)rampStamp(x,y,R);if(stroke.fur)furStamp(x,y,R);}
   const d=stroke.dirty,a=[x-R-2,y-R-2,x+R+2,y+R+2];
   stroke.dirty=d?[Math.min(d[0],a[0]),Math.min(d[1],a[1]),Math.max(d[2],a[2]),Math.max(d[3],a[3])]:a;
   {const q=stroke.bbx;stroke.bbx=q?[Math.min(q[0],a[0]),Math.min(q[1],a[1]),Math.max(q[2],a[2]),Math.max(q[3],a[3])]:a.slice();}
@@ -894,6 +894,60 @@ function furStamp(x,y,R){const f=stroke.fur,c=furC.getContext('2d'),rgb=hex2rgb(
       if(P.curl){const rc=P.curl*R,th=sv/rc+L.ph;o+=Math.sin(th)*rc;a=Math.cos(th)*rc;}
       const qx=cx+nx*o+f.dx*a,qy=cy+ny*o+f.dy*a;if(!st){c.moveTo(qx,qy);st=true;}else c.lineTo(qx,qy);L.prev=[qx,qy];}
     c.stroke();}}
+/* b33 Push tool (smudge / liquify family). Moves only the user's own color layers (color + Pulse); the line art is never touched.
+   Each dab works on a small patch around the brush (never the whole canvas), so it stays smooth on phones. Line Lock: only the
+   area where the push started changes, and color is never pulled in from outside it. One drag = one Undo step. */
+const PUSH_MODES=[['smudge','Smudge','Drag color like a finger'],['blend','Blend','Softly mix neighbouring colors'],['ripple','Ripple','Rings ripple out along the stroke'],
+  ['wave','Wave','Wavy lines along the drag'],['twirl','Twirl','Swirl color around the brush'],['pinch','Scrunch','Pull color in toward the brush'],
+  ['bloat','Bloat','Push color outward'],['cpush','Color push','Carry your pencil color into what you push']];   /* b34: Dimple tried and dropped (looked like stamped blobs) */
+const PUSH_X={ripple:['Ripple spacing',6,40],wave:['Wave length',10,80],twirl:['Twirl direction',0,1]};
+function pushCfg(){const k='push'+(toolSet||'2d');if(!settings[k]||typeof settings[k]!=='object')settings[k]={m:'smudge',s:55,x:50,tw:1};if(!PUSH_MODES.some(q=>q[0]===settings[k].m))settings[k].m='smudge';return settings[k];}
+function pushSave(){LS.set('settings',settings);}
+const pushR=()=>Math.max(4,penSize*1.1)/zoomSizeDiv();
+let PSH=null;
+function pushBegin(x,y){if(!S)return;snap();let r=labAt(x,y);const locked=!!clip;
+  if(locked&&(!r||isInk(x,y))){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q)r=labAt(q[0],q[1]);}
+  const c=pushCfg(),hx=(ink&&ink.hex)||color||'#888888';
+  PSH={r:locked?r:0,m:c.m,s:Math.max(.05,c.s/100),xv:c.x/100,tw:c.tw?1:-1,lx:x,ly:y,acc:0,col:hex2rgb(/^#[0-9a-f]{6}$/i.test(hx)?hx:'#888888'),bb:null,cs:[S.free.ctx].concat(S.pulseUsed&&S.pulse?[S.pulse.ctx]:[])};
+  if(r)S.dpLastR=r;if(PSH.m==='dimple')pushDab(x,y,1,0,pushR());}
+function pushMove(x,y){const P=PSH;if(!P)return;const dx=x-P.lx,dy=y-P.ly,d=Math.hypot(dx,dy);if(d<.4)return;const R=pushR();
+  const sp=P.m==='dimple'?R*1.15:P.m==='ripple'?Math.max(2,R*.35):Math.max(1.2,R*.16);const ux=dx/d,uy=dy/d;let t=sp-P.acc;
+  while(t<=d){pushDab(P.lx+ux*t,P.ly+uy*t,ux,uy,sp);t+=sp;}P.acc=d-(t-sp);P.lx=x;P.ly=y;
+  if(!P.raf)P.raf=requestAnimationFrame(()=>{if(PSH)PSH.raf=0;if(S&&S.pulse&&P.cs.length>1)dirty('pulse');});}
+function pushEnd(){const P=PSH;if(!P)return;PSH=null;if(P.raf)cancelAnimationFrame(P.raf);dirty('free');if(P.cs.length>1)dirty('pulse');
+  if(P.bb){const b=P.bb;try{lastOpCapture(S.free.ctx,b[0],b[1],b[2]-b[0],b[3]-b[1],'stroke');}catch(e){}}if(P.r)try{helperAfterColor(P.r);}catch(e){}}
+function pushDab(cx,cy,ux,uy,L){const P=PSH,R=pushR(),pad=P.m==='blend'?3:2,x0=Math.max(0,Math.floor(cx-R-pad)),y0=Math.max(0,Math.floor(cy-R-pad)),
+    x1=Math.min(W,Math.ceil(cx+R+pad)),y1=Math.min(H,Math.ceil(cy+R+pad)),w=x1-x0,h=y1-y0;if(w<2||h<2)return;
+  const s=P.s,k=L/R,lab=S.lab,lock=P.r,R2=R*R,nx=-uy,ny=ux,lam=P.m==='wave'?10+P.xv*70:6+P.xv*34;
+  {const b=P.bb;P.bb=b?[Math.min(b[0],x0),Math.min(b[1],y0),Math.max(b[2],x1),Math.max(b[3],y1)]:[x0,y0,x1,y1];}
+  for(const ctx of P.cs){const id=ctx.getImageData(x0,y0,w,h),o=id.data,src=new Uint8ClampedArray(o);let any=false;
+    for(let i=3;i<src.length;i+=4)if(src[i]){any=true;break;}
+    if(!any&&P.m!=='cpush')continue;
+    const okSrc=(gx,gy)=>!lock||lab[gy*W+gx]===lock;
+    const samp=(sx,sy,out)=>{sx-=x0;sy-=y0;if(sx<0)sx=0;if(sy<0)sy=0;if(sx>w-1.001)sx=w-1.001;if(sy>h-1.001)sy=h-1.001;const ix=sx|0,iy=sy|0,fx=sx-ix,fy=sy-iy;
+      let r=0,g=0,b=0,a=0;for(let q=0;q<4;q++){const xx=ix+(q&1),yy=iy+(q>>1),wt=(q&1?fx:1-fx)*(q>>1?fy:1-fy);if(wt<=0)continue;
+        if(lock&&!okSrc(x0+xx,y0+yy))return false;const j=(yy*w+xx)*4,al=src[j+3]*wt;r+=src[j]*al;g+=src[j+1]*al;b+=src[j+2]*al;a+=al;}
+      if(a>0){out[0]=r/a;out[1]=g/a;out[2]=b/a;}else{out[0]=out[1]=out[2]=0;}out[3]=a;return true;};
+    const T=[0,0,0,0],U=[0,0,0,0];
+    for(let py=0;py<h;py++){const gy=y0+py,ry=gy+.5-cy;for(let px=0;px<w;px++){const gx=x0+px,rx=gx+.5-cx,d2=rx*rx+ry*ry;if(d2>=R2)continue;
+      if(lock&&lab[gy*W+gx]!==lock)continue;if(!lock&&!lab[gy*W+gx]&&P.m!=='smudge'&&P.m!=='blend'&&P.m!=='cpush'){}
+      const dn=Math.sqrt(d2)/R,f=(1-dn*dn)*(1-dn*dn),j=(py*w+px)*4;let sx=gx+.5,sy=gy+.5;
+      switch(P.m){
+        case 'smudge':case 'cpush':case 'blend':{const m=(P.m==='blend'?.45:.92)*s*f*L;sx-=ux*m;sy-=uy*m;break;}
+        case 'twirl':{const a=-P.tw*.9*s*f*k;const ca=Math.cos(a),sa=Math.sin(a);sx=cx+rx*ca-ry*sa;sy=cy+rx*sa+ry*ca;break;}
+        case 'pinch':{const m=1+.55*s*f*k;sx=cx+rx*m;sy=cy+ry*m;break;}
+        case 'bloat':{const m=1-.45*s*f*k;sx=cx+rx*m;sy=cy+ry*m;break;}
+        case 'ripple':{const dd=Math.sqrt(d2)||1,amp=Math.sin(dd/lam*6.2832)*R*.22*s*f*Math.min(1,k*1.4);sx=cx+rx*(1+amp/dd);sy=cy+ry*(1+amp/dd);break;}
+        case 'wave':{const ph=(gx*ux+gy*uy)/lam*6.2832,amp=Math.sin(ph)*R*.5*s*f*k;sx-=nx*amp;sy-=ny*amp;break;}
+        case 'dimple':break;}
+      if(P.m==='dimple'){if(!src[j+3])continue;const r0=R*.62,dd=Math.sqrt(d2)/r0;if(dd>=1)continue;const zz=Math.sqrt(1-dd*dd),lx=rx/r0,ly=ry/r0;
+        const sh=(lx*.62+ly*.62)*zz*.55*s-(1-zz)*.06*s,fm=1+sh;o[j]=src[j]*fm;o[j+1]=src[j+1]*fm;o[j+2]=src[j+2]*fm;continue;}
+      if(!samp(sx,sy,T))continue;
+      if(P.m==='blend'){const rr=Math.max(1.5,R*.22);let n=0,ar=0,ag=0,ab=0,aa=0;for(const [ox,oy] of [[rr,0],[-rr,0],[0,rr],[0,-rr]]){if(samp(sx+ox,sy+oy,U)){ar+=U[0]*U[3];ag+=U[1]*U[3];ab+=U[2]*U[3];aa+=U[3];n++;}}
+        if(n){const bw=.55*s*f;const ta=T[3]*(1-bw)+aa/n*bw;if(ta>0){T[0]=(T[0]*T[3]*(1-bw)+ar/n*bw)/ta;T[1]=(T[1]*T[3]*(1-bw)+ag/n*bw)/ta;T[2]=(T[2]*T[3]*(1-bw)+ab/n*bw)/ta;}T[3]=ta;}}
+      if(P.m==='cpush'){const c=P.col,cm=Math.min(1,.16*s*f*(L/1.6));const na=T[3]+(255-T[3])*cm;if(na>0){const wa=T[3]*(1-cm)/na,wc=1-wa;T[0]=T[0]*wa+c[0]*wc;T[1]=T[1]*wa+c[1]*wc;T[2]=T[2]*wa+c[2]*wc;}T[3]=na;}
+      o[j]=T[0];o[j+1]=T[1];o[j+2]=T[2];o[j+3]=T[3];}}
+    ctx.putImageData(id,x0,y0);}}
 function moveStroke(x,y,pr){
   const [lx,ly]=stroke.last,dx=x-lx,dy=y-ly,dist=Math.hypot(dx,dy);
   if(stroke.fur&&dist>.5){const f=stroke.fur,ux=dx/dist,uy=dy/dist;if(!f.has){f.dx=ux;f.dy=uy;f.has=true;}else{f.dx=f.dx*.65+ux*.35;f.dy=f.dy*.65+uy*.35;const m=Math.hypot(f.dx,f.dy)||1;f.dx/=m;f.dy/=m;}}
@@ -1095,13 +1149,14 @@ stage.addEventListener('pointerdown',e=>{
   if(e.pointerType==='mouse'&&e.button!==0&&e.button!==1)return; if(e.target.closest&&e.target.closest('.zoomui,.grabui,.tryrow,.nudge,.ideasbar'))return;
   stage.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
   if(e.button===1||spaceDown){e.preventDefault();down={x:e.clientX,y:e.clientY,id:e.pointerId,pan:true,zx:Z.x,zy:Z.y};stage.classList.add('panning');return;}
-  if(ptrs.size===2){cancelStroke();down=null;const [a,b]=[...ptrs.values()];const r=stage.getBoundingClientRect();
+  if(ptrs.size===2){cancelStroke();if(PSH)pushEnd();down=null;const [a,b]=[...ptrs.values()];const r=stage.getBoundingClientRect();
     pinch={d:Math.hypot(a.x-b.x,a.y-b.y),mx:(a.x+b.x)/2-r.left,my:(a.y+b.y)/2-r.top,z:Z.z,x:Z.x,y:Z.y};return;}
   if(ptrs.size>2)return;
   if(handOn()){e.preventDefault();down={x:e.clientX,y:e.clientY,id:e.pointerId,pan:true,zx:Z.x,zy:Z.y};stage.classList.add('panning');return;}   /* v16 Smart Grab: hand = pan, the tool stays as it is */
   const [x,y]=toCanvas(e); down={x:e.clientX,y:e.clientY,cx:x,cy:y,t:performance.now(),id:e.pointerId,zx:Z.x,zy:Z.y};
   if(LT.on&&S){down.lt=ltDown(x,y)?1:2;return;}   /* v19: Color the lines only */
   // a one-finger / pen stroke with a drawing tool always draws (never pans); other tools pan when dragged while zoomed
+  if(mode==='free'&&tool==='push'){pushBegin(x,y);down.push=1;return;}
   if(mode==='free'&&(tool==='pencil'||tool==='eraser'||tool==='airbrush'||tool==='watercolor'))beginStroke(x,y,e.pressure,e.pointerType);
   else if(tool==='poppencil'){ppBegin(x,y);down.pp=!!pps;if(pps&&mode==='free'&&settings.ppColor!==false)beginStroke(x,y,e.pressure,e.pointerType);}   // Color while popping: raise + paint in one stroke
 });
@@ -1111,6 +1166,7 @@ stage.addEventListener('pointermove',e=>{
     const d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2-r.left,my=(a.y+b.y)/2-r.top,z=Math.min(MAXZ,Math.max(1,pinch.z*d/pinch.d));
     Z.z=z;Z.x=mx-(pinch.mx-pinch.x)*z/pinch.z;Z.y=my-(pinch.my-pinch.y)*z/pinch.z;applyZoom();return;}
   if(down&&down.lt===1&&e.pointerId===down.id){const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of (evs.length?evs:[e])){const [x,y]=toCanvas(ev);ltMove(x,y);}return;}
+  if(PSH&&down&&e.pointerId===down.id){const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of (evs.length?evs:[e])){const [x,y]=toCanvas(ev);pushMove(x,y);}return;}
   if(pps&&down&&e.pointerId===down.id){const evs=e.getCoalescedEvents?e.getCoalescedEvents():[e];for(const ev of (evs.length?evs:[e])){const [x,y]=toCanvas(ev);ppMove(x,y);if(stroke)moveStroke(x,y,ev.pressure);}return;}
   if(down&&e.pointerId===down.id&&down.pan){   /* b30: dragging with Fill / Pop Fill no longer pans a zoomed picture; only Hand, Space or middle drag pan */
     down.pan=true;stage.classList.add('panning');Z.x=down.zx+(e.clientX-down.x);Z.y=down.zy+(e.clientY-down.y);applyZoom();return;}
@@ -1123,6 +1179,7 @@ function up(e){
   if(!down||e.pointerId!==down.id)return;
   const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);stage.classList.remove('panning');
   if(down.pan){down=null;return;}
+  if(down.push){pushEnd();down=null;return;}
   if(down.lt){if(down.lt===1){if(e.type==='pointerup')ltUp();else{LTS=null;ltRender();}}down=null;return;}
   if(pps){ppEnd();if(stroke){const r=stroke.region||labAt(down.cx,down.cy);endStroke();helperAfterColor(r);}down=null;return;}
   if(stroke){const r=stroke.region||labAt(down.cx,down.cy);if(stroke.er&&mode==='free'&&e.type==='pointerup'&&moved<4)eraseRegionAt(down.cx,down.cy);endStroke();helperAfterColor(r);}   /* b30: Eraser click (<4px movement) = clear that whole area, drag = erase along the path */
@@ -1280,8 +1337,8 @@ function dpChanged(p){if(p){const c=dpCache.get(p);deepRender(S,true);dirty('pop
 function dpOpen(){const el=$('#deep');if(!el)return;adjClose();setTimeout(sheetSync,0);if(!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();el.hidden=false;$('#dpBtn')&&$('#dpBtn').classList.add('on');dpBuildUI();}
 function dpClose(){const el=$('#deep');if(el)el.hidden=true;$('#dpBtn')&&$('#dpBtn').classList.remove('on');sheetSync();}
 /* v27: Deep Pop and Adjust open as a bottom sheet (picture stays visible above, changes preview live). Close: big X, Done, Esc, or tap above the sheet */
-const SHEETS=['#deep','#adjust','#mixer','#ccEd','#linesPop'];let sheetCur='';
-function sheetClose(){if(typeof dpClose==='function')dpClose();adjClose();if($('#mixer')&&!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();if(typeof ccEdClose==='function')ccEdClose();{const lp=$('#linesPop');if(lp&&!lp.hidden){lp.hidden=true;const lb=$('#linesBtn');lb&&lb.setAttribute('aria-expanded','false');}}}
+const SHEETS=['#deep','#adjust','#mixer','#ccEd','#linesPop','#pushSheet'];let sheetCur='';
+function sheetClose(){if(typeof dpClose==='function')dpClose();adjClose();if($('#mixer')&&!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();if(typeof ccEdClose==='function')ccEdClose();{const lp=$('#linesPop');if(lp&&!lp.hidden){lp.hidden=true;const lb=$('#linesBtn');lb&&lb.setAttribute('aria-expanded','false');}}if(typeof pushSheet==='function')pushSheet(false);}
 function sheetSync(){let bg=$('#sheetBg');const cur=SHEETS.find(q=>$(q)&&!$(q).hidden)||'';if(!bg){bg=document.createElement('div');bg.id='sheetBg';bg.className='sheetbg';bg.onclick=sheetClose;document.body.appendChild(bg);}bg.hidden=!cur;document.body.classList.toggle('sheet-open',!!cur);
   if(cur!==sheetCur){sheetCur=cur;if(typeof focusOn==='function'){if(cur)requestAnimationFrame(()=>focusOn(cur));else focusOff();}}}
 (()=>{const mo=new MutationObserver(()=>setTimeout(sheetSync,0));for(const q of SHEETS){const el=$(q);if(el)mo.observe(el,{attributes:true,attributeFilter:['hidden']});}})();
@@ -1642,7 +1699,7 @@ function fxOverlap(bx,by,bw,bh){return (S.fx||[]).some(r=>{if(r.kind==='cover')r
 function solidStroke(sc,bx,by,bw,bh){bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));const c=mk();if(bw<=0||bh<=0)return sc;
   const im=sc.getContext('2d').getImageData(bx,by,bw,bh),d=im.data,o=new Uint8ClampedArray(d);
   for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){let m=0,mj=-1;for(let dy=-1;dy<=1;dy++){const yy=y+dy;if(yy<0||yy>=bh)continue;for(let dx=-1;dx<=1;dx++){const xx=x+dx;if(xx<0||xx>=bw)continue;const j=(yy*bw+xx)*4;if(d[j+3]>m){m=d[j+3];mj=j;}}}
-    const i=(y*bw+x)*4;if(m>0){if(d[i+3]<m*.5){o[i]=d[mj];o[i+1]=d[mj+1];o[i+2]=d[mj+2];}o[i+3]=Math.min(255,m*3);}}
+    const i=(y*bw+x)*4;if(m>0){if(d[i+3]<m*.5){o[i]=d[mj];o[i+1]=d[mj+1];o[i+2]=d[mj+2];}o[i+3]=Math.min(255,m<40?m*1.4:m*3);}}
   im.data.set(o);c.getContext('2d').putImageData(im,bx,by);return c;}
 /* v24: is there 3D work (Pop Pencil relief or Pop Fill) under this box? */
 function under3DAt(bx,by,bw,bh){bx=Math.max(0,bx|0);by=Math.max(0,by|0);bw=Math.min(W-bx,Math.ceil(bw));bh=Math.min(H-by,Math.ceil(bh));if(bw<=0||bh<=0||!S)return false;
@@ -2311,6 +2368,7 @@ function regionHeights(st){const T=depthOf(st),hr=new Float32Array(st.N);let any
     for(let r=1;r<st.N;r++){if(!cnt[r])continue;const up=sum[r]/cnt[r],dn=neg[r]/cnt[r];if(up>.04&&!hr[r]){hr[r]=Math.min(1,up*3);any=true;}else if(dn>.04&&!hr[r]){hr[r]=-Math.min(1,dn*3);any=true;}}}
   return any?hr:null;}
 function updateLineTint(){const c=$('#lineTint');if(!S||!c)return;const x=c.getContext('2d');x.clearRect(0,0,W,H);const old=vline.querySelector('#vtint');if(old)old.remove();
+  S.ltAny=false;S.ltF=null;if(!window.EP_LIT_LINES)return;   /* b34: 3D 'lit outlines' recoloured the black line art (pale/lavender lines next to raised areas). Line art is never tinted now; only the Lines panel can recolour it. */
   const hr=D3.on?regionHeights(S):null;S.ltAny=!!hr;if(!hr)return;   /* v12: 2D pops leave the black lines alone (lines are walls); lit outlines stay for the 3D view */
   // fill colour of each popped region (what you see: free colour or colour-by-number, paper when empty)
   const src=(mode==='free'?S.free.ctx:S.cbn.ctx).getImageData(0,0,W,H).data,N=S.N,cs=new Float32Array(N*3),cn=new Uint32Array(N),L=S.lab;
@@ -2692,7 +2750,7 @@ function save(){
     setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Saved '+name);},'image/png');
 }
 $$('.mode').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
-$$('.tool').forEach(b=>b.onclick=()=>{const t=b.dataset.tool;setTool(isEr(t)&&tool===t?backTool():t);});   /* v20: Eraser is a toggle: tap it again to go back */
+$$('.tool').forEach(b=>b.onclick=()=>{const t=b.dataset.tool;if(t==='push'&&tool==='push'){pushSheet(true);return;}setTool(isEr(t)&&tool===t?backTool():t);});   /* v20: Eraser is a toggle: tap it again to go back */
 {const bk=$('#ctxBack');if(bk)bk.onclick=()=>setTool(backTool());
  const pb=$('#palbody');if(pb)pb.addEventListener('click',e=>{if(isEr(tool)&&e.target.closest('button'))setTool(backTool());},true);}   /* tapping any pencil or color leaves the eraser */
 {const to=$('#toolopts');if(to){const a=$('#tools .popswwrap'),b=$('#tools .popctl');if(a)to.appendChild(a);if(b)to.appendChild(b);}ctxBar(tool,false);}   /* v16: pop options live in the tool bar row */
@@ -2835,6 +2893,26 @@ $('#ideasPrev').onclick=()=>{IDEAS.set--;renderIdeas();ideasSave();};$('#ideasNe
 $('#idea').onclick=previewIdea;$('#tryrow .tx').onclick=()=>$('#tryrow').hidden=true;$('#nudge .nx').onclick=()=>$('#nudge').hidden=true;
 $('#saveLoop').onclick=saveLoop;
 $('#setPrev').onclick=()=>flipSet(-1);$('#setNext').onclick=()=>flipSet(1);
+
+/* b33 Push picker: bottom sheet with icon + name per mode, Size (= pen size), Strength and the mode's own slider. Remembered per 2D / 3D. */
+let pushPrevTool='';
+function pushToolHook(t){const was=pushPrevTool;pushPrevTool=t;pushUI();if(t==='push'&&was!=='push'&&MM_READY&&!(settings.pushSeen&&settings.pushSeen[toolSet]))pushSheet(true);if(t!=='push')pushSheet(false);}
+function pushSheet(on){const el=$('#pushSheet');if(!el)return;if(on){if(typeof dpClose==='function')dpClose();adjClose();if(!$('#mixer').hidden&&typeof mixCancel==='function')mixCancel();if(typeof ccEdClose==='function')ccEdClose();pushUI();el.hidden=false;
+    settings.pushSeen=settings.pushSeen||{};settings.pushSeen[toolSet]=1;pushSave();}else if(!el.hidden)el.hidden=true;}
+function pushUI(){const c=pushCfg(),M=PUSH_MODES.find(q=>q[0]===c.m)||PUSH_MODES[0];const pm=$('#pushMode');if(pm)pm.textContent=M[1];if(!$('#pushSheet'))return;
+  $$('#pushModes .pmode').forEach(b=>{const on=b.dataset.pm===c.m;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);b.title=(PUSH_MODES.find(q=>q[0]===b.dataset.pm)||[])[2]||'';});
+  $('#pushDesc').textContent=M[1]+': '+M[2]+' · never moves the line art';
+  const sz=$('#pushSize');if(document.activeElement!==sz)sz.value=penSize;$('#pushSizeV').textContent=penSize;const st=$('#pushStr');if(document.activeElement!==st)st.value=c.s;$('#pushStrV').textContent=c.s+'%';
+  const X=PUSH_X[c.m];$('#pushXRow').hidden=!X||c.m==='twirl';$('#pushTwRow').hidden=c.m!=='twirl';
+  if(X&&c.m!=='twirl'){$('#pushXLab').textContent=X[0];const xr=$('#pushX2');if(document.activeElement!==xr)xr.value=c.x;$('#pushXV').textContent=Math.round(X[1]+(X[2]-X[1])*c.x/100)+' px';}
+  $$('#pushTwRow [data-tw]').forEach(b=>b.classList.toggle('on',(+b.dataset.tw?1:0)===(c.tw?1:0)));}
+(()=>{if(!$('#pushSheet'))return;$('#pushX').onclick=()=>pushSheet(false);$('#pushDone').onclick=()=>pushSheet(false);
+  $$('#pushModes .pmode').forEach(b=>b.onclick=()=>{pushCfg().m=b.dataset.pm;pushSave();pushUI();});
+  $('#pushSize').oninput=e=>{setPenSize(e.target.value);pushUI();};
+  $('#pushStr').oninput=e=>{pushCfg().s=+e.target.value;pushSave();pushUI();};
+  $('#pushX2').oninput=e=>{pushCfg().x=+e.target.value;pushSave();pushUI();};
+  $$('#pushTwRow [data-tw]').forEach(b=>b.onclick=()=>{pushCfg().tw=+b.dataset.tw;pushSave();pushUI();});
+  setTimeout(pushUI,0);})();
 $('#undo').onclick=undoR;$('#redo')&&($('#redo').onclick=redo);setTimeout(redoUI,0);
 /* b33 Redo: every Undo first records the whole picture state it is about to change (color, Pulse, tracing, Pop Pencil heights,
    pops + Deep Pop, effect masks, lines); Redo puts it back and leaves an Undo step for itself. Any new action clears Redo. */
