@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=59;let EP_place=null;
+const EP_BUILD=60;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1454,12 +1454,14 @@ function deepRender(st=S,force){if(!st)return;const P=(st.pops||[]).filter(p=>p.
   for(const p of P){let c=dpCache.get(p);if(!c){c={};dpCache.set(p,c);}
     const can=force||!c.layers||!dpAnimated(p)||(!built&&performance.now()-(c.bt||0)>Math.max(250,(c.fms||0)*4));let did=false;if(can){const k0=c.key;dpBuild(st,p,t);did=c.key!==k0;if(did)built++;}c=dpCache.get(p);if(!c||!c.layers||!c.field)continue;
     const f=c.field,D=p.deep,k=p.k==null?1:Math.max(0,Math.min(1,p.k)),anim=dpAnimated(p);
-    if(!c.T){c.T=document.createElement('canvas');c.T.width=f.w;c.T.height=f.h;}const T=c.T,tx=T.getContext('2d');tx.globalCompositeOperation='source-over';tx.clearRect(0,0,f.w,f.h);   // per-area compose, then clip to the area
+    const still=!(anim&&(D.drift||D.rot));   /* b60: no drift / sway = the composed area is the same every frame until its layers change, so reuse it */
+    if(!c.T){c.T=document.createElement('canvas');c.T.width=f.w;c.T.height=f.h;}const T=c.T,tx=T.getContext('2d');
+    if(!(still&&c.Tl===c.layers&&c.Tf===f&&T.width===f.w&&T.height===f.h)){c.Tl=still?c.layers:null;c.Tf=f;tx.globalCompositeOperation='source-over';tx.clearRect(0,0,f.w,f.h);   // per-area compose, then clip to the area
     const br=anim&&D.drift?.5+.5*Math.sin(t*.7+(D.ph||0)):0,amp=anim&&D.drift?(1.5+3.5*dpVal(p,'d',t)/100):0,rot=anim&&D.rot?Math.sin(t*.25+(D.ph||0))*.14:0;
     for(const L of c.layers){const inner=1-L.df,dx=-lx*amp*inner*(.4+.6*br),dy=-ly*amp*inner*(.4+.6*br);
       if(rot){tx.save();tx.translate(f.cx,f.cy);tx.rotate(rot*inner*(L.i%2?1:-1));tx.translate(-f.cx,-f.cy);tx.drawImage(L.c,L.x-f.x0+dx,L.y-f.y0+dy);tx.restore();}
       else tx.drawImage(L.c,L.x-f.x0+dx,L.y-f.y0+dy);}
-    tx.globalCompositeOperation='destination-in';tx.drawImage(f.mc,0,0);
+    tx.globalCompositeOperation='destination-in';tx.drawImage(f.mc,0,0);}
     x.globalAlpha=k;x.drawImage(T,f.x0,f.y0);x.globalAlpha=1;if(did)c.fms=performance.now()-tf0;}
   dpAttach(st);if(st===S&&P.some(dpAnimated)&&!dpRaf)dpRaf=requestAnimationFrame(dpTick);}
 function dpTick(now){dpRaf=0;if(!S||document.hidden){return;}const P=(S.pops||[]).filter(p=>p.deep&&dpAnimated(p));if(!P.length)return;
