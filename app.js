@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=51;let EP_place=null;
+const EP_BUILD=52;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -3333,7 +3333,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const ap=docu
  add($('#settings .set-card'),'setX',()=>{$('#settings').hidden=true;});add($('#map .map-head'),'mapX',closeMap);
  $('#map').addEventListener('click',e=>{if(e.target.id==='map')closeMap();});})();
 /* b28: Example showcase viewer · plays a finished version of the page in a dialog; never touches the user's saved coloring */
-const SHOWCASE={4:{v:'data/showcase/sc_04e.mp4',p:'data/showcase/sc_04e.jpg',t:'The Ember Seal · example',d:'Made in the app with this page\'s own colors: a glowing ember seal in a metallic gold wax ring, gold glitter stars, Deep Pop carved flaps in the page\'s Parchment colors, and 3D pops on the envelope and hands.'},101:{v:'data/showcase/sc_101_3d.mp4',p:'data/showcase/sc_101_3d.jpg',t:'Ninja Kat · example',d:'Made in the app in 3D with this page\'s own colors: Kat and the tanuki popped out of the page, Deep Pop on Kat\'s hood (Sunset sky) and the dojo medallion (Lantern gold), a drifting Sunset sky color cycle, an iridescent Moon silver sash, glowing amber lanterns, gold paw medallions and raised granite steps.'}};
+const SHOWCASE={4:{v:'data/showcase/sc_04e.mp4',p:'data/showcase/sc_04e.jpg',t:'The Ember Seal · example',d:'Made in the app with this page\'s own colors: a glowing ember seal in a metallic gold wax ring, gold glitter stars, Deep Pop carved flaps in the page\'s Parchment colors, and 3D pops on the envelope and hands.'},101:{v:'data/showcase/sc_101_3d2.mp4',p:'data/showcase/sc_101_3d2.jpg',t:'Ninja Kat · example',d:'Made in the app in 3D with this page\'s own colors: Kat and the tanuki popped out of the page, Deep Pop on Kat\'s hood (Sunset sky) and the dojo medallion (Lantern gold), a drifting Sunset sky color cycle, an iridescent Moon silver sash, glowing amber lanterns, gold paw medallions and raised granite steps.'}};
 function scBtnSync(){const b=$('#scBtn');if(b)b.hidden=!(S&&SHOWCASE[S.n]);}
 function scOpen(){const c=S&&SHOWCASE[S.n];if(!c)return;const v=$('#scVid');$('#scTitle').textContent=c.t;$('#scDesc').textContent=c.d;v.poster=c.p;if(v.getAttribute('src')!==c.v)v.src=c.v;$('#scView').hidden=false;const pr=v.play();if(pr&&pr.catch)pr.catch(()=>{});}
 function scClose(){const v=$('#scVid');if(v)v.pause();$('#scView').hidden=true;}
