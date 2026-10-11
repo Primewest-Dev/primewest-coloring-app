@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=37;
+const EP_BUILD=38;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -2190,7 +2190,7 @@ const fxLive=()=>S&&((S.fx&&S.fx.length)||(S.pp&&S.pp.any));
 const KSPD=k=>({shimmer:'shimmerSpeed',shine:'shimmerSpeed',jshine:'shimmerSpeed',mirror:'shimmerSpeed',twinkle:'twinkleSpeed',neonfx:'neonSpeed',glowfx:'glowSpeed',boltfx:'boltSpeed',pulsefx:'pulseSpeed',smoke:'smokeSpeed',cloud:'smokeSpeed'})[k]||(k&&k.startsWith('pt')?'partSpeed':null);
 /* b37: the effect loop only runs while something can move: an effect at intensity 0 or Speed 'Stopped' costs no CPU at all */
 function fxMoves(r){if(r.amt!=null&&r.amt<=.001)return false;const sk=KSPD(r.kind);if(!sk)return r.kind!=='cover';if(motionLvl(sk)<=0)return false;if(['mirror','shine','jshine','shimmer'].includes(r.kind)&&motionLvl('shimmer')<=0)return false;if(r.kind==='twinkle'&&motionLvl('sparkle')<=0)return false;if(RM.matches&&['mirror','shine','jshine','shimmer','twinkle'].includes(r.kind))return true;return true;}
-const fxNeedsLoop=()=>!!S&&(((S.fx||[]).some(fxMoves))||!!(S.pp&&S.pp.any&&motionLvl('pulseSpeed')>0&&!RM.matches));
+const fxNeedsLoop=()=>!!S&&(S.fx||[]).some(fxMoves);   /* b38: Pop Pencil has no moving light (ppPulse is off), so it never keeps the loop running */
 function fxStart(){if(fxRaf||!fxLive())return;fxAttach();if(!fxNeedsLoop()||document.hidden){fxDraw(performance.now());return;}
   const step=now=>{fxRaf=0;if(!fxLive()||document.hidden)return;if(!fxNeedsLoop()){fxDraw(now);return;}if(perfBusy()){FXJ=null;}else if(FXJ){if(fxSliced(now))fxLast=now;}else if(now-fxLast>=fxGap()){if(fxSliced(now))fxLast=now;}/* adaptive: slow machines draw effects less often so taps and strokes stay responsive */fxRaf=requestAnimationFrame(step);};fxRaf=requestAnimationFrame(step);}
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(fxRaf);fxRaf=0;cancelAnimationFrame(pvRaf);pvRaf=0;}else{fxStart();pvStart();}});
@@ -2368,34 +2368,78 @@ function ppBegin(x,y){try{redoClear();}catch(e){}
     const l=Trials.popsLeft();toast(l?`Pop Pencil · free tries: ${l} left`:'That was your last free 3D try ✦');}
   let r=labAt(x,y);if(!r)return;if(isInk(x,y)){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q)r=labAt(q[0],q[1]);}
   ppCanvases(S);const tmp=mk(),rs=ppRegions(r,x,y);pps={r,rs,mask:ppMaskFor(rs),tmp,tx:tmp.getContext('2d'),last:[x,y],inset:POP.pressed,v:POP.flat?0:(POP.pressed?-1:1)};ppStamp(x,y);ppFlush();}
-function ppStamp(x,y){const R=ppR()/zoomSizeDiv();pps.tx.globalAlpha=.16;pps.tx.drawImage(sprite,x-R,y-R,2*R,2*R);}
+function ppStamp(x,y){const R=ppR()/zoomSizeDiv();pps.tx.globalAlpha=.16;pps.tx.drawImage(sprite,x-R,y-R,2*R,2*R);const d=pps.dr||(pps.dr=[1e9,1e9,-1e9,-1e9]);d[0]=Math.min(d[0],x-R-1|0);d[1]=Math.min(d[1],y-R-1|0);d[2]=Math.max(d[2],x+R+2|0);d[3]=Math.max(d[3],y+R+2|0);}
 function ppMove(x,y){const [lx,ly]=pps.last,d=Math.hypot(x-lx,y-ly),step=Math.max(1,ppR()*.3/zoomSizeDiv()),n=Math.floor(d/step);
   for(let i=1;i<=n;i++)ppStamp(lx+(x-lx)*i/n,ly+(y-ly)*i/n);if(n)pps.last=[x,y];if(!ppFlush.t)ppFlush.t=setTimeout(()=>{ppFlush.t=0;ppFlush();},90);}
-function ppFlush(){if(!pps)return;const st=S.pp,t=pps.tx,r=pps.r,b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;if(bw<=0||bh<=0)return;
+function ppFlush(){if(!pps||!pps.dr)return;const st=S.pp,t=pps.tx,r=pps.r,b=r*4,q=pps.dr;pps.dr=null;   /* b38: only the stamped part of the area */
+  const bx=Math.max(S.bb[b],q[0]),by=Math.max(S.bb[b+1],q[1]),bw=Math.min(S.bb[b+2],q[2])-bx+1,bh=Math.min(S.bb[b+3],q[3])-by+1;if(bw<=0||bh<=0)return;
   // the stroke sets the height toward the slider value (+ raise, - inset, 0 flattens), only on pixels of the starting area
   const Tm=t.getImageData(bx,by,bw,bh).data,R=st.rx.getImageData(bx,by,bw,bh),I=st.ix.getImageData(bx,by,bw,bh),dr=R.data,di=I.data,v=pps.v,lab=S.lab;
+  /* b38 shape-aware: a small area (finger, seal piece, flap tip) is lifted as one whole shape, so a single pass gives a clean pillow instead of a brush mark */
+  const RR=ppR()/zoomSizeDiv(),cnt=S.off[r+1]-S.off[r];if(cnt<Math.PI*RR*RR*2.2){let mxA=0;for(let j=3;j<Tm.length;j+=4)if(Tm[j]>mxA){const q=(j>>2),yy=by+((q/bw)|0),xx=bx+q%bw;if(lab[yy*W+xx]===r)mxA=Tm[j];}
+    if(mxA){const fb=r*4,fx0=S.bb[fb],fy0=S.bb[fb+1],fx1=S.bb[fb+2],fy1=S.bb[fb+3];if(fx0<bx||fy0<by||fx1>bx+bw-1||fy1>by+bh-1){pps.dr=[fx0,fy0,fx1,fy1];t.fillStyle='rgba(0,0,0,'+(mxA/255)+')';t.globalAlpha=1;
+      for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p];t.fillRect(i%W,(i/W)|0,1,1);}return ppFlush();}
+      for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3;Tm[j]=mxA;}}}
   for(let y=0;y<bh;y++){const o=(by+y)*W+bx;for(let x=0;x<bw;x++){const j=(y*bw+x)*4+3,a=Tm[j];if(!a||lab[o+x]!==r)continue;
     const k=a/255,h0=(dr[j]-di[j])/255,h=v>0?(h0>=v?h0:Math.min(v,h0+k)):v<0?(h0<=v?h0:Math.max(v,h0-k)):(h0>0?Math.max(0,h0-k):Math.min(0,h0+k));dr[j]=h>0?Math.round(h*255):0;di[j]=h<0?Math.round(-h*255):0;}}
-  st.rx.putImageData(R,bx,by);st.ix.putImageData(I,bx,by);t.clearRect(0,0,W,H);ppRender(S);}   // v8 feel: every pass adds a little more, up to the slider height
+  st.rx.putImageData(R,bx,by);st.ix.putImageData(I,bx,by);t.clearRect(bx,by,bw,bh);ppRender(S,[bx,by,bx+bw-1,by+bh-1]);}   // v8 feel: every pass adds a little more, up to the slider height
 function ppEnd(){if(!pps)return;clearTimeout(ppFlush.t);ppFlush.t=0;ppFlush();const sr=pps.r;setTimeout(()=>popSelect('pp',sr),0);pps=null;dirty('pp');}
-function ppRender(st){const P=st.pp;if(!P)return;const N=W*H,dr=P.rx.getImageData(0,0,W,H).data,di=P.ix.getImageData(0,0,W,H).data;
-  const h=new Float32Array(N),lab=st.lab,mark=new Uint8Array(st.N);let any=false;for(let i=0;i<N;i++){const v=(dr[i*4+3]-di[i*4+3])/255;h[i]=v;if(v){any=true;mark[lab[i]]=1;}}   // alpha caps at 255: the height cap
-  mark[0]=0;
-  const lx=P.li.getContext('2d'),sx=P.sh.getContext('2d');lx.clearRect(0,0,W,H);sx.clearRect(0,0,W,H);P.any=any;if(!any){ppAttach(st);return;}
-  /* v13: the soft bevel blur only mixes pixels of the SAME area (other areas count as flat), so one section's height never bleeds into a neighbour's rim */
-  const b=new Float32Array(N),R=3,D7=2*R+1;for(let pass=0;pass<2;pass++){for(let y=0;y<H;y++){const o=y*W;for(let x=0;x<W;x++){const i=o+x,L=lab[i];if(!mark[L]){b[i]=0;continue;}let s=0;const x0=Math.max(0,x-R),x1=Math.min(W-1,x+R);for(let q=o+x0;q<=o+x1;q++)if(lab[q]===L)s+=h[q];b[i]=s/D7;}}
-    for(let x=0;x<W;x++){for(let y=0;y<H;y++){const i=y*W+x,L=lab[i];if(!mark[L]){h[i]=0;continue;}let s=0;const y0=Math.max(0,y-R),y1=Math.min(H-1,y+R);for(let q=y0*W+x;q<=y1*W+x;q+=W)if(lab[q]===L)s+=b[q];h[i]=s/D7;}}}
-  for(let i=0;i<N;i++)if(!mark[lab[i]])h[i]=0;   // v12: nothing outside the popped areas (lines and neighbours stay untouched)
-  const im=lx.createImageData(W,H),D=im.data,K=44;
-  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;if(!h[i]&&!h[i-1]&&!h[i+1]&&!h[i-W]&&!h[i+W])continue;
-    const L=lab[i],hn=q=>lab[q]===L?h[q]:0,gx=(hn(i+1)-hn(i-1))*.5,gy=(hn(i+W)-hn(i-W))*.5,v=(gx+gy)*.7071*K+(h[i]<0?h[i]*.3:h[i]*.06),j=i*4;
-    if(v>0){D[j]=255;D[j+1]=250;D[j+2]=238;D[j+3]=Math.min(28,v*60);}else if(v<0){D[j]=16;D[j+1]=10;D[j+2]=5;D[j+3]=Math.min(170,-v*240);}}   /* v16: near-black shadow = a darker shade of the color underneath */
-  lx.putImageData(im,0,0);
-  const m=sx.createImageData(W,H);for(let i=0;i<N;i++)if(h[i]>.03)m.data[i*4+3]=Math.min(255,h[i]*500);const mc=mk();mc.getContext('2d').putImageData(m,0,0);
-  sx.save();sx.shadowColor='rgba(38,22,8,.35)';sx.shadowBlur=9;sx.shadowOffsetX=4+W*2;sx.shadowOffsetY=7;sx.drawImage(mc,-W*2,0);sx.restore();
-  sx.globalCompositeOperation='destination-out';sx.drawImage(mc,0,0);sx.globalCompositeOperation='source-over';
-  {const rm=regionMask(st,mark);for(const c of [lx,sx]){c.save();c.globalCompositeOperation='destination-in';c.drawImage(rm,0,0);c.restore();}}
-  const hq=new Float32Array(WQ*HQ);for(let y=0;y<HQ;y++)for(let X=0;X<WQ;X++)hq[y*WQ+X]=Math.max(0,h[(y*MQ+2)*W+X*MQ+2]);P.hq=hq;ppAttach(st);if(st===S)scheduleLineTint();if(st===S&&typeof fxStart==='function')fxStart();}
+/* b38: shape-aware Pop Pencil. Height = what you painted (builds per pass) x a pillow profile from the area's own distance field,
+   so the relief follows the outline of the shape (hands, flaps, seal) with a crisp rim at the line, no blur. Rendered only around the
+   changed area; the distance field is cached per area. */
+function ppDT(st,r){const C=st.ppDT||(st.ppDT=new Map());let e=C.get(r);if(e)return e;
+  const b=r*4,bx=st.bb[b],by=st.bb[b+1],bw=st.bb[b+2]-bx+1,bh=st.bb[b+3]-by+1,lab=st.lab,d=new Float32Array(bw*bh),Q=1.4142;
+  for(let y=0;y<bh;y++){const o=(by+y)*W+bx;for(let x=0;x<bw;x++)d[y*bw+x]=lab[o+x]===r?1e6:0;}
+  for(let y=0;y<bh;y++)for(let x=0;x<bw;x++){const i=y*bw+x;let v=d[i];if(!v)continue;const l=x>0?d[i-1]:0,u=y>0?d[i-bw]:0,ul=x>0&&y>0?d[i-bw-1]:0,ur=x<bw-1&&y>0?d[i-bw+1]:0;
+    v=Math.min(v,l+1,u+1,ul+Q,ur+Q);d[i]=v;}
+  let mx=0;for(let y=bh-1;y>=0;y--)for(let x=bw-1;x>=0;x--){const i=y*bw+x;let v=d[i];if(!v)continue;const rr=x<bw-1?d[i+1]:0,dd=y<bh-1?d[i+bw]:0,dr=x<bw-1&&y<bh-1?d[i+bw+1]:0,dl=x>0&&y<bh-1?d[i+bw-1]:0;
+    v=Math.min(v,rr+1,dd+1,dr+Q,dl+Q);d[i]=v;if(v>mx)mx=v;}
+  e={bx,by,bw,bh,d,mx,rim:Math.max(2.2,Math.min(15,mx*.62))};C.set(r,e);if(C.size>400)C.delete(C.keys().next().value);return e;}
+let PPT={n:0,ms:0,max:0};
+function ppRender(st,rect){const P=st.pp;if(!P)return;const t0=performance.now();
+  const X0=rect?Math.max(0,rect[0]):0,Y0=rect?Math.max(0,rect[1]):0,X1=rect?Math.min(W-1,rect[2]):W-1,Y1=rect?Math.min(H-1,rect[3]):H-1;if(X1<X0||Y1<Y0)return;
+  const PD=rect?16:0,rx0=Math.max(0,X0-PD),ry0=Math.max(0,Y0-PD),rw=Math.min(W-1,X1+PD)-rx0+1,rh=Math.min(H-1,Y1+PD)-ry0+1,N=rw*rh;
+  const dr=P.rx.getImageData(rx0,ry0,rw,rh).data,di=P.ix.getImageData(rx0,ry0,rw,rh).data,lab=st.lab;
+  const h=new Float32Array(N),L=new Int32Array(N);let anyL=false;
+  for(let y=0;y<rh;y++){const o=(ry0+y)*W+rx0;for(let x=0;x<rw;x++){const i=y*rw+x,v=(dr[i*4+3]-di[i*4+3])/255;L[i]=lab[o+x];if(v&&L[i]){h[i]=v;anyL=true;}}}
+  if(!rect)P.any=anyL;else if(anyL)P.any=true;
+  const lx=P.li.getContext('2d'),sx=P.sh.getContext('2d');
+  if(!anyL){lx.clearRect(X0,Y0,X1-X0+1,Y1-Y0+1);sx.clearRect(X0,Y0,X1-X0+1,Y1-Y0+1);ppAttach(st);PPT.n++;return;}
+  /* light same-area smoothing of the painted amount only (stamp grain), never across a line */
+  const b=new Float32Array(N),R=5;
+  for(let y=0;y<rh;y++){const o=y*rw;for(let x=0;x<rw;x++){const i=o+x,l=L[i];if(!l||!h[i]&&!(x>0&&h[i-1])&&!(x<rw-1&&h[i+1])){b[i]=h[i];continue;}let s=0,c=0;for(let q=Math.max(0,x-R);q<=Math.min(rw-1,x+R);q++)if(L[o+q]===l){s+=h[o+q];c++;}b[i]=s/c;}}
+  for(let x=0;x<rw;x++)for(let y=0;y<rh;y++){const i=y*rw+x,l=L[i];if(!l){h[i]=0;continue;}let s=0,c=0;for(let q=Math.max(0,y-R);q<=Math.min(rh-1,y+R);q++){const k=q*rw+x;if(L[k]===l){s+=b[k];c++;}}h[i]=s/c;}
+  /* pillow profile from the distance to the area's outline: steep at the rim (crisp), flat on top */
+  const Hh=new Float32Array(N);let last=-1,E=null;
+  for(let y=0;y<rh;y++)for(let x=0;x<rw;x++){const i=y*rw+x,v=h[i];if(!v)continue;const l=L[i];if(l!==last){E=ppDT(st,l);last=l;}
+    const dd=E.d[(ry0+y-E.by)*E.bw+(rx0+x-E.bx)]||0,t=Math.min(1,dd/E.rim),u=1-t,av=Math.abs(v),e=av>=.3?1:(av/.3)*(av/.3)*(3-2*av/.3);Hh[i]=v*e*(1-u*u*u);}   /* e: the brush edge becomes a crisp shoulder instead of a soft blur */
+  /* lighting: top-left key light, crisp rim (height drops to 0 across the line), small specular on raised tops, carved areas get occlusion */
+  const lw=X1-X0+1,lh=Y1-Y0+1,im=lx.createImageData(lw,lh),D=im.data,HS=18,lxv=-.48,lyv=-.56,lzv=.675,hxv=lxv*.5,hyv=lyv*.5,hzv=(lzv+1)*.5,hn0=Math.hypot(hxv,hyv,hzv);
+  for(let y=Y0;y<=Y1;y++)for(let x=X0;x<=X1;x++){const ly=y-ry0,lxx=x-rx0,i=ly*rw+lxx,l=L[i];if(!l)continue;const c=Hh[i];
+    const g=(k,ok)=>ok&&L[k]===l?Hh[k]:0,a=g(i-1,lxx>0),bb=g(i+1,lxx<rw-1),u=g(i-rw,ly>0),dn=g(i+rw,ly<rh-1);if(!c&&!a&&!bb&&!u&&!dn)continue;
+    const gx=(bb-a)*.5*HS,gy=(dn-u)*.5*HS,nl=Math.hypot(gx,gy,1),nx=-gx/nl,ny=-gy/nl,nz=1/nl,lam=nx*lxv+ny*lyv+nz*lzv-lzv,j=((y-Y0)*lw+(x-X0))*4;
+    let sp=c>0?Math.pow(Math.max(0,(nx*hxv+ny*hyv+nz*hzv)/hn0),60)*(1-nz):0;
+    const occ=c<0?-c*.1:0;
+    if(lam>0.004||sp>.01){const al=Math.min(.55,lam*1.25)+Math.min(.4,sp*3);D[j]=255;D[j+1]=249;D[j+2]=236;D[j+3]=Math.min(150,al*255);}
+    else if(lam<-0.004||occ){const al=Math.min(.66,-Math.min(0,lam)*1.7+occ);D[j]=22;D[j+1]=13;D[j+2]=6;D[j+3]=al*255;}}
+  lx.putImageData(im,X0,Y0);
+  /* crisp contact shadow from raised areas onto lower popped areas (never onto lines or untouched neighbours) */
+  const mc=document.createElement('canvas');mc.width=rw;mc.height=rh;const mx=mc.getContext('2d'),m=mx.createImageData(rw,rh),M=m.data;let anyUp=false;
+  for(let i=0;i<N;i++)if(Hh[i]>.03){M[i*4+3]=Math.min(255,Hh[i]*500);anyUp=true;}
+  sx.clearRect(X0,Y0,lw,lh);
+  if(anyUp){mx.putImageData(m,0,0);const tc=document.createElement('canvas');tc.width=rw;tc.height=rh;const tx=tc.getContext('2d');
+    tx.save();tx.shadowColor='rgba(34,20,8,.38)';tx.shadowBlur=2.5;tx.shadowOffsetX=3+rw*2;tx.shadowOffsetY=5;tx.drawImage(mc,-rw*2,0);tx.restore();
+    tx.globalCompositeOperation='destination-out';tx.drawImage(mc,0,0);
+    const pm=tx.createImageData(rw,rh),PM=pm.data;for(let i=0;i<N;i++)if(L[i]&&(h[i]||Hh[i]))PM[i*4+3]=255;
+    /* only on areas that are themselves popped */
+    const mark=new Set();for(let i=0;i<N;i++)if(h[i])mark.add(L[i]);for(let i=0;i<N;i++)if(mark.has(L[i]))PM[i*4+3]=255;
+    const pc=document.createElement('canvas');pc.width=rw;pc.height=rh;pc.getContext('2d').putImageData(pm,0,0);
+    tx.globalCompositeOperation='destination-in';tx.drawImage(pc,0,0);
+    sx.save();sx.beginPath();sx.rect(X0,Y0,lw,lh);sx.clip();sx.drawImage(tc,rx0,ry0);sx.restore();}
+  if(!P.hq)P.hq=new Float32Array(WQ*HQ);
+  for(let qy=Math.ceil((Y0-2)/MQ);qy*MQ+2<=Y1;qy++)for(let qx=Math.ceil((X0-2)/MQ);qx*MQ+2<=X1;qx++){if(qy<0||qx<0||qy>=HQ||qx>=WQ)continue;P.hq[qy*WQ+qx]=Math.max(0,Hh[(qy*MQ+2-ry0)*rw+qx*MQ+2-rx0]||0);}
+  const dt=performance.now()-t0;PPT.n++;PPT.ms+=dt;PPT.max=Math.max(PPT.max,dt);PPT.last=dt;
+  ppAttach(st);if(st===S)scheduleLineTint();if(st===S&&typeof fxStart==='function')fxStart();}
 function regionMask(st,mark){const c=mk(),x=c.getContext('2d'),m=x.createImageData(W,H),D=m.data;for(let r=1;r<st.N;r++)if(mark[r])for(let p=st.off[r];p<st.off[r+1];p++)D[st.pix[p]*4+3]=255;x.putImageData(m,0,0);return c;}
 function ppAttach(st){if(st!==S||!st.pp)return;layers.appendChild(st.pp.sh);layers.appendChild(st.pp.li);}
 function ppEraseAt(r){const P=S.pp;if(!P||!P.any)return false;const bx=S.bb[r*4],by=S.bb[r*4+1],bw=S.bb[r*4+2]-bx+1,bh=S.bb[r*4+3]-by+1;
@@ -3352,7 +3396,7 @@ clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   paintedFree:()=>{const d=S.free.ctx.getImageData(0,0,W,H).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i])n++;return n;},
   rampAt:(x,y)=>{const r=(S.fx||[]).find(q=>q.kind==='rampfx');if(!r||!r.oc||!r.bb)return null;const d=r.oc.getContext('2d').getImageData((x|0)-r.bb[0],(y|0)-r.bb[1],1,1).data;return [d[0],d[1],d[2],d[3]];},
   fx:()=>({n:(S.fx||[]).length,kinds:(S.fx||[]).map(r=>r.kind),ms:Math.round(fxMs*10)/10,each:(S.fx||[]).map(r=>Math.round((r.ms||0)*10)/10),parts:fxTotal,running:!!fxRaf,rm:RM.matches}),
-  pp:()=>({any:!!(S.pp&&S.pp.any),active:!!pps}), mix:()=>({...MIX}), owner:()=>ownerMode(), pvCount:()=>PVS.size,
+  pp:()=>({any:!!(S.pp&&S.pp.any),active:!!pps}), ppStat:()=>({...PPT}), mix:()=>({...MIX}), owner:()=>ownerMode(), pvCount:()=>PVS.size,
   ppHeight:(x,y)=>{if(!S.pp)return 0;const a=S.pp.rx.getImageData(x|0,y|0,1,1).data[3],b=S.pp.ix.getImageData(x|0,y|0,1,1).data[3];return (a-b)/255;},
   tipNames:()=>SETS.map((t,ti)=>({id:t.id,names:(t.type==='plain'?t.colors.map(h=>({dataset:{c:h},classList:{contains:c=>c==='pencil'}})):t.items.map(p=>({dataset:{p:p.id},classList:{contains:()=>false}}))).map(el=>{const o=setIdx;setIdx=ti;const d=tipFor(el);setIdx=o;return d&&d[0]+' | '+d[1];})})),
   lines:()=>({...linesOf(S),under:!$('#lineUnder').hidden,col:!$('#lineCol').hidden,op:lineImg.style.opacity,vfill:(vline.querySelector('path')||{getAttribute:()=>null}).getAttribute('fill'),vauto:!!vline.querySelector('#vauto'),hist:(S.linesHist||[]).length,saved:LS.get('lines.'+S.n,null)}),
