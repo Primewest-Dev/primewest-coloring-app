@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=61;let EP_place=null;
+const EP_BUILD=62;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1367,7 +1367,7 @@ function popRender(st,pop,sh,li){ // draws one pop into shadow ctx `sh` and ligh
     sx.globalCompositeOperation='destination-out';sx.drawImage(mk2,0,0);sh.drawImage(s2,x0,y0);}}
 function popCanvases(st){if(!st.popSh){st.popSh=mk();st.popLi=mk();st.popSh.className='pop-sh';st.popLi.className='pop-li';}return st;}
 function renderPops(st=S){if(!st)return;popCanvases(st);const sh=st.popSh.getContext('2d'),li=st.popLi.getContext('2d');sh.clearRect(0,0,W,H);li.clearRect(0,0,W,H);
-  for(const p of st.pops||[]){if(p.deep)continue;const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;sh.globalAlpha=li.globalAlpha=k;popStamp(st,p,sh,li);}
+  for(const p of st.pops||[]){if(p.deep||s3nSkipPop(st,p))continue;const k=p.k==null?1:Math.max(0,Math.min(1,p.k));if(k<=0)continue;sh.globalAlpha=li.globalAlpha=k;popStamp(st,p,sh,li);}
   sh.globalAlpha=li.globalAlpha=1;
   if((st.pops||[]).length){const rm=popRegionMask(st);for(const c of [sh,li]){c.save();c.globalCompositeOperation='destination-in';c.drawImage(rm,0,0);c.restore();}}   // v12: strictly inside the popped areas
   if(st===S&&!st.popSh.isConnected){layers.appendChild(st.popSh);layers.appendChild(st.popLi);}popParallax();deepRender(st,true);if(st===S)scheduleLineTint();}
@@ -1449,11 +1449,16 @@ function dpAnimated(p){const D=p.deep;return !RM.matches&&(D.drift||D.rot||D.cyc
 function dpCanvas(st){if(!st.dpC){st.dpC=mk();st.dpC.className='deep-pop';st.dpC.style.pointerEvents='none';}return st.dpC;}
 function dpAttach(st){if(st!==S||!st.dpC)return;const ref=S.pulse?S.pulse.c:S.free.c;if(st.dpC.previousSibling!==ref||st.dpC.parentNode!==layers)layers.insertBefore(st.dpC,ref.nextSibling);}
 /* compose every Deep Pop area from its cached layers; `rebuild` lets AUTO values re-render the cache (throttled by build cost) */
+let DPPV=0;
+function dpPaint(st,p,c,f){if(!c.col){c.pm=null;return;}const im=st.free.ctx.getImageData(f.x0,f.y0,f.w,f.h),D=im.data,col=c.col;let any=0;
+  for(let i=0;i<f.w*f.h;i++){const j=i*4;if(!f.m[i]||D[j+3]<40){D[j+3]=0;continue;}const dr=D[j]-col[0],dg=D[j+1]-col[1],db=D[j+2]-col[2];if(dr*dr+dg*dg+db*db<1600){D[j+3]=0;continue;}D[j+3]=255;any=1;}
+  if(!any){c.pm=null;return;}const cv=c.pmC||(c.pmC=document.createElement('canvas'));cv.width=f.w;cv.height=f.h;cv.getContext('2d').putImageData(im,0,0);c.pm=cv;}
 function deepRender(st=S,force){if(!st)return;const P=(st.pops||[]).filter(p=>p.deep);if(!P.length){if(st.dpC){st.dpC.getContext('2d').clearRect(0,0,W,H);st.dpC.remove();}return;}
   const C=dpCanvas(st),x=C.getContext('2d'),t=dpTime(),[lx,ly]=lightAt(t);x.clearRect(0,0,W,H);let built=0;const tf0=performance.now();
   for(const p of P){let c=dpCache.get(p);if(!c){c={};dpCache.set(p,c);}
     const can=force||!c.layers||!dpAnimated(p)||(!built&&performance.now()-(c.bt||0)>Math.max(250,(c.fms||0)*4));let did=false;if(can){const k0=c.key;dpBuild(st,p,t);did=c.key!==k0;if(did)built++;}c=dpCache.get(p);if(!c||!c.layers||!c.field)continue;
     const f=c.field,D=p.deep,k=p.k==null?1:Math.max(0,Math.min(1,p.k)),anim=dpAnimated(p);
+    if(c.pmV!==DPPV){c.pmV=DPPV;dpPaint(st,p,c,f);c.Tl=null;}
     const still=!(anim&&(D.drift||D.rot));   /* b60: no drift / sway = the composed area is the same every frame until its layers change, so reuse it */
     if(!c.T){c.T=document.createElement('canvas');c.T.width=f.w;c.T.height=f.h;}const T=c.T,tx=T.getContext('2d');
     if(!(still&&c.Tl===c.layers&&c.Tf===f&&T.width===f.w&&T.height===f.h)){c.Tl=still?c.layers:null;c.Tf=f;tx.globalCompositeOperation='source-over';tx.clearRect(0,0,f.w,f.h);   // per-area compose, then clip to the area
@@ -1461,7 +1466,10 @@ function deepRender(st=S,force){if(!st)return;const P=(st.pops||[]).filter(p=>p.
     for(const L of c.layers){const inner=1-L.df,dx=-lx*amp*inner*(.4+.6*br),dy=-ly*amp*inner*(.4+.6*br);
       if(rot){tx.save();tx.translate(f.cx,f.cy);tx.rotate(rot*inner*(L.i%2?1:-1));tx.translate(-f.cx,-f.cy);tx.drawImage(L.c,L.x-f.x0+dx,L.y-f.y0+dy);tx.restore();}
       else tx.drawImage(L.c,L.x-f.x0+dx,L.y-f.y0+dy);}
-    tx.globalCompositeOperation='destination-in';tx.drawImage(f.mc,0,0);}
+    tx.globalCompositeOperation='destination-in';tx.drawImage(f.mc,0,0);
+    if(c.pm){const P2=c.pm2||(c.pm2=document.createElement('canvas'));if(P2.width!==f.w||P2.height!==f.h){P2.width=f.w;P2.height=f.h;}const px=P2.getContext('2d');   /* b62: 2D color painted over a Deep Pop shows in its exact colour, shaded by the layers under it */
+      px.globalCompositeOperation='copy';px.filter='none';px.drawImage(c.pm,0,0);px.globalCompositeOperation='soft-light';try{px.filter='grayscale(1)';}catch(e){}px.globalAlpha=.85;px.drawImage(T,0,0);px.globalAlpha=1;px.filter='none';
+      px.globalCompositeOperation='destination-in';px.drawImage(c.pm,0,0);px.globalCompositeOperation='source-over';tx.globalCompositeOperation='source-atop';tx.drawImage(P2,0,0);}}
     x.globalAlpha=k;x.drawImage(T,f.x0,f.y0);x.globalAlpha=1;if(did)c.fms=performance.now()-tf0;}
   dpAttach(st);if(st===S&&P.some(dpAnimated)&&!dpRaf)dpRaf=requestAnimationFrame(dpTick);}
 function dpTick(now){dpRaf=0;if(!S||document.hidden){return;}const P=(S.pops||[]).filter(p=>p.deep&&dpAnimated(p));if(!P.length)return;
@@ -1570,8 +1578,12 @@ function applySelHeight(v){if(!S||!S.popSel)return false;const {k,r}=S.popSel;
     if(i>=0){const p=S.pops[i];p.depth=Math.max(10,Math.round(Math.abs(v)*100));p.pressed=v<0;}else S.pops.push({r,rs:[r],depth:Math.max(10,Math.round(Math.abs(v)*100)),pressed:v<0,hz:null});
     renderPops();dirty('pop');return true;}
   const P=ppCanvases(S),b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;if(bw<=0)return false;
-  const R=P.rx.getImageData(bx,by,bw,bh),I=P.ix.getImageData(bx,by,bw,bh),a=Math.round(Math.abs(v)*255);
-  for(let q=S.off[r];q<S.off[r+1];q++){const i=S.pix[q],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3;R.data[j]=v>0?a:0;I.data[j]=v<0?a:0;}
+  const R=P.rx.getImageData(bx,by,bw,bh),I=P.ix.getImageData(bx,by,bw,bh),a=Math.abs(v)*255;
+  /* b62 fix: Raise / Inset / the height slider reshape only the Pop Pencil strokes painted in this area (each keeps its own
+     soft profile, scaled to the new height). Before, they flooded the whole line-enclosed area to one height. */
+  let pk=0;for(let q=S.off[r];q<S.off[r+1];q++){const i=S.pix[q],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3,m=Math.max(R.data[j],I.data[j]);if(m>pk)pk=m;}
+  if(!pk)return false;const sc=a/pk;
+  for(let q=S.off[r];q<S.off[r+1];q++){const i=S.pix[q],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3,m=Math.max(R.data[j],I.data[j]);if(!m)continue;const n=Math.min(255,Math.round(m*sc));R.data[j]=v>0?n:0;I.data[j]=v<0?n:0;}
   P.rx.putImageData(R,bx,by);P.ix.putImageData(I,bx,by);clearTimeout(applySelHeight.t);applySelHeight.t=setTimeout(()=>{ppRender(S);dirty('pp');},40);return true;}
 function popUI(show){const hs=$('#ppH');if(hs){const v=show!=null?show:Math.round(popH()*100);if(+hs.value!==v)hs.value=v;const nb=$('#ppHn');if(nb&&document.activeElement!==nb)nb.value=fxNum(v/100);const o=$('#ppHv');if(o)o.textContent=v>0?'Raise '+v:v<0?'Inset '+(-v):'Flat';hs.style.setProperty('--p',((v+100)/2)+'%');}
   const m=$('#popMode');m.setAttribute('aria-pressed',String(POP.pressed));m.dataset.m=popModeName().toLowerCase();
@@ -1650,6 +1662,80 @@ function buildRelief(st){ // height field -> bevel light + shadow for every rais
   s2x.shadowColor='transparent';s2x.globalCompositeOperation='destination-in';s2x.drawImage(maskOf(l=>l===1),0,0);sx.drawImage(s2,0,0);
   const mI=maskOf(l=>l<0);
   li.className='rel-li';sh.className='rel-sh';return {li,sh,mF,mA,mI,hf};}
+/* ---------- b62 3D by Number: every line-enclosed area has a preset 3D shape (round dome, pillow, cylinder / curl along an axis,
+   flat block with a bevel, or recessed inset), derived from the area's own geometry and the page's depth map, with hand-tuned
+   key areas. With the toggle on in 3D, an area takes its shape as soon as it is colored (any tool: Pencil, Fill, Pop Fill),
+   as a light-and-shadow layer under the line art; the user's colors are never changed. Shapes are built per area the first
+   time it is colored (a small tile) and the page layer is only recomposed when the set of colored areas changes. */
+const S3N_TUNE={   // [x, y, shape, {hz: height 0..1, ax: cylinder axis in degrees}] resolved to the area under (x, y)
+  4:[[797,375,'dome',{hz:1}],[700,322,'pillow',{hz:.9}],[880,300,'pillow',{hz:.9}],[430,300,'bevel',{hz:.7}],[1050,260,'bevel',{hz:.7}],[760,560,'bevel',{hz:.7}],[735,190,'bevel',{hz:.7}],[1050,480,'bevel',{hz:.7}],
+     [300,520,'pillow',{hz:1}],[1350,450,'pillow',{hz:1}]],
+  101:[[575,300,'dome',{hz:1}],[1230,360,'dome',{hz:.9}],[553,535,'dome',{hz:1}],[1150,95,'dome',{hz:1}],[940,600,'cyl',{ax:-15,hz:.8}],[470,240,'pillow',{hz:.9}],
+     [1500,420,'dome',{hz:1}],[1555,420,'dome',{hz:1}],[870,490,'dome',{hz:1}]]};
+const S3N_TYPES=['dome','pillow','cyl','bevel','inset'];
+function s3nOn(){return !!(S&&D3.on&&settings.s3n!==false&&depthOf(S));}
+function s3nTuned(st){if(st.s3tune)return st.s3tune;const m=new Map();for(const [x,y,t,o] of S3N_TUNE[st.n]||[]){const r=st.lab[(y|0)*W+(x|0)];if(r)m.set(r,Object.assign({t},o||{}));}return st.s3tune=m;}
+function s3nSpec(st,r){st.s3s=st.s3s||new Map();if(st.s3s.has(r))return st.s3s.get(r);const T=depthOf(st);let sp=null;
+  const tu=s3nTuned(st).get(r),lv=T?T.lv[r]:0,n=st.off[r+1]-st.off[r];
+  if(tu||(lv&&n>=40)){let sx=0,sy=0;for(let p=st.off[r];p<st.off[r+1];p++){const i=st.pix[p];sx+=i%W;sy+=(i/W)|0;}const mx=sx/n,my=sy/n;let a=0,b=0,c=0;
+    for(let p=st.off[r];p<st.off[r+1];p++){const i=st.pix[p],dx=i%W-mx,dy=((i/W)|0)-my;a+=dx*dx;b+=dx*dy;c+=dy*dy;}a/=n;b/=n;c/=n;
+    const tr=(a+c)/2,dt=Math.sqrt(Math.max(0,tr*tr-(a*c-b*b))),l1=tr+dt,l2=Math.max(1e-6,tr-dt),el=Math.sqrt(l1/l2),ang=Math.atan2(l1-a,b||1e-9);   // major axis angle
+    const hz=Math.min(1,.45+.55*Math.abs((T&&T.h[r]||50)/100));let t;
+    const b4=r*4,box=(st.bb[b4+2]-st.bb[b4]+1)*(st.bb[b4+3]-st.bb[b4+1]+1),rect=n/Math.max(1,box);   /* boxy areas (steps, stones, planks, panels) are blocks */
+    if(lv<0)t='inset';else if(el>2.6&&Math.sqrt(l2)<26)t='cyl';else if(Math.sqrt(l2)<4.5||n<160)t='bevel';else if(rect>.8&&n>1500)t='bevel';else if(n>22000)t='pillow';else t='dome';
+    sp=Object.assign({t,ax:ang*180/Math.PI,hz},tu||{});}
+  st.s3s.set(r,sp);return sp;}
+function s3nTile(st,r){st.s3t=st.s3t||new Map();const sp=s3nSpec(st,r);if(!sp)return null;const key=sp.t+'|'+sp.hz+'|'+sp.ax;let t=st.s3t.get(r);if(t&&t.key===key)return t;
+  const b=r*4,x0=Math.max(0,st.bb[b]-1),y0=Math.max(0,st.bb[b+1]-1),x1=Math.min(W-1,st.bb[b+2]+1),y1=Math.min(H-1,st.bb[b+3]+1),w=x1-x0+1,h=y1-y0+1;if(w<3||h<3)return null;
+  const m=new Uint8Array(w*h);for(let p=st.off[r];p<st.off[r+1];p++){const i=st.pix[p];m[(((i/W)|0)-y0)*w+(i%W)-x0]=1;}
+  const d=new Float32Array(w*h);for(let i=0;i<w*h;i++)d[i]=m[i]?1e9:0;chamfer(d,w,h);let dm=1;for(let i=0;i<w*h;i++)if(d[i]>dm)dm=d[i];
+  const sm=u=>u>=1?1:u*u*(3-2*u),hf=new Float32Array(w*h),hz=sp.hz;let ux=0,uy=0;
+  if(sp.t==='cyl'){const a=(sp.ax+90)*Math.PI/180;ux=Math.cos(a);uy=Math.sin(a);}   // across the axis
+  for(let i=0;i<w*h;i++){if(!m[i])continue;const v=d[i];let z;
+    if(sp.t==='dome'||sp.t==='cyl'){const u=Math.min(1,v/dm);z=Math.sqrt(1-(1-u)*(1-u))*dm*.85*hz;}
+    else if(sp.t==='pillow'){const P=Math.min(dm,22),u=Math.min(1,v/P);z=(Math.sqrt(1-(1-u)*(1-u))*P*.8+Math.min(v,dm)*.04)*hz;}
+    else if(sp.t==='bevel'){const B=Math.min(6,dm);z=sm(Math.min(1,v/B))*B*.9*hz;}
+    else{const B=Math.min(10,dm);z=-sm(Math.min(1,v/B))*B*.9*hz;}
+    hf[i]=z;}
+  {const K=Math.max(2,Math.min(24,Math.round(dm*(sp.t==='bevel'?.15:.3)))),ps=new Float64Array(Math.max(w,h)+1),pc=new Float64Array(Math.max(w,h)+1);   // masked box blur (x then y, twice): smooth domes without the distance field's creases
+    for(let pass=0;pass<2;pass++){for(let y=0;y<h;y++){for(let x=0;x<w;x++){const i=y*w+x;ps[x+1]=ps[x]+(m[i]?hf[i]:0);pc[x+1]=pc[x]+m[i];}
+        for(let x=0;x<w;x++){const i=y*w+x;if(!m[i])continue;const a0=Math.max(0,x-K),a1=Math.min(w,x+K+1);hf[i]=(ps[a1]-ps[a0])/(pc[a1]-pc[a0]);}}
+      for(let x=0;x<w;x++){for(let y=0;y<h;y++){const i=y*w+x;ps[y+1]=ps[y]+(m[i]?hf[i]:0);pc[y+1]=pc[y]+m[i];}
+        for(let y=0;y<h;y++){const i=y*w+x;if(!m[i])continue;const a0=Math.max(0,y-K),a1=Math.min(h,y+K+1);hf[i]=(ps[a1]-ps[a0])/(pc[a1]-pc[a0]);}}}}
+  const c=document.createElement('canvas');c.width=w;c.height=h;const cx=c.getContext('2d'),im=cx.createImageData(w,h),P=im.data;
+  const Lx=-.5,Ly=-.62,Lz=.6,Ll=Math.hypot(Lx,Ly,Lz),l0=Lz/Ll;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=y*w+x;if(!m[i])continue;let gx=(hf[i+1]-hf[i-1])*.5,gy=(hf[i+w]-hf[i-w])*.5;
+    if(ux||uy){const g=gx*ux+gy*uy;gx=g*ux;gy=g*uy;}
+    const nl=Math.hypot(gx,gy,1),lam=(-gx*Lx-gy*Ly+Lz)/(nl*Ll),v=lam-l0,j=i*4;
+    if(v>0){P[j]=255;P[j+1]=248;P[j+2]=232;P[j+3]=Math.min(52,v*150);}else{P[j]=40;P[j+1]=24;P[j+2]=10;P[j+3]=Math.min(150,-v*260);}   // like the relief: the lit side keeps the real colour (soft sheen), shade does the shaping
+    if(sp.t==='inset'){const ao=1-sm(Math.min(1,d[i]/Math.min(10,dm)));P[j+3]=Math.min(200,P[j+3]+(v>0?0:ao*40));}}
+  cx.putImageData(im,0,0);
+  const mc=document.createElement('canvas');mc.width=w;mc.height=h;const mx2=mc.getContext('2d'),mi=mx2.createImageData(w,h);for(let i=0;i<w*h;i++)if(m[i])mi.data[i*4+3]=255;mx2.putImageData(mi,0,0);
+  t={key,c,mc,x0,y0};st.s3t.set(r,t);return t;}
+function s3nColored(st){const col=new Uint8Array(st.N);   /* Miles's spec: the preset shape stays hidden until a 3D tool is used: Pop Fill on an area builds that area's preset shape (plain Fill / 2D stay flat) */
+  for(const p of st.pops||[])if(!p.deep)for(const q of p.rs||[p.r])col[q]=1;
+  return col;}
+function s3nCanvas(st){if(!st.s3c){st.s3c=mk();st.s3c.className='s3n-li';st.s3c.style.pointerEvents='none';}return st.s3c;}
+let s3nT=0;function s3nSoon(){clearTimeout(s3nT);s3nT=setTimeout(()=>{try{s3nRender(S);}catch(e){console.warn(e);}},140);}
+function s3nRender(st){if(!st)return;const on=st===S&&s3nOn();
+  if(!on){clearTimeout(st.s3q&&st.s3q.t);st.s3q=null;if(st.s3c){st.s3c.remove();}if(st.relief&&st.relief.li0){const g=st.relief.li.getContext('2d');g.clearRect(0,0,W,H);g.drawImage(st.relief.li0,0,0);}st.s3set=null;st.s3key='';if(st.s3was)renderPops(st);st.s3was=false;return;}
+  const col=s3nColored(st),rs=[];for(let r=1;r<st.N;r++)if(col[r]&&s3nSpec(st,r))rs.push(r);
+  const C=s3nCanvas(st);if(st.relief&&C.previousSibling!==st.relief.li)layers.insertBefore(C,st.relief.li.nextSibling);
+  const R=st.relief;if(R&&!R.li0){R.li0=mk();R.li0.getContext('2d').drawImage(R.li,0,0);}
+  const old=st.s3set,nw=new Set(rs);let add=rs;
+  if(!old||[...old].some(r=>!nw.has(r))){C.getContext('2d').clearRect(0,0,W,H);if(R){const g=R.li.getContext('2d');g.clearRect(0,0,W,H);g.drawImage(R.li0,0,0);}st.s3set=new Set();}   // an area lost its color: recompose
+  else add=rs.filter(r=>!old.has(r));
+  st.s3key=rs.join(',');if(!add.length)return;
+  const q=st.s3q||(st.s3q={list:[],t:0});q.list=add;clearTimeout(q.t);
+  /* new areas are shaped in small time slices, so a fully colored page never blocks a frame */
+  const run=()=>{q.t=0;if(st!==S||!s3nOn())return;const t0=performance.now(),x=C.getContext('2d'),g=R&&R.li.getContext('2d');if(g)g.globalCompositeOperation='destination-out';
+    while(q.list.length&&performance.now()-t0<8){const r=q.list.shift();const t=s3nTile(st,r);st.s3set.add(r);if(!t)continue;x.drawImage(t.c,t.x0,t.y0);if(g)g.drawImage(t.mc,t.x0,t.y0);}
+    if(g)g.globalCompositeOperation='source-over';st.s3ms=(st.s3ms||0)+performance.now()-t0;
+    if(q.list.length)q.t=setTimeout(run,16);else{const was=st.s3was;st.s3was=true;if(!was||(st.pops||[]).length)renderPops(st);}};
+  run();}
+function s3nSkipPop(st,p){return st.s3was&&s3nOn()&&!p.deep&&(p.rs||[p.r]).every(q=>s3nSpec(st,q));}   // Pop Fill areas take their preset shape instead of the generic bevel
+function s3nToggle(v){settings.s3n=v;LS.set('settings',settings);s3nUI();if(S){S.s3set=null;s3nRender(S);}toast(v?'3D by Number on · Pop Fill builds each area\'s own preset shape':'3D by Number off · Pop Fill uses the plain bevel');}
+function s3nUI(){const b=$('#s3nBtn');if(!b)return;const on=settings.s3n!==false;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);const s=b.querySelector('small');if(s)s.textContent=on?'On':'Off';}
 function apply3D(quiet){if(!S)return;scheduleLineTint();const want=D3.want&&!!depthOf(S);
   if(want&&!allowed3D(S.n)){D3.on=false;if(!quiet)openUpgrade(null,'effects3d');}
   else D3.on=want;
@@ -1660,7 +1746,7 @@ function apply3D(quiet){if(!S)return;scheduleLineTint();const want=D3.want&&!!de
   else if(S.popSh){S.popSh.style.display='';S.popLi.style.display='';}
   if(!D3.on&&D3.band)bandView(false);
   if(D3.fresh){D3.fresh=false;setToolSet(D3.on?'3d':'2d');}else if(!D3.on&&toolSet==='3d')setToolSet('2d');
-  modeLabels();popParallax();sway();}
+  modeLabels();popParallax();sway();s3nSoon();}
 function set3D(v){D3.want=v;settings.view3d=v;LS.set('settings',settings);if(v)enableTilt();
   if(v&&S&&!allowed3D(S.n)){D3.want=false;settings.view3d=false;LS.set('settings',settings);openUpgrade(null,'effects3d');modeLabels();return;}
   if(!S)return;needDepth(S.n).then(()=>{apply3D(false);if(v&&!D3.on&&!depthOf(S)){D3.want=false;settings.view3d=false;LS.set('settings',settings);modeLabels();toast('3D isn\'t available on this page yet · staying in 2D');return;}toast(D3.on?(mode==='cbn'?'3D by Number':'3D Free Color')+' · color right onto the relief':(mode==='cbn'?'Color by Number':'Free Color'));});}
@@ -3075,7 +3161,7 @@ if(0)$('#popDepth').oninput=e=>{const v=+e.target.value;POP.flat=v===0;POP.press
 if(0)$('#popWhole').onclick=()=>{POP.whole=!POP.whole;settings.popWhole=POP.whole;LS.set('settings',settings);$('#popWhole').classList.toggle('on',POP.whole);toast(POP.whole?'Pop whole object: one tap raises the whole object':'Pop one area at a time');};
 function want3DTools(after){if(!S)return;needDepth(S.n).then(()=>{if(!depthOf(S)){toast('3D isn\'t available on this page yet · staying in 2D');return;}
   if(!allowed3D(S.n)){openUpgrade(null,'effects3d');return;}enableTilt();if(!D3.on){D3.want=true;D3.fresh=false;apply3D(true);}setToolSet('3d');if(after)after();});}
-$('#btn2d').onclick=()=>setToolSet('2d');$('#btn3d').onclick=()=>{if(toolSet!=='3d')want3DTools();};
+$('#btn2d').onclick=()=>setToolSet('2d');$('#s3nBtn')&&($('#s3nBtn').onclick=()=>s3nToggle(settings.s3n===false));s3nUI();$('#btn3d').onclick=()=>{if(toolSet!=='3d')want3DTools();};
 $('#bandBtn').onclick=()=>{if(!D3.on)return;enableTilt();bandView(!D3.band);};$('#bandv').onclick=()=>bandView(false);
 $('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));
 $('#ppColor').onclick=()=>{settings.ppColor=settings.ppColor===false;LS.set('settings',settings);$('#ppColor').setAttribute('aria-pressed',String(settings.ppColor!==false));toast(settings.ppColor!==false?'Color while popping: on (uses your current pencil)':'Color while popping: off (only raises / insets)');};
@@ -3256,7 +3342,7 @@ document.addEventListener('keydown',e=>{if(/INPUT|TEXTAREA/.test((document.activ
 
 /* ---------- saving each scene's coloring ---------- */
 const pend={};let saveT=0;
-function dirty(kind){if(!S)return;if(kind==='free'||kind==='cbn'||kind==='pop')try{dpTileSoon();}catch(e){}if(kind==='free')dpRecolorSoon();if(kind==='free')try{scheduleIdeas();}catch(e){}if(S.ltAny&&(kind==='free'||kind==='cbn'))scheduleLineTint();if((kind==='free'||kind==='cbn')&&!linesDefault(S.lines))scheduleLines();if(kind==='cbn')linesDoneGlow();if(kind==='free'||kind==='pulse')S.envDirty=true;if(kind==='pp')S.ppV=(S.ppV||0)+1;if(kind==='pulse'){const sl=$('#saveLoop');if(sl)sl.hidden=!(S.pulseUsed&&mode==='free');}pend[S.n]=pend[S.n]||{};pend[S.n][kind]=1;clearTimeout(saveT);saveT=setTimeout(saveNow,1500);}
+function dirty(kind){if(!S)return;if(kind==='free'&&(S.pops||[]).some(p=>p.deep)){DPPV++;try{deepRender(S);}catch(e){}}if(kind==='free'||kind==='cbn'||kind==='pop')s3nSoon();if(kind==='free'||kind==='cbn'||kind==='pop')try{dpTileSoon();}catch(e){}if(kind==='free')dpRecolorSoon();if(kind==='free')try{scheduleIdeas();}catch(e){}if(S.ltAny&&(kind==='free'||kind==='cbn'))scheduleLineTint();if((kind==='free'||kind==='cbn')&&!linesDefault(S.lines))scheduleLines();if(kind==='cbn')linesDoneGlow();if(kind==='free'||kind==='pulse')S.envDirty=true;if(kind==='pp')S.ppV=(S.ppV||0)+1;if(kind==='pulse'){const sl=$('#saveLoop');if(sl)sl.hidden=!(S.pulseUsed&&mode==='free');}pend[S.n]=pend[S.n]||{};pend[S.n][kind]=1;clearTimeout(saveT);saveT=setTimeout(saveNow,1500);}
 function saveNow(){deferFlush();clearTimeout(saveT);
   for(const k of Object.keys(pend)){const st=cache[k];if(!st){delete pend[k];continue;}const p=pend[k];
     if(p.cbn){const ids=[];for(let r=1;r<st.N;r++)if(st.cbn.filled[r])ids.push(r);ids.length?LS.set('cbn.'+k,ids.join(',')):LS.del('cbn.'+k);}
@@ -3523,7 +3609,7 @@ window.EP={
   texAt:(k,h,x,y)=>{const D=texTile(k,texVariant(k,h),hex2rgb(h),true).data,j=(Math.min(H-1,Math.max(0,y))*W+Math.min(W-1,Math.max(0,x)))*4;return [D[j],D[j+1],D[j+2]];},
   fxDrawNow:()=>fxDraw(performance.now()),fxDrawAt:(ms)=>fxDraw(ms),
   boltI:(t)=>boltI(t),bolt:()=>(S.fx||[]).filter(r=>r.kind==='boltfx').map(r=>({hex:r.hex,I:r.lastI||0,off:r.bolt?r.bolt.off:null})),boltClock:(t)=>{if(t==null){BFIX=false;return CLK.boltSpeed;}BFIX=true;CLK.boltSpeed=t;fxDraw(performance.now());return t;},openUpgrade:(k)=>openUpgrade(null,k),fxSets:(k)=>SETS.filter(q=>q.product===k&&q.type==='ink').map(q=>q.name),
-clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
+s3n:()=>({on:s3nOn(),setting:settings.s3n!==false,shaped:S&&S.s3key?S.s3key.split(',').filter(Boolean).length:0,ms:S&&S.s3ms,types:S&&S.s3s?[...S.s3s.values()].filter(Boolean).reduce((o,v)=>(o[v.t]=(o[v.t]||0)+1,o),{}):{}}),s3nSpecAt:(x,y)=>{const r=labAt(x,y);return r?{r,sp:s3nSpec(S,r)}:null;},clk:()=>Object.assign({chrome:CCLK,pulse:PCLK},CLK),
   fxHexes:()=>(S.fx||[]).map(r=>[r.kind,r.hex]),
   chromeClock:(t)=>{if(t==null){CFIX=false;return CCLK;}CFIX=true;CCLK=t;fxDraw(performance.now());return CCLK;},
   fxNoLight:(norm)=>{(S&&S.fx||[]).forEach(r=>{r.light=null;if(norm){r.sp=1;r.ph=0;}});fxDraw(performance.now());return true;},   /* tests: measure the glint on its own */
