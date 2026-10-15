@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=62;let EP_place=null;
+const EP_BUILD=63;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1033,7 +1033,8 @@ const DEFQ=[];let defT=0;
 function defer(fn){DEFQ.push(fn);if(!defT)defT=setTimeout(()=>requestAnimationFrame(()=>{defT=setTimeout(defRun,0);}),0);}
 function defRun(){defT=0;const t0=performance.now();while(DEFQ.length){const f=DEFQ.shift();try{f();}catch(e){console.warn(e);}if(DEFQ.length&&performance.now()-t0>8){defT=setTimeout(defRun,16);return;}}}
 function deferFlush(){if(!DEFQ.length)return;while(DEFQ.length){const f=DEFQ.shift();try{f();}catch(e){console.warn(e);}}}
-function commitPaint(){snapFill();try{const b=stroke&&stroke.bbx;if(b&&!stroke.er&&((S.pops||[]).length||(S.pp&&S.pp.any))){   /* b40: only the areas the stroke really touched (sampled), not its whole box */
+function commitPaint(){snapFill();try{const b=stroke&&stroke.bbx;if(b&&!stroke.er&&S.pp&&S.pp.any)setTimeout(()=>{try{ppRender(S,[Math.floor(b[0])-8,Math.floor(b[1])-8,Math.ceil(b[2])+8,Math.ceil(b[3])+8]);}catch(e){}},0);}catch(e){}   /* b63: Pop Pencil light/shade are tints of the colour under them: re-tint the painted spot */
+  try{const b=stroke&&stroke.bbx;if(b&&!stroke.er&&((S.pops||[]).length||(S.pp&&S.pp.any))){   /* b40: only the areas the stroke really touched (sampled), not its whole box */
     const x0=Math.max(0,b[0]-2|0),y0=Math.max(0,b[1]-2|0),w=Math.min(W,(b[2]+3)|0)-x0,h=Math.min(H,(b[3]+3)|0)-y0;if(w>0&&h>0){const d=strokeC.getContext('2d').getImageData(x0,y0,w,h).data,L=new Set(),st=w*h>40000?3:2;
       for(let y=0;y<h;y+=st)for(let x=0;x<w;x+=st)if(d[(y*w+x)*4+3]>8){const l=S.lab[(y0+y)*W+x0+x];if(l)L.add(l);}popsRecolor(x0,y0,w,h,L);}}}catch(e){}
   let src=strokeC;if(!stroke.er&&stroke.st!=='water'){const b=stroke.bbx||[0,0,W,H],bx=b[0]-2,by=b[1]-2,bw=b[2]-b[0]+4,bh=b[3]-b[1]+4;
@@ -1279,7 +1280,7 @@ POP.whole=true;
 const popH=()=>POP.flat?0:(POP.pressed?-1:1)*POP.hv;   // v12: one two-way height: + raises, 0 flat, - insets
 function setPopH(v){v=Math.max(-1,Math.min(1,Math.round(v*100)/100));POP.flat=v===0;if(v)POP.pressed=v<0;POP.hv=Math.abs(v);if(v)POP.depth=Math.max(10,Math.round(POP.hv*100));
   settings.popH=v;settings.popMode=POP.flat?'flat':POP.pressed?'inset':'raised';LS.set('settings',settings);popUI();}
-const popModeName=()=>POP.pressed?'Inset':'Raise';
+const popModeName=()=>POP.pressed?'Invert':'Pop';
 function chamfer(d,w,h){for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x;if(!d[i])continue;let v=d[i];
     if(x>0)v=Math.min(v,d[i-1]+1);if(y>0){v=Math.min(v,d[i-w]+1);if(x>0)v=Math.min(v,d[i-w-1]+1.414);if(x<w-1)v=Math.min(v,d[i-w+1]+1.414);}d[i]=v;}
   for(let y=h-1;y>=0;y--)for(let x=w-1;x>=0;x--){const i=y*w+x;if(!d[i])continue;let v=d[i];
@@ -1468,7 +1469,7 @@ function deepRender(st=S,force){if(!st)return;const P=(st.pops||[]).filter(p=>p.
       else tx.drawImage(L.c,L.x-f.x0+dx,L.y-f.y0+dy);}
     tx.globalCompositeOperation='destination-in';tx.drawImage(f.mc,0,0);
     if(c.pm){const P2=c.pm2||(c.pm2=document.createElement('canvas'));if(P2.width!==f.w||P2.height!==f.h){P2.width=f.w;P2.height=f.h;}const px=P2.getContext('2d');   /* b62: 2D color painted over a Deep Pop shows in its exact colour, shaded by the layers under it */
-      px.globalCompositeOperation='copy';px.filter='none';px.drawImage(c.pm,0,0);px.globalCompositeOperation='soft-light';try{px.filter='grayscale(1)';}catch(e){}px.globalAlpha=.85;px.drawImage(T,0,0);px.globalAlpha=1;px.filter='none';
+      px.globalCompositeOperation='copy';px.filter='none';px.drawImage(c.pm,0,0);px.globalCompositeOperation='soft-light';try{px.filter='grayscale(1)';}catch(e){}px.globalAlpha=.55;px.drawImage(T,0,0);px.globalAlpha=1;px.filter='none';
       px.globalCompositeOperation='destination-in';px.drawImage(c.pm,0,0);px.globalCompositeOperation='source-over';tx.globalCompositeOperation='source-atop';tx.drawImage(P2,0,0);}}
     x.globalAlpha=k;x.drawImage(T,f.x0,f.y0);x.globalAlpha=1;if(did)c.fms=performance.now()-tf0;}
   dpAttach(st);if(st===S&&P.some(dpAnimated)&&!dpRaf)dpRaf=requestAnimationFrame(dpTick);}
@@ -1556,10 +1557,10 @@ function popTap(x,y,noColor){try{redoClear();}catch(e){}const r=labAt(x,y);if(!r
   if(POP.flat){if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');}S.popSel={k:'pop',r};if(!noColor)popColor(x,y,r);return;}   /* b33: height 0 = a flat color fill */
   const T=depthOf(S),pressed=(T&&T.lv[r]<0)?true:!!POP.pressed,depth=Math.max(10,Math.round(POP.depth)),fin=()=>{renderPops();dirty('pop');if(S&&S.popSel&&S.popSel.r===r)popSelect('pop',r);};
   S.popSel={k:'pop',r};
-  if(i>=0){const p=S.pops[i];if(p.anim)return;if(settings.deepOn&&!p.deep){p.deep=dpNew();p.deep.carved=pressed;}else if(!settings.deepOn&&p.deep){delete p.deep;}const same=p.pressed===pressed&&p.depth===depth;p.pressed=pressed;p.depth=depth;if(same)fin();else{p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}}
+  if(i>=0){const p=S.pops[i];if(p.anim)return;if(settings.deepOn&&!p.deep){p.deep=dpNew();p.deep.carved=pressed;}else if(!settings.deepOn&&p.deep){delete p.deep;}if(s3nOn()&&!p.deep){p.lvl=Math.max(-3,Math.min(4,(p.lvl==null?1:p.lvl)+(POP.pressed?-1:1)));renderPops();s3nSoon();dirty('pop');if(S.popSel)popSelect('pop',r);toast(p.lvl>0?'Preset shape · level '+p.lvl:p.lvl===0?'Flat':'Indented · level '+(-p.lvl));return;}   /* b63: Pop / Invert passes on a preset shape */const same=p.pressed===pressed&&p.depth===depth;p.pressed=pressed;p.depth=depth;if(same)fin();else{p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}}
   else{if(!Effects3D.unlocked()){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
       const l=Trials.popsLeft();toast(l?`Pop Fill · free tries: ${l} left`:'That was your last free Pop Fill ✦');}
-    const p={r,rs:[r],depth,pressed,hz:null};if(settings.deepOn){p.deep=dpNew();p.deep.carved=pressed;}S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}
+    const p={r,rs:[r],depth,pressed,hz:null};if(s3nOn())p.lvl=1;if(settings.deepOn){p.deep=dpNew();p.deep.carved=pressed;}S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}
   if(noColor||settings.ppColor===false)return;if(dpColored(r)){if(!popTap.told){popTap.told=1;toast('Pop Fill kept the color that\u2019s already here · use Fill to recolor');}return;}popColor(x,y,r);}   /* b42: popping a finished picture never repaints it with the current pencil; Color while popping colors blank areas only */
 function popColor(x,y,r){if(mode==='free'){if(ink&&ink.kind==='brush')return;fillFree(x,y);}else if(!S.cbn.filled[r]&&S.num[r]===selNum)tapCBN(x,y);}
 function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}}
@@ -1567,6 +1568,8 @@ function popRestyle(){applySelHeight(popH());}   // v13: the slider / switch dri
 /* v13: the Pop height slider follows the section you last drew in or tapped (Pop Pencil, 3D Pop, Pop Erase). Moving it sets
    that one section's height (whole line-enclosed area, + raise / - inset / 0 flat); other sections keep their own heights. */
 function popSelect(k,r){if(!S||!r)return;S.popSel={k,r};if($('#deep')&&!$('#deep').hidden)setTimeout(dpBuildUI,0);const h=selHeight();if(h!=null){POP.hv=Math.abs(h)||POP.hv;if(h){POP.pressed=h<0;POP.flat=false;}popUI(Math.round(h*100));}}
+function selHeightOf(r){const P=S.pp;if(!P||!P.any)return 0;const b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;if(bw<=0)return 0;const d=P.rx.getImageData(bx,by,bw,bh).data,e=P.ix.getImageData(bx,by,bw,bh).data,n=S.off[r+1]-S.off[r],st=Math.max(1,(n/3000)|0);
+  for(let q=S.off[r];q<S.off[r+1];q+=st){const i=S.pix[q],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3;if(d[j]||e[j])return 1;}return 0;}
 function selHeight(){if(!S||!S.popSel)return null;const {k,r}=S.popSel;
   if(k==='pop'){const p=(S.pops||[]).find(q=>(q.rs||[q.r]).includes(r));return p?(p.pressed?-1:1)*Math.min(1,p.depth/100):0;}
   const P=S.pp;if(!P)return 0;const b=r*4,bx=S.bb[b],by=S.bb[b+1],bw=S.bb[b+2]-bx+1,bh=S.bb[b+3]-by+1;if(bw<=0)return 0;
@@ -1586,7 +1589,7 @@ function applySelHeight(v){if(!S||!S.popSel)return false;const {k,r}=S.popSel;
   for(let q=S.off[r];q<S.off[r+1];q++){const i=S.pix[q],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3,m=Math.max(R.data[j],I.data[j]);if(!m)continue;const n=Math.min(255,Math.round(m*sc));R.data[j]=v>0?n:0;I.data[j]=v<0?n:0;}
   P.rx.putImageData(R,bx,by);P.ix.putImageData(I,bx,by);clearTimeout(applySelHeight.t);applySelHeight.t=setTimeout(()=>{ppRender(S);dirty('pp');},40);return true;}
 function popUI(show){const hs=$('#ppH');if(hs){const v=show!=null?show:Math.round(popH()*100);if(+hs.value!==v)hs.value=v;const nb=$('#ppHn');if(nb&&document.activeElement!==nb)nb.value=fxNum(v/100);const o=$('#ppHv');if(o)o.textContent=v>0?'Raise '+v:v<0?'Inset '+(-v):'Flat';hs.style.setProperty('--p',((v+100)/2)+'%');}
-  const m=$('#popMode');m.setAttribute('aria-pressed',String(POP.pressed));m.dataset.m=popModeName().toLowerCase();
+  const m=$('#popMode');m.setAttribute('aria-pressed',String(POP.pressed));m.dataset.m=POP.pressed?'inset':'raise';
   m.querySelectorAll('i').forEach(b=>b.classList.toggle('on',b.dataset.v===m.dataset.m));}
 /* Pop Erase: flattens a manual pop (2D) or the template relief of an area (3D modes); tap again in 3D to restore */
 function popErase(x,y){const r=labAt(x,y);if(!r||!S)return;const hadPop=(S.pops||[]).some(q=>(q.rs||[q.r]).includes(r));S.popSel={k:hadPop?'pop':'pp',r};setTimeout(()=>popUI(0),0);
@@ -1685,7 +1688,11 @@ function s3nSpec(st,r){st.s3s=st.s3s||new Map();if(st.s3s.has(r))return st.s3s.g
     if(lv<0)t='inset';else if(el>2.6&&Math.sqrt(l2)<26)t='cyl';else if(Math.sqrt(l2)<4.5||n<160)t='bevel';else if(rect>.8&&n>1500)t='bevel';else if(n>22000)t='pillow';else t='dome';
     sp=Object.assign({t,ax:ang*180/Math.PI,hz},tu||{});}
   st.s3s.set(r,sp);return sp;}
-function s3nTile(st,r){st.s3t=st.s3t||new Map();const sp=s3nSpec(st,r);if(!sp)return null;const key=sp.t+'|'+sp.hz+'|'+sp.ax;let t=st.s3t.get(r);if(t&&t.key===key)return t;
+function s3nTileBase(st,r){const sv=st.pops;try{st.pops=[];return s3nTile(st,r);}finally{st.pops=sv;}}
+function s3nLvl(st,r){const p=(st.pops||[]).find(q=>!q.deep&&(q.rs||[q.r]).includes(r));return p&&p.lvl!=null?p.lvl:1;}
+function s3nSpecL(st,r){const sp=s3nSpec(st,r);if(!sp)return null;const L=s3nLvl(st,r);if(L===1)return sp;if(L===0)return null;
+  if(L>1)return Object.assign({},sp,{hz:Math.min(2.2,sp.hz*(1+.55*(L-1)))});return Object.assign({},sp,{t:'inset',hz:sp.hz*(.7+.5*(-L-1))});}
+function s3nTile(st,r){st.s3t=st.s3t||new Map();const sp=s3nSpecL(st,r);if(!sp)return null;const key=sp.t+'|'+sp.hz+'|'+sp.ax;let t=st.s3t.get(r);if(t&&t.key===key)return t;
   const b=r*4,x0=Math.max(0,st.bb[b]-1),y0=Math.max(0,st.bb[b+1]-1),x1=Math.min(W-1,st.bb[b+2]+1),y1=Math.min(H-1,st.bb[b+3]+1),w=x1-x0+1,h=y1-y0+1;if(w<3||h<3)return null;
   const m=new Uint8Array(w*h);for(let p=st.off[r];p<st.off[r+1];p++){const i=st.pix[p];m[(((i/W)|0)-y0)*w+(i%W)-x0]=1;}
   const d=new Float32Array(w*h);for(let i=0;i<w*h;i++)d[i]=m[i]?1e9:0;chamfer(d,w,h);let dm=1;for(let i=0;i<w*h;i++)if(d[i]>dm)dm=d[i];
@@ -1711,7 +1718,8 @@ function s3nTile(st,r){st.s3t=st.s3t||new Map();const sp=s3nSpec(st,r);if(!sp)re
     if(sp.t==='inset'){const ao=1-sm(Math.min(1,d[i]/Math.min(10,dm)));P[j+3]=Math.min(200,P[j+3]+(v>0?0:ao*40));}}
   cx.putImageData(im,0,0);
   const mc=document.createElement('canvas');mc.width=w;mc.height=h;const mx2=mc.getContext('2d'),mi=mx2.createImageData(w,h);for(let i=0;i<w*h;i++)if(m[i])mi.data[i*4+3]=255;mx2.putImageData(mi,0,0);
-  t={key,c,mc,x0,y0};st.s3t.set(r,t);return t;}
+  let zm=0;for(let i=0;i<w*h;i++)if(Math.abs(hf[i])>zm)zm=Math.abs(hf[i]);const z=new Float32Array(w*h);if(zm)for(let i=0;i<w*h;i++)z[i]=Math.abs(hf[i])/zm;
+  t={key,c,mc,x0,y0,w,h,z};st.s3t.set(r,t);return t;}
 function s3nColored(st){const col=new Uint8Array(st.N);   /* Miles's spec: the preset shape stays hidden until a 3D tool is used: Pop Fill on an area builds that area's preset shape (plain Fill / 2D stay flat) */
   for(const p of st.pops||[])if(!p.deep)for(const q of p.rs||[p.r])col[q]=1;
   return col;}
@@ -1719,7 +1727,7 @@ function s3nCanvas(st){if(!st.s3c){st.s3c=mk();st.s3c.className='s3n-li';st.s3c.
 let s3nT=0;function s3nSoon(){clearTimeout(s3nT);s3nT=setTimeout(()=>{try{s3nRender(S);}catch(e){console.warn(e);}},140);}
 function s3nRender(st){if(!st)return;const on=st===S&&s3nOn();
   if(!on){clearTimeout(st.s3q&&st.s3q.t);st.s3q=null;if(st.s3c){st.s3c.remove();}if(st.relief&&st.relief.li0){const g=st.relief.li.getContext('2d');g.clearRect(0,0,W,H);g.drawImage(st.relief.li0,0,0);}st.s3set=null;st.s3key='';if(st.s3was)renderPops(st);st.s3was=false;return;}
-  const col=s3nColored(st),rs=[];for(let r=1;r<st.N;r++)if(col[r]&&s3nSpec(st,r))rs.push(r);
+  const col=s3nColored(st),rs=[];for(let r=1;r<st.N;r++)if(col[r]&&s3nSpec(st,r))rs.push(r);const lk=rs.map(r=>s3nLvl(st,r)).join(',');if(lk!==st.s3lk){st.s3lk=lk;st.s3set=null;}
   const C=s3nCanvas(st);if(st.relief&&C.previousSibling!==st.relief.li)layers.insertBefore(C,st.relief.li.nextSibling);
   const R=st.relief;if(R&&!R.li0){R.li0=mk();R.li0.getContext('2d').drawImage(R.li,0,0);}
   const old=st.s3set,nw=new Set(rs);let add=rs;
@@ -1734,7 +1742,7 @@ function s3nRender(st){if(!st)return;const on=st===S&&s3nOn();
     if(q.list.length)q.t=setTimeout(run,16);else{const was=st.s3was;st.s3was=true;if(!was||(st.pops||[]).length)renderPops(st);}};
   run();}
 function s3nSkipPop(st,p){return st.s3was&&s3nOn()&&!p.deep&&(p.rs||[p.r]).every(q=>s3nSpec(st,q));}   // Pop Fill areas take their preset shape instead of the generic bevel
-function s3nToggle(v){settings.s3n=v;LS.set('settings',settings);s3nUI();if(S){S.s3set=null;s3nRender(S);}toast(v?'3D by Number on · Pop Fill builds each area\'s own preset shape':'3D by Number off · Pop Fill uses the plain bevel');}
+function s3nToggle(v){settings.s3n=v;LS.set('settings',settings);s3nUI();if(S){S.s3set=null;s3nRender(S);}toast(v?'Preset 3D shapes on · Pop Fill and Pop Pencil build each area\'s own shape':'Preset 3D shapes off · plain bevel');}
 function s3nUI(){const b=$('#s3nBtn');if(!b)return;const on=settings.s3n!==false;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on);const s=b.querySelector('small');if(s)s.textContent=on?'On':'Off';}
 function apply3D(quiet){if(!S)return;scheduleLineTint();const want=D3.want&&!!depthOf(S);
   if(want&&!allowed3D(S.n)){D3.on=false;if(!quiet)openUpgrade(null,'effects3d');}
@@ -2590,7 +2598,7 @@ function ppBegin(x,y){try{redoClear();}catch(e){}
   if(!Effects3D.unlocked()&&S.n!==FREE_3D_SCENE){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
     const l=Trials.popsLeft();toast(l?`Pop Pencil · free tries: ${l} left`:'That was your last free 3D try ✦');}
   let r=labAt(x,y);if(!r)return;if(isInk(x,y)){const q=nearestPx(x,y,LINE_LOCK.SNAP_START,(v,u,w)=>v>0&&!isInk(u,w));if(q)r=labAt(q[0],q[1]);}
-  ppCanvases(S);const tmp=mk(),rs=ppRegions(r,x,y);pps={r,rs,mask:ppMaskFor(rs),tmp,tx:tmp.getContext('2d'),last:[x,y],inset:POP.pressed,v:POP.flat?0:(POP.pressed?-1:1)};ppStamp(x,y);ppFlush();}
+  ppCanvases(S);const tmp=mk(),rs=ppRegions(r,x,y);pps={r,rs,mask:ppMaskFor(rs),tmp,tx:tmp.getContext('2d'),last:[x,y],inset:POP.pressed,v:POP.flat?0:(POP.pressed?-1:1),base:new Map(),step:Math.max(.2,Math.min(.6,(POP.hv||.6)*.55)),fresh:selHeightOf(r)===0&&!(S.pops||[]).some(p=>(p.rs||[p.r]).includes(r))};ppStamp(x,y);ppFlush();}
 function ppStamp(x,y){const R=ppR()/zoomSizeDiv();pps.tx.globalAlpha=.16;pps.tx.drawImage(sprite,x-R,y-R,2*R,2*R);const d=pps.dr||(pps.dr=[1e9,1e9,-1e9,-1e9]);d[0]=Math.min(d[0],x-R-1|0);d[1]=Math.min(d[1],y-R-1|0);d[2]=Math.max(d[2],x+R+2|0);d[3]=Math.max(d[3],y+R+2|0);}
 function ppMove(x,y){const [lx,ly]=pps.last,d=Math.hypot(x-lx,y-ly),step=Math.max(1,ppR()*.3/zoomSizeDiv()),n=Math.floor(d/step);
   for(let i=1;i<=n;i++)ppStamp(lx+(x-lx)*i/n,ly+(y-ly)*i/n);if(n)pps.last=[x,y];if(!ppFlush.t)ppFlush.t=setTimeout(()=>{ppFlush.t=0;ppFlush();},90);}
@@ -2604,7 +2612,9 @@ function ppFlush(){if(!pps||!pps.dr)return;const st=S.pp,t=pps.tx,r=pps.r,b=r*4,
       for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p];t.fillRect(i%W,(i/W)|0,1,1);}return ppFlush();}
       for(let p=S.off[r];p<S.off[r+1];p++){const i=S.pix[p],j=(((i/W)|0)-by)*bw*4+((i%W)-bx)*4+3;Tm[j]=mxA;}}}
   for(let y=0;y<bh;y++){const o=(by+y)*W+bx;for(let x=0;x<bw;x++){const j=(y*bw+x)*4+3,a=Tm[j];if(!a||lab[o+x]!==r)continue;
-    const k=a/255,h0=(dr[j]-di[j])/255,h=v>0?(h0>=v?h0:Math.min(v,h0+k)):v<0?(h0<=v?h0:Math.max(v,h0-k)):(h0>0?Math.max(0,h0-k):Math.min(0,h0+k));dr[j]=h>0?Math.round(h*255):0;di[j]=h<0?Math.round(-h*255):0;}}
+    const k=a/255,h0=(dr[j]-di[j])/255,pi=o+x;let b0=pps.base.get(pi);if(b0===undefined){b0=h0;pps.base.set(pi,b0);}
+    /* b63 passes: Pop raises one level above where this pass started; Invert steps down (preset -> flat -> indent -> deeper); a never-popped area starts at its preset level */
+    const tg=v===0?0:(pps.fresh&&Math.abs(b0)<.02)?pps.step:v>0?Math.min(1,b0+pps.step):Math.max(-1,b0-pps.step),h=tg>=h0?Math.min(tg,h0+k):Math.max(tg,h0-k);dr[j]=h>0?Math.round(h*255):0;di[j]=h<0?Math.round(-h*255):0;}}
   st.rx.putImageData(R,bx,by);st.ix.putImageData(I,bx,by);t.clearRect(bx,by,bw,bh);ppRender(S,[bx,by,bx+bw-1,by+bh-1]);}   // v8 feel: every pass adds a little more, up to the slider height
 function ppEnd(){if(!pps)return;clearTimeout(ppFlush.t);ppFlush.t=0;ppFlush();const sr=pps.r;setTimeout(()=>popSelect('pp',sr),0);pps=null;dirty('pp');}
 /* b38: shape-aware Pop Pencil. Height = what you painted (builds per pass) x a pillow profile from the area's own distance field,
@@ -2633,9 +2643,9 @@ function ppRender(st,rect){const P=st.pp;if(!P)return;const t0=performance.now()
   for(let y=0;y<rh;y++){const o=y*rw;for(let x=0;x<rw;x++){const i=o+x,l=L[i];if(!l||!h[i]&&!(x>0&&h[i-1])&&!(x<rw-1&&h[i+1])){b[i]=h[i];continue;}let s=0,c=0;for(let q=Math.max(0,x-R);q<=Math.min(rw-1,x+R);q++)if(L[o+q]===l){s+=h[o+q];c++;}b[i]=s/c;}}
   for(let x=0;x<rw;x++)for(let y=0;y<rh;y++){const i=y*rw+x,l=L[i];if(!l){h[i]=0;continue;}let s=0,c=0;for(let q=Math.max(0,y-R);q<=Math.min(rh-1,y+R);q++){const k=q*rw+x;if(L[k]===l){s+=b[k];c++;}}h[i]=s/c;}
   /* pillow profile from the distance to the area's outline: steep at the rim (crisp), flat on top */
-  const Hh=new Float32Array(N);let last=-1,E=null;
+  const Hh=new Float32Array(N);let last=-1,E=null;const PSc=new Map(),PS=s3nOn()?(l=>{if(!PSc.has(l)){let t=null;try{const sp=s3nSpec(st,l);if(sp&&sp.t!=='inset'){const m=st.s3t&&st.s3t.get(l);t=(m&&m.z&&m.key===(sp.t+'|'+sp.hz+'|'+sp.ax))?m:s3nTileBase(st,l);}}catch(e){}PSc.set(l,t);}return PSc.get(l);}):null;
   for(let y=0;y<rh;y++)for(let x=0;x<rw;x++){const i=y*rw+x,v=h[i];if(!v)continue;const l=L[i];if(l!==last){E=ppDT(st,l);last=l;}
-    const dd=E.d[(ry0+y-E.by)*E.bw+(rx0+x-E.bx)]||0,t=Math.min(1,dd/E.rim),u=1-t,av=Math.abs(v),e=av>=.3?1:(av/.3)*(av/.3)*(3-2*av/.3);Hh[i]=v*e*(1-u*u*u);}   /* e: the brush edge becomes a crisp shoulder instead of a soft blur */
+    const dd=E.d[(ry0+y-E.by)*E.bw+(rx0+x-E.bx)]||0,t=Math.min(1,dd/E.rim),u=1-t,av=Math.abs(v),e=av>=.3?1:(av/.3)*(av/.3)*(3-2*av/.3);Hh[i]=v*e*(1-u*u*u);if(PS){const pf=PS(l);if(pf){const zz=pf.z[(ry0+y-pf.y0)*pf.w+(rx0+x-pf.x0)];if(zz!==undefined)Hh[i]=v*e*Math.max(.12,zz);}}}   /* b63: with Preset 3D shapes on, the stroke takes the area's preset curve */   /* e: the brush edge becomes a crisp shoulder instead of a soft blur */
   /* lighting: top-left key light, crisp rim (height drops to 0 across the line), small specular on raised tops, carved areas get occlusion */
   const lw=X1-X0+1,lh=Y1-Y0+1,im=lx.createImageData(lw,lh),D=im.data,HS=18,lxv=-.48,lyv=-.56,lzv=.675,hxv=lxv*.5,hyv=lyv*.5,hzv=(lzv+1)*.5,hn0=Math.hypot(hxv,hyv,hzv);
   const BA=baseRGBA(st,rx0,ry0,rw,rh),o3=[0,0,0];
@@ -2645,9 +2655,9 @@ function ppRender(st,rect){const P=st.pp;if(!P)return;const t0=performance.now()
     let sp=c>0?Math.pow(Math.max(0,(nx*hxv+ny*hyv+nz*hzv)/hn0),60)*(1-nz):0;
     const occ=c<0?-c*.1:0;
     if(!(lam>0.004||sp>.01||lam<-0.004||occ))continue;const E=okEnds(...baseAt(BA,i*4,o3));
-    if(sp>.06){const al=Math.min(.45,lam*1.2)+Math.min(.4,sp*3);D[j]=E.sp[0];D[j+1]=E.sp[1];D[j+2]=E.sp[2];D[j+3]=Math.min(150,al*255);}
-    else if(lam>0.004){const al=Math.min(.6,lam*1.4);D[j]=E.lt[0];D[j+1]=E.lt[1];D[j+2]=E.lt[2];D[j+3]=Math.min(155,al*255);}
-    else{const sv=-Math.min(0,lam)*1.9,al=Math.min(.8,sv+occ*1.6),w2=al>0?Math.min(1,occ*1.6/al):0,a1=E.s1,a2=E.s2;D[j]=a1[0]+(a2[0]-a1[0])*w2;D[j+1]=a1[1]+(a2[1]-a1[1])*w2;D[j+2]=a1[2]+(a2[2]-a1[2])*w2;D[j+3]=al*255;}}
+    if(sp>.06){const al=Math.min(.2,lam*.9)+Math.min(.3,sp*2.5);D[j]=E.sp[0];D[j+1]=E.sp[1];D[j+2]=E.sp[2];D[j+3]=Math.min(150,al*255);}
+    else if(lam>0.004){const al=Math.min(.24,lam*.9);D[j]=E.lt[0];D[j+1]=E.lt[1];D[j+2]=E.lt[2];D[j+3]=Math.min(155,al*255);}
+    else{const sv=Math.max(0,-lam-.08)*2,al=Math.min(.45,sv+occ*.4),w2=al>0?Math.min(1,occ*.4/al):0,a1=E.s1,a2=E.s2;D[j]=a1[0]+(a2[0]-a1[0])*w2;D[j+1]=a1[1]+(a2[1]-a1[1])*w2;D[j+2]=a1[2]+(a2[2]-a1[2])*w2;D[j+3]=al*255;}}
   lx.putImageData(im,X0,Y0);
   /* crisp contact shadow from raised areas onto lower popped areas (never onto lines or untouched neighbours) */
   const mc=document.createElement('canvas');mc.width=rw;mc.height=rh;const mx=mc.getContext('2d'),m=mx.createImageData(rw,rh),M=m.data;let anyUp=false;
@@ -3169,7 +3179,7 @@ numBox($('#ppHn'),-1,1,v=>{const e=$('#ppH');e.value=Math.round(v*100);e.oninput
 $('#ppH').oninput=e=>{setPopH(+e.target.value/100);if(tool!=='pop'&&tool!=='poppencil'&&tool!=='poperase')setTool(S&&S.popSel&&S.popSel.k==='pop'?'pop':'poppencil');applySelHeight(popH());};
 $('#ppH').onchange=()=>{const v=popH();toast(v>0?'Pop height: raise':v<0?'Pop height: inset':'Pop height: flat · the Pop Pencil smooths areas back to the page');};
 $('#popMode').onclick=e=>{const v=e.target&&e.target.dataset&&e.target.dataset.v;POP.pressed=v?v==='inset':!POP.pressed;POP.flat=false;if(!POP.hv)POP.hv=.6;settings.popH=popH();if(tool!=='pop'&&tool!=='poppencil'&&mode==='free')setTool('poppencil');   // simple switch: Raise <-> Inset (Pop Erase flattens)
-  settings.popMode=POP.pressed?'inset':'raised';LS.set('settings',settings);popUI();popRestyle();toast(POP.pressed?'Inset: press areas into the page':'Raise: lift areas off the page');};
+  settings.popMode=POP.pressed?'inset':'raised';LS.set('settings',settings);popUI();toast(POP.pressed?'Invert: each pass steps the painted spot down (preset → flat → indent → deeper)':'Pop: each pass raises the painted spot one more level');};
 $('#idea3d').onclick=()=>idea3d();$('#idea3dApply').onclick=idea3dApply;
 /* v20: Mix opens as an overlay on the bottom section only (same footprint as the pencil and tool boxes; the picture never moves).
    Accept keeps the mix and returns to the bar; Cancel puts everything back as it was */
