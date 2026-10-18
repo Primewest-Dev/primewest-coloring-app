@@ -3,7 +3,7 @@
 'use strict';
 /* ---------- build check: index.html, app.js and the config must come from the same release. If an old cached page is
    paired with this script (or the reverse), clear the offline cache once and reload fresh instead of breaking. ---------- */
-const EP_BUILD=63;let EP_place=null;
+const EP_BUILD=64;let EP_place=null;
 
 function epHeal(why){try{if(sessionStorage.getItem('ep.heal'))return false;sessionStorage.setItem('ep.heal',why);}catch(e){return false;}
   console.warn('Refreshing app files:',why);
@@ -1557,12 +1557,12 @@ function popTap(x,y,noColor){try{redoClear();}catch(e){}const r=labAt(x,y);if(!r
   if(POP.flat){if(i>=0){S.pops.splice(i,1);renderPops();dirty('pop');}S.popSel={k:'pop',r};if(!noColor)popColor(x,y,r);return;}   /* b33: height 0 = a flat color fill */
   const T=depthOf(S),pressed=(T&&T.lv[r]<0)?true:!!POP.pressed,depth=Math.max(10,Math.round(POP.depth)),fin=()=>{renderPops();dirty('pop');if(S&&S.popSel&&S.popSel.r===r)popSelect('pop',r);};
   S.popSel={k:'pop',r};
-  if(i>=0){const p=S.pops[i];if(p.anim)return;if(settings.deepOn&&!p.deep){p.deep=dpNew();p.deep.carved=pressed;}else if(!settings.deepOn&&p.deep){delete p.deep;}if(s3nOn()&&!p.deep){p.lvl=Math.max(-3,Math.min(4,(p.lvl==null?1:p.lvl)+(POP.pressed?-1:1)));renderPops();s3nSoon();dirty('pop');if(S.popSel)popSelect('pop',r);toast(p.lvl>0?'Preset shape · level '+p.lvl:p.lvl===0?'Flat':'Indented · level '+(-p.lvl));return;}   /* b63: Pop / Invert passes on a preset shape */const same=p.pressed===pressed&&p.depth===depth;p.pressed=pressed;p.depth=depth;if(same)fin();else{p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}}
+  if(i>=0){const p=S.pops[i];if(p.anim)return;if(settings.deepOn&&!p.deep){p.deep=dpNew();p.deep.carved=pressed;}else if(!settings.deepOn&&p.deep){delete p.deep;}if(s3nOn()&&!p.deep){if(!noColor&&settings.ppColor!==false)popColor(x,y,r);p.lvl=Math.max(-3,Math.min(4,(p.lvl==null?1:p.lvl)+(POP.pressed?-1:1)));renderPops();s3nSoon();dirty('pop');if(S.popSel)popSelect('pop',r);toast(p.lvl>0?'Preset shape · level '+p.lvl:p.lvl===0?'Flat':'Indented · level '+(-p.lvl));return;}   /* b63: Pop / Invert passes on a preset shape */const same=p.pressed===pressed&&p.depth===depth;p.pressed=pressed;p.depth=depth;if(same)fin();else{p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}}
   else{if(!Effects3D.unlocked()){if(Trials.popsLeft()<=0){openUpgrade(null,'effects3d');return;}Trials.spendPop();refreshPremiumUI();
       const l=Trials.popsLeft();toast(l?`Pop Fill · free tries: ${l} left`:'That was your last free Pop Fill ✦');}
     const p={r,rs:[r],depth,pressed,hz:null};if(s3nOn())p.lvl=1;if(settings.deepOn){p.deep=dpNew();p.deep.carved=pressed;}S.pops.push(p);p.anim=1;popAnim(p,0,1,()=>{delete p.anim;fin();});}
-  if(noColor||settings.ppColor===false)return;if(dpColored(r)){if(!popTap.told){popTap.told=1;toast('Pop Fill kept the color that\u2019s already here · use Fill to recolor');}return;}popColor(x,y,r);}   /* b42: popping a finished picture never repaints it with the current pencil; Color while popping colors blank areas only */
-function popColor(x,y,r){if(mode==='free'){if(ink&&ink.kind==='brush')return;fillFree(x,y);}else if(!S.cbn.filled[r]&&S.num[r]===selNum)tapCBN(x,y);}
+  if(noColor||settings.ppColor===false)return;popColor(x,y,r);}   /* b64: Pop Fill always fills the whole area (every pixel inside its lines, gaps between strokes included) with the picked color, replacing pencil, fill or 2D color, then pops it */
+function popColor(x,y,r){if(mode==='free'){if(ink&&ink.kind==='brush')return;fillFree(x,y);try{if(S.pp&&S.pp.any){const b=r*4;setTimeout(()=>ppRender(S,[S.bb[b]-8,S.bb[b+1]-8,S.bb[b+2]+8,S.bb[b+3]+8]),0);}}catch(e){}}else if(!S.cbn.filled[r]&&S.num[r]===selNum)tapCBN(x,y);}
 function shake(){stage.classList.remove('shake');void stage.offsetWidth;stage.classList.add('shake');try{navigator.vibrate&&navigator.vibrate(15);}catch(e){}}
 function popRestyle(){applySelHeight(popH());}   // v13: the slider / switch drive only the selected section
 /* v13: the Pop height slider follows the section you last drew in or tapped (Pop Pencil, 3D Pop, Pop Erase). Moving it sets
